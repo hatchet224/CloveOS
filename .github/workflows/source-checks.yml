@@ -20,3 +20,9 @@ jobs:
           cmake -S src/console-file-explorer -B build/file-tests -DFM_BUILD_APP=OFF -DFM_BUILD_TESTS=ON
           cmake --build build/file-tests
           ctest --test-dir build/file-tests --output-on-failure
+      - name: Build managed File Explorer with SDL
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libsdl2-dev pkg-config
+          cmake -S src/console-file-explorer -B build/file-app -DBUILD_TESTING=OFF
+          cmake --build build/file-app --target console-file-explorer -j2
