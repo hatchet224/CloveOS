@@ -13,3 +13,5 @@ jobs:
         run: python3 tools/check-source.py
       - name: Build and run portable daemon tests
         run: python3 tools/test-portable.py
+      - name: Check ordinary-file packaging
+        run: python3 src/console-packaging/tests/test_package.py

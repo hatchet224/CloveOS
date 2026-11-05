@@ -22,6 +22,11 @@
     "parser_probes": 2000,
     "physical_device_test": false
   },
+  "packaging_validation": {
+    "passed": true,
+    "existing_host_tests": 12,
+    "physical_card_accessed": false
+  },
   "license_boundary": {
     "original_cloveos_code": "GPL-3.0-or-later",
     "third_party_notices": "preserved in source and LICENSES",

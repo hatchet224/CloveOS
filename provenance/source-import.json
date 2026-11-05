@@ -1966,9 +1966,51 @@
       "path": "ports/emulator-patches/README.md",
       "source_sha256": "d2dc2b54a18b8f90ac2cdeece8d5fddc00df5142fcc3318f12923f300e3f57da",
       "published_sha256": "d2dc2b54a18b8f90ac2cdeece8d5fddc00df5142fcc3318f12923f300e3f57da"
+    },
+    {
+      "path": "src/console-packaging/package.py",
+      "source_sha256": "63a0103f19b43babcdf856b24f3f83a419fbf1ea9a1216f590b7ff2aca14fd73",
+      "published_sha256": "63a0103f19b43babcdf856b24f3f83a419fbf1ea9a1216f590b7ff2aca14fd73"
+    },
+    {
+      "path": "src/console-packaging/build_all.sh",
+      "source_sha256": "6f1513e0506b5cf6ad54a8c4a7590ef4349c41f4afec55c403c43929152b0f42",
+      "published_sha256": "6f1513e0506b5cf6ad54a8c4a7590ef4349c41f4afec55c403c43929152b0f42"
+    },
+    {
+      "path": "src/console-packaging/make_image.sh",
+      "source_sha256": "46b4760e4a7264bf801bb94aceb613c1c139c3c0efad5ff5386ea29bacaf57c9",
+      "published_sha256": "46b4760e4a7264bf801bb94aceb613c1c139c3c0efad5ff5386ea29bacaf57c9"
+    },
+    {
+      "path": "src/console-packaging/generate_content_index.py",
+      "source_sha256": "25cd19c4cb05c13fb2f5d6aeb6c25eeb52f293e1e36e1928e3e43b7a5bd417db",
+      "published_sha256": "25cd19c4cb05c13fb2f5d6aeb6c25eeb52f293e1e36e1928e3e43b7a5bd417db"
+    },
+    {
+      "path": "src/console-packaging/generate_core_templates.py",
+      "source_sha256": "66baad63f5e86df5b978edca00dfdc07ca39667873161a74d1ec7f25eb0cdce4",
+      "published_sha256": "66baad63f5e86df5b978edca00dfdc07ca39667873161a74d1ec7f25eb0cdce4"
+    },
+    {
+      "path": "src/console-packaging/check_release_identities.py",
+      "source_sha256": "542b15b53decf965a1b3e51b967279307e5ebe92c1c8e9a71289d6902dba1ebe",
+      "published_sha256": "542b15b53decf965a1b3e51b967279307e5ebe92c1c8e9a71289d6902dba1ebe"
+    },
+    {
+      "path": "src/console-packaging/prepare_roms.py",
+      "source_sha256": "bbb890c0169b6b6633415b007a322674ef037d62a250f1b76b317acaddaf74cf",
+      "published_sha256": "79e8379cdeab7c41f9bacc18f428354353e26c867a9c1236ca0a4f9f1a8d467e"
+    },
+    {
+      "path": "src/console-packaging/tests/test_package.py",
+      "source_sha256": "4eedeb35457cb302538bb519595519478430038af1f4bad55ddb96e78e4ae3fe",
+      "published_sha256": "4eedeb35457cb302538bb519595519478430038af1f4bad55ddb96e78e4ae3fe"
     }
   ],
   "publication_changes": [
-    "Theme asset installation made opt-in; no runtime C source was changed during publication."
+    "Theme asset installation made opt-in; no runtime C source was changed during publication.",
+    "The archive importer requires an explicit user jobs file instead of the original private game list.",
+    "Source packaging documentation and SDK templates are included with the additional media/build tools."
   ]
 }

@@ -96,3 +96,20 @@ firmware or artwork. See [its README](tools/reconstruct-r48/README.md).
 It still requires independently acquired exact vendor/runtime/artwork inputs.
 Do not substitute an arbitrary kernel/module set or flash a build merely because
 it compiles. The source and rights gaps in `REDISTRIBUTION.md` remain applicable.
+
+## Packaging and media tools
+
+`src/console-packaging` includes the original ordinary-file package builder,
+SDK helper, protected template generator, content-index generator, identity
+checker, and archive import tool. The package builder has host-only tests:
+
+```sh
+python3 src/console-packaging/tests/test_package.py
+```
+
+These package tests construct temporary fixtures and never flash a card. Consult
+each tool's `--help` before using it with your own data. `prepare_roms.py` now
+requires a user-supplied `--jobs` JSON list of `[system, archive filename]` pairs;
+the original private game-library list is omitted. It still requires separately
+supplied content and `chdman`, and its 7z extraction path is Windows-specific.
+No games or BIOS are supplied by these tools.

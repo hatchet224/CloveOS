@@ -1,0 +1,22 @@
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_VERSION 4.9)
+set(CMAKE_SYSTEM_PROCESSOR aarch64)
+
+# Set by build_all.sh from explicit, user-supplied SDK paths. No SDK discovery.
+foreach(name TINA_SYSROOT TINA_CC TINA_CXX TINA_AR TINA_RANLIB TINA_STRIP)
+    if(NOT DEFINED ENV{${name}} OR "$ENV{${name}}" STREQUAL "")
+        message(FATAL_ERROR "Missing ${name}; invoke through build_all.sh")
+    endif()
+endforeach()
+set(CMAKE_SYSROOT "$ENV{TINA_SYSROOT}")
+set(CMAKE_C_COMPILER "$ENV{TINA_CC}")
+set(CMAKE_CXX_COMPILER "$ENV{TINA_CXX}")
+set(CMAKE_AR "$ENV{TINA_AR}")
+set(CMAKE_RANLIB "$ENV{TINA_RANLIB}")
+set(CMAKE_STRIP "$ENV{TINA_STRIP}")
+set(CMAKE_FIND_ROOT_PATH "${CMAKE_SYSROOT}")
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+# Do not turn try_compile into STATIC_LIBRARY: target link failures must be visible.

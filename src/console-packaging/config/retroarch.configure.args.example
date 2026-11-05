@@ -1,0 +1,6 @@
+# One complete configure argument per line. No shell expansion or quoting.
+# Copy this file, remove the sentinel, and add the working BSP's video/audio/input
+# switches. SDL/GPU driver choices cannot be inferred from the A133 CPU alone.
+REPLACE_WITH_QUALIFIED_BOARD_CONFIGURE_ARGUMENTS
+# build_all.sh already supplies --host, --prefix, --enable-threads,
+# --enable-dynamic, --enable-networking, and --disable-vulkan.
