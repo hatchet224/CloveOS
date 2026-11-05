@@ -1,0 +1,7 @@
+# Milliseconds from harness startup. Assertions fail with a nonzero exit code.
+200 expect MENU_READY
+300 launch
+700 expect GAME_RUNNING
+800 press
+1000 release
+1800 expect OFF

@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "kind": "actual-patched-SDL2-helpers-with-mock-SDL",
+  "passed": true,
+  "source_sha256": "ad804bcfcd9b9a21c72dc4ca515dad71718ef898d7bca9de83f3d3adcbb3d183",
+  "helper_source_sha256": "14f5700d40e17d367f3cdb44c811fe80dbd8ca3c6dc0eb7c732389b004984e56",
+  "gpu_or_physical_board_executed": false,
+  "assertions_enabled": true,
+  "cases": [
+    "Mali SHOWN-only and unchanged other-window policies",
+    "RGB565160x144 in NPOT256x256 uses bounded upload and source crop",
+    "Menu320x240 in backing512x256 and ARGB8888 frames",
+    "Short/overflow pitch, wrong format/access/backing/query failures reject",
+    "Clockwise portrait90 geometry and composed core rotation",
+    "NULL render source and invalid output rejected",
+    "SDL upload error propagates"
+  ],
+  "patch_applies_to_pinned_v1_19_1_with_git_apply_check": true,
+  "pinned_retroarch_commit": "0792144fe3a7b59908b0afdb2c01722e79040360",
+  "patch_sha256": "41b9cecb08e6c55f2811b4be4b6b302ea385be7fc7ec8f22b38c3d562fc039e6"
+}

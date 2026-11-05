@@ -2,9 +2,26 @@
 
 CloveOS is a controller-first Linux firmware project for the **MagicX Mini Zero 28**, inspired by the OnionOS experience.
 
+The original CloveOS source is published under **GPL-3.0-or-later**. Start with
+[BUILDING.md](BUILDING.md), [LICENSE](LICENSE), and
+[LICENSE_SCOPE.md](LICENSE_SCOPE.md). Native application sources are in `src/`,
+with the RetroArch integration patches, LAN service, capacity helper, tests,
+dependency pins, and image reconstruction records. Third-party components retain
+their existing licenses.
+
+[RELEASE_POLICY.md](RELEASE_POLICY.md) requires matching source, build inputs,
+notices, privacy checks, and verified redistribution rights for every future
+update. The current image still has unresolved vendor/component source and
+redistribution questions. Publishing CloveOS's own source does not clear those
+third-party payloads or make every byte of an SD-card image GPL software.
+
 The current r48 build is a development test candidate. It includes a game launcher, GameSwitcher, save and resume integration, an optional app catalog, and networking tools. Virtual-machine checks have passed. Fresh-card boot, controls, display, live battery readings, and two-handheld multiplayer still need device testing.
 
-The first downloadable release is being prepared in [Releases](https://github.com/hatchet224/CloveOS/releases). The r48 image remains in a draft release while the corresponding-source and redistribution review is completed.
+See [Releases](https://github.com/hatchet224/CloveOS/releases) for release status.
+New binary publication is on hold while the corresponding-source and
+redistribution review is completed. The existing r48 image has not yet been
+cleared by that review. R49 is in development; its pending fixes must not be
+treated as validated release behavior.
 
 The clean image includes:
 

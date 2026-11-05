@@ -1,0 +1,572 @@
+diff --git a/include/sessiond/fsm.h b/include/sessiond/fsm.h
+--- a/include/sessiond/fsm.h
++++ b/include/sessiond/fsm.h
+@@ -61,7 +61,9 @@
+     CS_EV_RECOVERY_MENU,
+     CS_EV_CRITICAL_BATTERY,
+     CS_EV_EMULATOR_EXIT,
+-    CS_EV_DEVICE_FAULT
++    CS_EV_DEVICE_FAULT,
++    /* Orderly supervisor/init signal: same checkpoint path, never degraded consent. */
++    CS_EV_SYSTEM_SHUTDOWN
+ };
+ 
+ enum cs_result { CS_RESULT_ACCEPTED, CS_RESULT_COMPLETED, CS_RESULT_FAILED, CS_RESULT_UNSUPPORTED };
+diff --git a/include/sessiond/store.h b/include/sessiond/store.h
+--- a/include/sessiond/store.h
++++ b/include/sessiond/store.h
+@@ -45,7 +45,7 @@
+     char card_path[CS_PATH_MAX], uuid[65], instance[33], staging[96];
+     struct cs_identity identity;
+     struct cs_record selected;
+-    bool has_selected, fallback, fat, qualified_fat_syncfs, test_root, poisoned;
++    bool has_selected, fallback, fat, qualified_fat_syncfs, test_root, poisoned, read_only;
+     uint64_t max_state_bytes;
+ };
+ bool cs_identity_valid(const struct cs_identity *identity);
+@@ -53,7 +53,19 @@
+ void cs_store_init(struct cs_store *store);
+ void cs_store_close(struct cs_store *store);
+ enum cs_store_status cs_store_open(struct cs_store *store, const struct cs_store_config *config);
++/* Read-only launcher view: no lock acquisition, mkdir, counter/attempt update or repair.
++ * Close with cs_store_close. Use on a storage worker, never on the SDL event thread. */
++enum cs_store_status cs_store_open_reader(struct cs_store *store,
++                                          const struct cs_store_config *config);
++enum cs_store_status cs_store_read_checkpoint(struct cs_store *store,
++                                              const struct cs_identity *identity,
++                                              uint64_t generation, const char manifest_hash[65],
++                                              struct cs_record *record);
++enum cs_store_status cs_store_read_resume(struct cs_store *store, bool previous,
++                                          struct cs_record *record);
+ enum cs_store_status cs_store_check_media(const struct cs_store *store);
++/* Final checked volume barrier, used only after actual writer completion. */
++enum cs_store_status cs_store_sync(struct cs_store *store);
+ enum cs_store_status cs_store_load(struct cs_store *store);
+ enum cs_store_status cs_store_stage(struct cs_store *store, uint64_t generation,
+                                     char relative[256]);
+diff --git a/include/sessiond/worker.h b/include/sessiond/worker.h
+--- a/include/sessiond/worker.h
++++ b/include/sessiond/worker.h
+@@ -7,12 +7,14 @@
+ struct cs_job {
+     struct cs_request request;
+     bool active_game;
++    bool degraded_poweroff;
+ };
+ struct cs_worker {
+     pthread_t thread;
+     pthread_mutex_t mutex;
+     pthread_cond_t condition;
+     atomic_bool stopping;
++    atomic_bool endpoint_reaped; /* Trusted supervisor proved matching direct-child death. */
+     int event_fd;
+     struct cs_job jobs[4];
+     size_t job_head, job_count;
+@@ -25,6 +27,17 @@
+     bool store_open, bridge_uncertain, thread_started, awaiting_restore_release;
+     struct cs_request uncertain_request;
+     uint64_t frame;
++    /* Assigned by the managed host before submitting any jobs. Callbacks execute
++     * on this worker, not from a signal handler or the epoll thread. */
++    bool managed, automatic_restore;
++    uint64_t selected_generation;
++    char selected_manifest[65];
++    void *lifecycle_context;
++    enum cs_result (*lifecycle)(void *context, const struct cs_request *request, bool active_game,
++                                bool degraded_poweroff);
++    void (*committed)(void *context, struct cs_store *store, enum cs_operation operation,
++                      bool active_game);
++    enum cs_result (*maintenance)(void *context, struct cs_store *store);
+ };
+ bool cs_worker_init(struct cs_worker *worker, const struct cs_profile *profile,
+                     const char *instance);
+diff --git a/src/fsm.c b/src/fsm.c
+--- a/src/fsm.c
++++ b/src/fsm.c
+@@ -537,5 +537,8 @@
+         }
+         transition(fsm, CS_RECOVERY, "required input/device lost; no power transition allowed");
+         break;
+-    }
+-}
++    case CS_EV_SYSTEM_SHUTDOWN:
++        power_intent(fsm, true, now_ms);
++        break;
++    }
++}
+diff --git a/src/main.c b/src/main.c
+--- a/src/main.c
++++ b/src/main.c
+@@ -2,6 +2,9 @@
+ #include "sessiond/evdev.h"
+ #include "sessiond/profile.h"
+ #include "sessiond/worker.h"
++#ifdef HAVE_CONSOLE_SUPERVISOR
++#include "supervisor/managed.h"
++#endif
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <inttypes.h>
+@@ -55,7 +58,7 @@
+ static bool submit(void *context, const struct cs_request *request, uint64_t now_ms)
+ {
+     struct daemon_context *daemon = context;
+-    struct cs_job job;
++    struct cs_job job = {0};
+     (void)now_ms;
+     job.request = *request;
+     job.active_game = daemon->fsm.active_game;
+@@ -147,12 +150,17 @@
+ }
+ int main(int argc, char **argv)
+ {
++#ifdef HAVE_CONSOLE_SUPERVISOR
++    if (argc > 1 && strcmp(argv[1], "--supervised") == 0) {
++        return console_sessiond_managed_main(argc, argv);
++    }
++#endif
+     static struct daemon_context daemon;
+     struct cs_ports ports;
+     struct cs_config config = cs_config_default();
+     struct epoll_event ready[4];
+     int timer_fd = -1, signal_fd = -1, lock_fd = -1, exit_code = 1, i;
+-    bool worker_ready = false, running = true, mask_saved = false;
++    bool worker_ready = false, running = true, mask_saved = false, shutdown_requested = false;
+     sigset_t signals, previous;
+     const char *profile_path = NULL, *lock_path = "/run/console-sessiond.lock";
+     char instance[33];
+@@ -265,6 +273,12 @@
+                     emit(&daemon, CS_EV_LAUNCH, now);
+                 }
+             }
++            if (shutdown_requested && !daemon.fsm.power_pending) {
++                emit(&daemon, CS_EV_SYSTEM_SHUTDOWN, now);
++            }
++            if (daemon.fsm.state == CS_OFF) {
++                break;
++            }
+             if (now >= daemon.media_retry_ms) {
+                 daemon.media_retry_ms = CS_TIME_NEVER;
+                 if (daemon.input.fd >= 0 && daemon.fsm.state == CS_RECOVERY &&
+@@ -298,7 +312,10 @@
+                 struct signalfd_siginfo info;
+                 ssize_t n = read(signal_fd, &info, sizeof(info));
+                 if (n == (ssize_t)sizeof(info)) {
+-                    running = false;
++                    /* A signal requests an orderly transaction; it is not proof
++                     * that an in-flight emulator/storage writer has completed. */
++                    shutdown_requested = true;
++                    emit(&daemon, CS_EV_SYSTEM_SHUTDOWN, now);
+                 } else if (n < 0 && errno != EINTR && errno != EAGAIN) {
+                     goto cleanup;
+                 }
+diff --git a/src/store.c b/src/store.c
+--- a/src/store.c
++++ b/src/store.c
+@@ -283,6 +283,10 @@
+ {
+     int fd;
+     struct stat st;
++    if (create && store->read_only) {
++        errno = EROFS;
++        return -1;
++    }
+     if (create && mkdirat(parent, name, 0700) != 0 && errno != EEXIST) {
+         return -1;
+     }
+@@ -302,6 +306,21 @@
+     }
+     return fd;
+ }
++enum cs_store_status cs_store_sync(struct cs_store *store)
++{
++    int result;
++    if (cs_store_check_media(store) != CS_STORE_OK) {
++        return CS_STORE_MEDIA;
++    }
++    do {
++        result = syncfs(store->card_fd);
++    } while (result != 0 && errno == EINTR);
++    if (result != 0 || (store->data_fd >= 0 && flush_dir(store, store->data_fd) != 0)) {
++        store->poisoned = true;
++        return CS_STORE_IO;
++    }
++    return cs_store_check_media(store);
++}
+ static bool read_small(int dir, const char *name, char buffer[CS_JSON_MAX + 1U], size_t *length)
+ {
+     int fd = openat(dir, name, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC);
+@@ -362,7 +381,11 @@
+     char temp[96];
+     int fd;
+     bool ok;
+-    enum cs_store_status media = cs_store_check_media(store);
++    enum cs_store_status media;
++    if (store->read_only) {
++        return CS_STORE_CONFLICT;
++    }
++    media = cs_store_check_media(store);
+     if (media != CS_STORE_OK) {
+         return media;
+     }
+@@ -844,6 +867,9 @@
+     int dir;
+     size_t i;
+     uint64_t needed = store->max_state_bytes + aux_limits[1] + aux_limits[2] + 65536U;
++    if (store->read_only) {
++        return CS_STORE_CONFLICT;
++    }
+     result = cs_store_check_media(store);
+     if (result != CS_STORE_OK) {
+         return result;
+@@ -906,6 +932,9 @@
+     int dir;
+     struct stat st;
+     enum cs_store_status result;
++    if (store->read_only) {
++        return CS_STORE_CONFLICT;
++    }
+     result = cs_store_check_media(store);
+     if (result != CS_STORE_OK) {
+         return result;
+@@ -1052,3 +1081,172 @@
+     }
+     return atomic_write(store, store->data_fd, "resume-attempt.json", data, (size_t)m);
+ }
++
++/* Launcher readers never take the daemon's writer lock or create an empty store.
++ * The immutable-generation path and existing decoder/hasher are shared so UI
++ * markers cannot silently introduce a weaker definition of a valid checkpoint. */
++enum cs_store_status cs_store_open_reader(struct cs_store *store,
++                                          const struct cs_store_config *config)
++{
++    struct stat st;
++    struct statfs fs;
++    enum cs_store_status result = CS_STORE_MEDIA;
++    cs_store_init(store);
++    store->read_only = true;
++    if (config == NULL || !uuid_valid(config->card_uuid) || config->card_path == NULL ||
++        strlen(config->card_path) >= sizeof(store->card_path) || config->max_state_bytes == 0U ||
++        config->max_state_bytes > 64U * 1024U * 1024U) {
++        return CS_STORE_INCOMPATIBLE;
++    }
++    strcpy(store->card_path, config->card_path);
++    strcpy(store->uuid, config->card_uuid);
++    store->max_state_bytes = config->max_state_bytes;
++    store->qualified_fat_syncfs = config->qualified_fat_syncfs;
++    store->test_root = config->test_root;
++    store->card_fd = open_absolute_dir(store->card_path);
++    if (store->card_fd < 0 || fstat(store->card_fd, &st) != 0 ||
++        fstatfs(store->card_fd, &fs) != 0) {
++        goto fail;
++    }
++    store->device = st.st_dev;
++    store->inode = st.st_ino;
++    store->fat = (unsigned long)fs.f_type == 0x4d44UL;
++    if ((!store->test_root && (unsigned long)fs.f_type != 0xef53UL && !store->fat) ||
++        (store->fat && !store->qualified_fat_syncfs)) {
++        result = CS_STORE_UNSUPPORTED;
++        goto fail;
++    }
++    if (!store->test_root && !fd_mount_id(store->card_fd, &store->mount_id)) {
++        goto fail;
++    }
++    result = cs_store_check_media(store);
++    if (result != CS_STORE_OK) {
++        goto fail;
++    }
++    store->data_fd = child_dir(store, store->card_fd, ".console", false);
++    if (store->data_fd < 0) {
++        result = errno == ENOENT ? CS_STORE_EMPTY : CS_STORE_IO;
++        goto fail;
++    }
++    return CS_STORE_OK;
++fail:
++    cs_store_close(store);
++    store->read_only = true;
++    return result;
++}
++
++static int reader_game(struct cs_store *store, const struct cs_identity *identity)
++{
++    int sessions, game;
++    sessions = child_dir(store, store->data_fd, "sessions", false);
++    if (sessions < 0) {
++        return -1;
++    }
++    game = child_dir(store, sessions, identity->game, false);
++    if (close(sessions) != 0) {
++        if (game >= 0) {
++            (void)close(game);
++        }
++        return -1;
++    }
++    return game;
++}
++
++enum cs_store_status cs_store_read_checkpoint(struct cs_store *store,
++                                              const struct cs_identity *identity,
++                                              uint64_t generation, const char manifest_hash[65],
++                                              struct cs_record *record)
++{
++    struct cs_store view = *store;
++    struct cs_record candidate;
++    char name[40], data[CS_JSON_MAX + 1U], digest[65];
++    size_t length, i;
++    int dir = -1;
++    enum cs_store_status result = cs_store_check_media(store);
++    if (result != CS_STORE_OK) {
++        return result;
++    }
++    if (record == NULL || identity == NULL || !cs_identity_valid(identity) || generation == 0U ||
++        !cs_hex_valid(manifest_hash, 64U)) {
++        return CS_STORE_INCOMPATIBLE;
++    }
++    view.game_fd = reader_game(store, identity);
++    if (view.game_fd < 0) {
++        return CS_STORE_CORRUPT;
++    }
++    (void)snprintf(name, sizeof(name), "g-%020" PRIu64, generation);
++    dir = child_dir(store, view.game_fd, name, false);
++    result = CS_STORE_CORRUPT;
++    if (dir < 0 || !read_small(dir, "manifest.json", data, &length)) {
++        goto done;
++    }
++    cs_sha256_hex(data, length, digest);
++    if (strcmp(digest, manifest_hash) != 0 || !decode_record(store, data, length, &candidate) ||
++        candidate.generation != generation || candidate.menu ||
++        strcmp(candidate.manifest, zero_hash) != 0) {
++        goto done;
++    }
++    if (!cs_identity_equal(identity, &candidate.identity)) {
++        result = CS_STORE_INCOMPATIBLE;
++        goto done;
++    }
++    for (i = 0U; i < CS_STORE_ARTIFACTS; ++i) {
++        uint64_t size;
++        if (!hash_artifact(store, dir, i, false, &size, digest) || size != candidate.size[i] ||
++            strcmp(digest, candidate.hash[i]) != 0) {
++            goto done;
++        }
++    }
++    strcpy(candidate.manifest, manifest_hash);
++    result = cs_store_check_media(store);
++done:
++    if (dir >= 0 && close(dir) != 0) {
++        result = CS_STORE_IO;
++    }
++    if (close(view.game_fd) != 0) {
++        result = CS_STORE_IO;
++    }
++    if (result == CS_STORE_OK) {
++        *record = candidate;
++    }
++    return result;
++}
++
++enum cs_store_status cs_store_read_resume(struct cs_store *store, bool previous,
++                                          struct cs_record *record)
++{
++    const char *name = previous ? "resume.previous.json" : "resume.json";
++    char data[CS_JSON_MAX + 1U];
++    struct cs_record candidate;
++    struct cs_store view = *store;
++    struct stat st;
++    size_t length;
++    enum cs_store_status result = cs_store_check_media(store);
++    if (result != CS_STORE_OK || record == NULL) {
++        return result == CS_STORE_OK ? CS_STORE_INCOMPATIBLE : result;
++    }
++    if (fstatat(store->data_fd, name, &st, AT_SYMLINK_NOFOLLOW) != 0) {
++        return errno == ENOENT ? CS_STORE_EMPTY : CS_STORE_IO;
++    }
++    if (!read_small(store->data_fd, name, data, &length) ||
++        !decode_record(store, data, length, &candidate)) {
++        return CS_STORE_CORRUPT;
++    }
++    view.identity = candidate.identity;
++    view.game_fd = reader_game(store, &view.identity);
++    if (view.game_fd < 0) {
++        return CS_STORE_CORRUPT;
++    }
++    /* Re-read atomically replaced pointer through the existing complete validator. */
++    result = validate_pointer(&view, name, &candidate);
++    if (close(view.game_fd) != 0) {
++        result = CS_STORE_IO;
++    }
++    if (result == CS_STORE_OK) {
++        result = cs_store_check_media(store);
++    }
++    if (result == CS_STORE_OK) {
++        *record = candidate;
++    }
++    return result;
++}
+diff --git a/src/worker.c b/src/worker.c
+--- a/src/worker.c
++++ b/src/worker.c
+@@ -26,7 +26,33 @@
+     status = cs_store_open(&worker->store, &config);
+     if (status == CS_STORE_OK) {
+         worker->store_open = true;
+-        status = cs_store_load(&worker->store);
++        if (!worker->managed || worker->automatic_restore) {
++            status = cs_store_load(&worker->store);
++        } else if (worker->selected_generation == 0U) {
++            struct cs_record record;
++            enum cs_store_status pointer = cs_store_read_resume(&worker->store, false, &record);
++            if (pointer == CS_STORE_OK) {
++                /* Menu-only poweroff must persist menu disposition even when
++                 * the previous foreground game has another profile identity. */
++                worker->store.selected = record;
++                worker->store.has_selected = true;
++            } else if (pointer != CS_STORE_EMPTY) {
++                fprintf(stderr, "managed boot: current resume invalid; no automatic repair\n");
++            }
++        }
++        if (worker->managed && worker->selected_generation != 0U && status == CS_STORE_OK) {
++            if (worker->selected_generation > worker->store.highwater ||
++                (worker->automatic_restore &&
++                 (!worker->store.has_selected ||
++                  worker->store.selected.generation != worker->selected_generation ||
++                  strcmp(worker->store.selected.manifest, worker->selected_manifest) != 0))) {
++                return CS_STORE_INCOMPATIBLE;
++            }
++            status = cs_store_read_checkpoint(&worker->store, &worker->profile.identity,
++                                              worker->selected_generation,
++                                              worker->selected_manifest, &worker->store.selected);
++            worker->store.has_selected = status == CS_STORE_OK;
++        }
+     }
+     return status;
+ }
+@@ -59,7 +85,7 @@
+             }
+             if (w->store.has_selected) {
+                 event.resume_generation = w->store.selected.generation;
+-                if (!w->store.selected.menu) {
++                if (!w->managed && !w->store.selected.menu) {
+                     event.flags |= CS_REPLY_RESUME_AVAILABLE;
+                 }
+             }
+@@ -68,6 +94,12 @@
+         goto store_failure;
+     }
+     if (r->operation == CS_OP_SETTLE) {
++        if (w->managed && atomic_load(&w->endpoint_reaped)) {
++            /* Qualified cores have no detached writers. Actual waitpid proof,
++             * unlike a timeout/socket EOF, closes this process's writer ownership. */
++            w->bridge_uncertain = false;
++            cs_bridge_close(&w->bridge);
++        }
+         if (w->bridge_uncertain) {
+             reply = cs_bridge_exchange(&w->bridge, r, "", &w->uncertain_request, 3000U);
+             if (reply.status != CS_BRIDGE_OK || !reply.writers_closed) {
+@@ -83,6 +115,20 @@
+         event.result = CS_RESULT_COMPLETED;
+         return event;
+     }
++    if (w->managed && job->degraded_poweroff && !job->active_game &&
++        (r->operation == CS_OP_POWER_PREPARE || r->operation == CS_OP_SHUTDOWN)) {
++        if (w->lifecycle == NULL || w->bridge_uncertain || w->store.poisoned) {
++            return event;
++        }
++        if (w->store_open && cs_store_check_media(&w->store) == CS_STORE_OK) {
++            storage = cs_store_menu(&w->store);
++            if (storage != CS_STORE_OK) {
++                goto store_failure;
++            }
++        }
++        event.result = w->lifecycle(w->lifecycle_context, r, false, true);
++        return event;
++    }
+     if (!w->store_open) {
+         storage = CS_STORE_MEDIA;
+         goto store_failure;
+@@ -90,6 +136,29 @@
+     if ((storage = cs_store_check_media(&w->store)) != CS_STORE_OK) {
+         goto store_failure;
+     }
++    if (w->managed && (r->operation == CS_OP_START || r->operation == CS_OP_POWER_PREPARE ||
++                       r->operation == CS_OP_SHUTDOWN)) {
++        if (w->lifecycle == NULL || w->bridge_uncertain) {
++            return event;
++        }
++        if (r->operation == CS_OP_START) {
++            atomic_store(&w->endpoint_reaped, false);
++        }
++        if (r->operation != CS_OP_START) {
++            storage = cs_store_sync(&w->store);
++            if (storage != CS_STORE_OK) {
++                goto store_failure;
++            }
++        }
++        event.result = w->lifecycle(w->lifecycle_context, r, job->active_game, false);
++        if (event.result != CS_RESULT_COMPLETED || r->operation != CS_OP_START) {
++            if (event.result == CS_RESULT_COMPLETED && cs_store_sync(&w->store) != CS_STORE_OK) {
++                event.result = CS_RESULT_FAILED;
++            }
++            return event;
++        }
++        event.result = CS_RESULT_FAILED; /* START still needs actual bridge HELLO. */
++    }
+     if (r->operation == CS_OP_COMMIT) {
+         storage =
+             job->active_game ? cs_store_commit(&w->store, w->frame) : cs_store_menu(&w->store);
+@@ -97,6 +166,17 @@
+             goto store_failure;
+         }
+         event.result = CS_RESULT_COMPLETED;
++        if (w->managed && job->active_game) {
++            w->selected_generation = w->store.selected.generation;
++            memcpy(w->selected_manifest, w->store.selected.manifest, 65U);
++        }
++        if (w->managed && w->committed != NULL) {
++            w->committed(w->lifecycle_context, &w->store, CS_OP_COMMIT, job->active_game);
++        }
++        return event;
++    }
++    if (w->managed && r->operation == CS_OP_NONE && w->maintenance != NULL) {
++        event.result = w->maintenance(w->lifecycle_context, &w->store);
+         return event;
+     }
+     if (r->operation == CS_OP_WRITE) {
+@@ -107,7 +187,19 @@
+         timeout = 10000U;
+     }
+     if (r->operation == CS_OP_LOAD) {
+-        storage = cs_store_verify_selected(&w->store, r->generation, directory);
++        if (w->managed && w->selected_generation != 0U) {
++            storage = cs_store_read_checkpoint(&w->store, &w->profile.identity, r->generation,
++                                               w->selected_manifest, &w->store.selected);
++            if (storage == CS_STORE_OK) {
++                int n = snprintf(directory, sizeof(directory), "sessions/%s/g-%020" PRIu64,
++                                 w->profile.identity.game, r->generation);
++                if (n < 0 || (size_t)n >= sizeof(directory)) {
++                    storage = CS_STORE_IO;
++                }
++            }
++        } else {
++            storage = cs_store_verify_selected(&w->store, r->generation, directory);
++        }
+         if (storage != CS_STORE_OK) {
+             goto store_failure;
+         }
+@@ -170,6 +262,9 @@
+             goto store_failure;
+         }
+     }
++    if (w->managed && r->operation == CS_OP_RELEASE && w->committed != NULL) {
++        w->committed(w->lifecycle_context, &w->store, CS_OP_RELEASE, job->active_game);
++    }
+     event.result = CS_RESULT_COMPLETED;
+     return event;
+ store_failure:
+@@ -231,6 +326,7 @@
+     cs_store_init(&w->store);
+     w->bridge.fd = -1;
+     atomic_init(&w->stopping, false);
++    atomic_init(&w->endpoint_reaped, false);
+     if (!cs_hex_valid(instance, 32U)) {
+         return false;
+     }

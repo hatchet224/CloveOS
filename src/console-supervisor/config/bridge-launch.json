@@ -1,0 +1,11 @@
+{
+  "socket": "/run/console/retroarch.sock",
+  "card_path": "/mnt/SDCARD",
+  "card_uuid": "REPLACE-GAMES-UUID",
+  "daemon_uid": 0,
+  "bios_root": "/opt/console/bios",
+  "max_state_bytes": 67108864,
+  "healthy_frames": 3,
+  "healthy_timeout_ms": 1500,
+  "qualified_fat_syncfs": false
+}

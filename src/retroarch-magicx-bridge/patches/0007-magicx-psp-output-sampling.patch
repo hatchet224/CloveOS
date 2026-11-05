@@ -1,0 +1,24 @@
+diff --git a/gfx/video_driver.c b/gfx/video_driver.c
+--- a/gfx/video_driver.c
++++ b/gfx/video_driver.c
+@@ -31,6 +31,9 @@
+ #include "../config.def.h"
+ 
+ #include "video_driver.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../magicx/magicx_retroarch.h"
++#endif
+ #include "video_filter.h"
+ #include "video_display_server.h"
+ 
+@@ -3207,6 +3210,10 @@
+ #ifdef GEKKO
+    video.viwidth                     = settings->uints.video_viwidth;
+    video.vfilter                     = settings->bools.video_vfilter;
++#endif
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_smooth_video())
++      settings->bools.video_smooth = true;
+ #endif
+    video.smooth                      = settings->bools.video_smooth;
+    video.ctx_scaling                 = settings->bools.video_ctx_scaling;

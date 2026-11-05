@@ -1,0 +1,10 @@
+#!/bin/sh /etc/rc.common
+# Moss's first K service: wait for the checkpoint barrier before K80udev,
+# K90network, K98boot or K99umount. Failure never becomes unmount permission.
+STOP=00
+stop() {
+    while ! /system/bin/console-rc stop; do
+        echo 'console: shutdown waiting for checkpoint/storage settlement' >/dev/console
+        sleep 1
+    done
+}

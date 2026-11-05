@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "publication": "initial CloveOS native source import",
+  "source_privacy_scan_passed": true,
+  "credential_findings": [],
+  "personal_path_findings": [],
+  "binary_rom_bios_payload_findings": [],
+  "retired_scraper_client_values_checked": 2,
+  "manual_review": [
+    {
+      "path": "src/console-lan-services/cmd/vmtest/main.go",
+      "finding": "literal test password",
+      "disposition": "public synthetic fixture used only by isolated loopback test clients; no personal credential"
+    }
+  ],
+  "portable_validation": {
+    "passed": true,
+    "host": "Windows x86_64 with Zig 0.13.0 C compiler",
+    "suites": ["sessiond", "standby", "library_data"],
+    "sessiond_behavioral_cases": 41,
+    "sessiond_states_visited": 21,
+    "parser_probes": 2000,
+    "physical_device_test": false
+  },
+  "license_boundary": {
+    "original_cloveos_code": "GPL-3.0-or-later",
+    "third_party_notices": "preserved in source and LICENSES",
+    "upstream_file_explorer_implementation": "excluded while permission is unresolved; original CloveOS adapters retained",
+    "vendor_binaries_artwork_fonts_roms_bios": "not included",
+    "complete_image_redistribution_cleared": false,
+    "legal_certification": false
+  }
+}

@@ -2,6 +2,26 @@
 
 The review applies to the exact ZIP and image listed in `SHA256SUMS.txt`.
 
+## Source publication update
+
+Original CloveOS native source, tests, configuration templates, RetroArch
+integration source/patches, the LAN service, automatic-capacity helper, dependency
+pins, and reconstruction scripts are now published in this repository. See
+`BUILDING.md` and `LICENSE_SCOPE.md`. These files have been separated from
+personal content and third-party binary/artwork payloads.
+
+This is not a completed corresponding-source/redistribution review for the full
+r48 image. The historical core pins include reported upstream revisions and
+alternative local builds; they must not be represented as proven exact source for
+every shipped binary. The File Explorer's DinguxCommander snapshot lacks a clear
+license grant, so its upstream implementation is excluded from this source import
+pending verification. Theme/splash/font rights, vendor firmware grants, and exact
+kernel/bootloader corresponding source remain unresolved.
+
+Complete binary image publication is held under `RELEASE_POLICY.md` until these
+requirements are resolved. Original CloveOS source can be shared under its stated
+license independently of uncleared third-party payloads.
+
 | Included component | Provenance | Open requirement |
 | --- | --- | --- |
 | Boot0/U-Boot and early boot files | Clean Moss Zero 28 factory base. The bootloader FAT contains its original `bootlogo.bmp` and `magic.bin`. | Verify redistribution terms and exact corresponding source for the shipped bootloader. |

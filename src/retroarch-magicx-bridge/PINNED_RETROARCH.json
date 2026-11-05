@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/libretro/RetroArch.git",
+  "tag": "v1.19.1",
+  "commit": "0792144fe3a7b59908b0afdb2c01722e79040360",
+  "protocol_version": 2,
+  "module_version": "0.2.0"
+}

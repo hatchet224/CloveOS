@@ -1,0 +1,11 @@
+--- a/Makefile.libretro
++++ b/Makefile.libretro
+@@ -676,6 +676,8 @@
+ CORE_DIR := libgambatte/src
+ 
+ include Makefile.common
++# Settle C++ DSO callbacks before core dlclose on the AArch64 Zig toolchain.
++SOURCES_C += console-cxx-dso-fini.c
+ 
+ OBJECTS := $(SOURCES_CXX:.cpp=.o) $(SOURCES_C:.c=.o)
+ 

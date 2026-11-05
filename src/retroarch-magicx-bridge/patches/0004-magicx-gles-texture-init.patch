@@ -1,0 +1,23 @@
+--- a/gfx/drivers/gl2.c
++++ b/gfx/drivers/gl2.c
+@@ -1170,8 +1170,8 @@
+ #endif
+ }
+ 
+-/* This function should only be used without mipmaps
+-   and when data == NULL */
++/* This function should only be used without mipmaps. Immutable storage
++ * allocates undefined contents, so initialized callers need an explicit upload. */
+ static void gl2_load_texture_image(GLenum target,
+       GLint level,
+       GLint internalFormat,
+@@ -1197,6 +1197,9 @@
+ #else
+       glTexStorage2D   (target, 1, internalFormat, width, height);
+ #endif
++      if (data)
++         glTexSubImage2D(target, level, 0, 0, width, height,
++               format, type, data);
+    }
+    else
+ #endif

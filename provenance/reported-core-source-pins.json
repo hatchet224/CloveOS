@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "cores": [
+    {
+      "core": "gambatte",
+      "repository": "libretro/gambatte-libretro",
+      "reported_commit": "9d92381",
+      "commit": "9d92381643a6aad186054fa6019a47b710f73d2c",
+      "url": "https://codeload.github.com/libretro/gambatte-libretro/tar.gz/9d92381643a6aad186054fa6019a47b710f73d2c",
+      "sha256": "48c8e6607b24204544a8f4a56eb64527a89676b00b04cd098b0f2517bd4aef6a",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "fceumm",
+      "repository": "libretro/libretro-fceumm",
+      "reported_commit": "449db5d",
+      "commit": "449db5de6b56e9d44fc685e1b38399f0b233bd28",
+      "url": "https://codeload.github.com/libretro/libretro-fceumm/tar.gz/449db5de6b56e9d44fc685e1b38399f0b233bd28",
+      "sha256": "5cac184772421ec3cffa19f50737a5fdd481089007d21d79b3e2760f94c8fa87",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "snes9x2005_plus",
+      "repository": "libretro/snes9x2005",
+      "reported_commit": "74d871d",
+      "commit": "74d871db9b4dba6dbe6c5ecebc88cbf255be5349",
+      "url": "https://codeload.github.com/libretro/snes9x2005/tar.gz/74d871db9b4dba6dbe6c5ecebc88cbf255be5349",
+      "sha256": "e8e659fe3ed3686823f77a07b22289bc36b367c39bacfbad4285cc822d7998f8",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "picodrive",
+      "repository": "irixxxx/picodrive",
+      "reported_commit": "b0be121",
+      "commit": "b0be121b7d58d6ee1ee2809974e62893c80a8264",
+      "url": "https://codeload.github.com/irixxxx/picodrive/tar.gz/b0be121b7d58d6ee1ee2809974e62893c80a8264",
+      "sha256": "6ca90eac9c04f4c33f9a25d0b8928c18fbb0c8b7a7cb4b3a8a5c184478d7712c",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "pcsx_rearmed",
+      "repository": "libretro/pcsx_rearmed",
+      "reported_commit": "92bb759",
+      "commit": "92bb759deeb4377b02795ba06a35a82281bd9cee",
+      "url": "https://codeload.github.com/libretro/pcsx_rearmed/tar.gz/92bb759deeb4377b02795ba06a35a82281bd9cee",
+      "sha256": "85affbb641a2caa039291c2f5d44b40d1f94a93f687381a6728387e6a5ee5bd5",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "mgba",
+      "repository": "libretro/mgba",
+      "reported_commit": "747362c",
+      "commit": "747362c02d2e71ee7c363e8dcb240925be8af906",
+      "url": "https://codeload.github.com/libretro/mgba/tar.gz/747362c02d2e71ee7c363e8dcb240925be8af906",
+      "sha256": "9a49e66b28296f11e04161dacf8cfc89f113504b87f40f5857a884d513c394a8",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "mupen64plus_next",
+      "repository": "libretro/mupen64plus-libretro-nx",
+      "reported_commit": "3f794ee",
+      "commit": "3f794eec4dc4af2f22ecce507f2da324381d3d92",
+      "url": "https://codeload.github.com/libretro/mupen64plus-libretro-nx/tar.gz/3f794eec4dc4af2f22ecce507f2da324381d3d92",
+      "sha256": "7492fbcc60af0dd9b82f9ec04d6765fe3c0baf6197f6076f3c22b2a303047ebf",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "flycast",
+      "repository": "libretro/flycast",
+      "reported_commit": "4c293f30",
+      "commit": "4c293f306bc16a265c2d768af5d0cea138426054",
+      "url": "https://codeload.github.com/libretro/flycast/tar.gz/4c293f306bc16a265c2d768af5d0cea138426054",
+      "sha256": "4bd38f039530fde498ccbd004cbbd37a90533d6f34185a0f7aa18460c763325b",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "ppsspp",
+      "repository": "libretro/ppsspp",
+      "reported_commit": "3e20fab38",
+      "commit": "3e20fab387af43ccf8d1aa1099e919b33394df17",
+      "url": "https://codeload.github.com/libretro/ppsspp/tar.gz/3e20fab387af43ccf8d1aa1099e919b33394df17",
+      "sha256": "f10ea30cb287386d6dd66a4a43bd42ee50d0fd2fa56bdc0e03567f1978c9b3ce",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    },
+    {
+      "core": "yabasanshiro",
+      "repository": "libretro/yabause",
+      "reported_commit": "7513c8459",
+      "commit": "7513c8459034a0fe415d3cae4d692a54d0f90296",
+      "url": "https://codeload.github.com/libretro/yabause/tar.gz/7513c8459034a0fe415d3cae4d692a54d0f90296",
+      "sha256": "79186079bcdab37f5ab035bb6b478962b6cca31df2bc8b03166d26c9dce5f445",
+      "reported_commit_source": true,
+      "bit_identical_rebuild_proven": false
+    }
+  ],
+  "limits": "Upstream source at the commit reported by each shipped core; public release build recipes/patches are retained separately; not a bit-identical rebuild claim."
+}

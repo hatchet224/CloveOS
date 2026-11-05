@@ -1,0 +1,91 @@
+#!/bin/sh
+# Single-card Moss entry. Never mounts/switches an optional TF2 for active saves.
+set -eu
+PATH=/system/bin:/usr/magicx/bin:/usr/sbin:/usr/bin:/sbin:/bin
+LD_LIBRARY_PATH=/system/lib:/usr/magicx/lib:/lib:/usr/lib
+export PATH LD_LIBRARY_PATH
+CONF=/etc/console/cards.conf
+CTL=/system/bin/console-ctl
+die() { echo "console-rc: $*" >&2; exit 1; }
+[ -f "$CONF" ] && [ ! -L "$CONF" ] || die 'missing cards.conf'
+[ "$(stat -c %u "$CONF")" = 0 ] || die 'cards.conf must be root-owned'
+case "$(stat -c %a "$CONF")" in 400|600) ;; *) die 'cards.conf must be protected';; esac
+. "$CONF"
+runtime() {
+    if ! mountpoint -q /run; then
+        [ -z "$(ls -A /run)" ] || die 'refusing to hide an occupied /run'
+        mount -t tmpfs -o mode=0755,size=8m tmpfs /run
+    fi
+    [ ! -L /run/console ] || die 'runtime directory is a link'
+    mkdir -p /run/console
+    chmod 0700 /run/console
+    "$CTL" runtime-check || die 'runtime protection failed'
+}
+mount_games() {
+    device=$(/system/bin/console-board-probe --find-volume "$PRIMARY_UUID") ||
+        die 'cannot identify one unique primary data partition'
+    mkdir -p /dev/disk/by-uuid
+    alias=/dev/disk/by-uuid/$PRIMARY_UUID
+    if [ -e "$alias" ] || [ -L "$alias" ]; then
+        [ "$(readlink -f "$alias")" = "$device" ] || die 'UUID alias disagrees with the device'
+    else
+        ln -s "$device" "$alias"
+    fi
+    if ! mountpoint -q "$PRIMARY_MOUNT"; then
+        mount -t ext4 -o rw,nosuid,nodev,noexec "$device" "$PRIMARY_MOUNT"
+        : > /run/console/primary.owned
+    fi
+    "$CTL" verify-mount "$PRIMARY_MOUNT" "$device" "$PRIMARY_UUID" ext4 rw || die 'data mount mismatch'
+    if ! mountpoint -q /roms; then
+        mount -o bind "$PRIMARY_MOUNT/roms" /roms
+        : > /run/console/roms.owned
+    fi
+}
+stop_console() {
+    [ -e /run/console/started ] || return 0
+    if ! "$CTL" check-stopped; then
+        "$CTL" --socket /run/console/control.sock stop || return 1
+    fi
+    "$CTL" check-stopped || return 1
+    # No writer timeout is converted into success. Actual flush/reaping proofs
+    # come from the supervisor. Never force/lazily unmount a busy filesystem.
+    if [ -e /run/console/roms.owned ] && mountpoint -q /roms; then
+        umount /roms || return 1
+    fi
+    if [ -e /run/console/primary.owned ] && mountpoint -q "$PRIMARY_MOUNT"; then
+        umount "$PRIMARY_MOUNT" || return 1
+    fi
+}
+case "${1:-}" in
+    mount-games) runtime; mount_games;;
+    stop) stop_console;;
+    start)
+        runtime
+        mkdir /run/console/bootstrap.lock || die 'bootstrap already attempted this boot'
+        # Bind only the immutable SquashFS asset tree, even if Moss has a writable
+        # overlay mounted at /. Root configs remain protected and are never
+        # copied from the writable games volume.
+        asset=/system
+        [ ! -d /rom/system ] || asset=/rom/system
+        mount -o bind "$asset" /system
+        mount -o remount,bind,ro /system
+        mount_games
+        for module in $INPUT_MODULES; do
+            case "$module" in ''|-*|*[!A-Za-z0-9_-]*) die 'invalid input module';; esac
+            modprobe "$module" || die 'input module failed'
+        done
+        mkdir -p /run/console/config
+        chmod 0700 /run/console/config
+        attempts=0
+        while ! /system/bin/console-board-probe --prepare-runtime; do
+            attempts=$((attempts + 1))
+            [ "$attempts" -lt 20 ] || die 'physical input discovery failed; no unmanaged game started'
+            rm -f /run/console/config/base-profile.json /run/console/config/ui.json /run/console/config/supervisor.json
+            sleep 0.5
+        done
+        : > /run/console/started
+        /system/bin/console-supervisor --config /run/console/config/supervisor.json >/run/console/supervisor.log 2>&1 &
+        echo "$!" > /run/console/supervisor.pid
+        ;;
+    *) die 'usage: console-rc start|mount-games|stop';;
+esac

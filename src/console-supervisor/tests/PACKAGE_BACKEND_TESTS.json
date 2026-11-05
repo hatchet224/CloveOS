@@ -1,0 +1,52 @@
+{
+  "passed": true,
+  "physical_card_or_image_written": false,
+  "scope": "x86_64 and AArch64 static-musl fixtures on actual isolated Linux ext4/FAT32 mounts; AArch64 via qemu user. Dummy ELF fixtures test registry checks, not execution of those dummy files. Native packaged cores verified separately.",
+  "runs": [
+    {
+      "architecture": "x86_64",
+      "filesystem": "ext4",
+      "passed": true
+    },
+    {
+      "architecture": "x86_64",
+      "filesystem": "vfat",
+      "passed": true
+    },
+    {
+      "architecture": "aarch64",
+      "filesystem": "ext4",
+      "passed": true
+    },
+    {
+      "architecture": "aarch64",
+      "filesystem": "vfat",
+      "passed": true
+    }
+  ],
+  "checks": [
+    "protected native SHA/ELF64-AArch64 registry",
+    "tampered/symlink core unavailable",
+    "dependency closure/required packages",
+    "draft does not write",
+    "durable disable/reopen/rollback",
+    "CAS revision and lock contention",
+    "current corruption falls back previous; both corrupt fail closed",
+    "media identity change preserves output",
+    "injected failure before publish preserves old selection",
+    "after-rename barrier failure returns uncertain, requires reload",
+    "actual ENOSPC filler stress leaves coherent selected record; tiny transaction succeeded on these filesystems",
+    "post-test ext4/FAT filesystem check clean"
+  ],
+  "source_sha256": {
+    "outputs/console-supervisor/src/package_registry.c": "901ff09956d8787b2229693cb29fde47a2efd1d5c8056c6a1dcbce62c59f0df0",
+    "outputs/console-supervisor/src/package_manager.c": "4fa7dbfa2f700ebd444f604411e6fef3866febdc84d676569fd9dbb22e8afc27",
+    "outputs/console-supervisor/include/supervisor/packages.h": "d412ac0334e979dc273181c0c8beadce48fd63fc96ca807c72d91e34c5ec9825",
+    "outputs/console-supervisor/tests/test_packages.c": "d39c03911848b268152dd65c7898a4bebb105b4b9b7b41efa10924cbfa4ee468"
+  },
+  "test_binary_sha256": {
+    "x86_64": "676642d662e904c11238b438b1c3f8814d488be7fe40c739fe40d5f883235edd",
+    "aarch64": "7d1ffdfa82adf2614c920cbe5edd8bd4d6d1d7509d77b08d54f01d8f6b34bedb"
+  },
+  "log_sha256": "e2ec31437b24a52adfb92369baf22bfa9ceb2b6c8c020f3060b15c3a80c922aa"
+}

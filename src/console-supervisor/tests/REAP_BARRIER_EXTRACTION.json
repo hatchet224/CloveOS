@@ -1,0 +1,10 @@
+{
+  "source_sha256": {
+    "outputs\\console-supervisor\\src\\main.c": "4f5d813a05a942cb58f15ba1b686b2e131b899dd025eb0473190b9d11ba98285",
+    "outputs\\console-supervisor\\src\\process.c": "20d5e78dbcb180d9f205510419943662671084bf176f4e04b3c3d4153d2aa73f"
+  },
+  "exact_prepare_branch_sha256": "e3178c7d4401598e23758718e08e70189ae0c20c7eee8908b1d991b1c53ed1d0",
+  "exact_term_function_body_sha256": "f9487823c5be68bdd79cf2c49e9e0309db7c814b3882ac4a1fb907cd962309f5",
+  "fixture_sha256": "d06cffd5c8a2767f780a56d28bcf717ab3b589125b1d9176cef3c5ddf28799f7",
+  "method": "Exact source bodies; real Linux fork, SIGTERM and waitpid; minimal surrounding supervisor fields."
+}

@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "physical_device_tested": false,
+  "scope": "Pinned RetroArch task/serializer fixture with dummy libretro core; isolated Linux VM filesystems. AArch64 executed through qemu-aarch64 user emulation with static musl, not stock Moss glibc. Parent full-RetroArch target tests are separate.",
+  "pinned_retroarch_commit": "0792144fe3a7b59908b0afdb2c01722e79040360",
+  "root_cause": "Pinned path_get returns NULL for unset CONFIG_APPEND/CONFIG_OVERRIDE; the prior fixture returned an empty string, masking qualified_settings dereferencing path_get(...)[0].",
+  "production_fix": "Use !path_is_empty(type) for the two optional-path policy checks. No other qualification restrictions removed.",
+  "assertions": "Fixture undefines NDEBUG before headers and uses unconditional CHECK. Compiled -O2 -g0 -UNDEBUG -fno-sanitize=all; all test setup occurs outside disabled assert macros.",
+  "comparison": "Two disposable binding snapshots differ only by replacing fixed optional path_is_empty checks with previous unsafe path_get(...)[0] checks. Relative RetroArch includes rewritten absolute for isolated compilation. Production files were not changed by this comparison.",
+  "runs": [
+    {
+      "architecture": "x86_64",
+      "filesystem": "ext4",
+      "unsafe_binding_exit": 139,
+      "fixed_binding_exit": 0,
+      "unset_optional_paths_accepted": true,
+      "append_and_override_rejected_before_socket_bind": true,
+      "pinned_task_full_suite_passed": true,
+      "log": "outputs/retroarch-magicx-bridge/tests/logs/nullable-path-x86_64.log",
+      "log_sha256": "c28f8516b6b4487d15e35d23f3067fb4c104fad148be235141213701563d90be"
+    },
+    {
+      "architecture": "x86_64",
+      "filesystem": "vfat",
+      "unsafe_binding_exit": 139,
+      "fixed_binding_exit": 0,
+      "unset_optional_paths_accepted": true,
+      "append_and_override_rejected_before_socket_bind": true,
+      "pinned_task_full_suite_passed": true,
+      "log": "outputs/retroarch-magicx-bridge/tests/logs/nullable-path-x86_64.log",
+      "log_sha256": "c28f8516b6b4487d15e35d23f3067fb4c104fad148be235141213701563d90be"
+    },
+    {
+      "architecture": "aarch64",
+      "filesystem": "ext4",
+      "unsafe_binding_exit": 139,
+      "fixed_binding_exit": 0,
+      "unset_optional_paths_accepted": true,
+      "append_and_override_rejected_before_socket_bind": true,
+      "pinned_task_full_suite_passed": true,
+      "log": "outputs/retroarch-magicx-bridge/tests/logs/nullable-path-aarch64.log",
+      "log_sha256": "11970ccb28fa9a6731e4a9d7044197253d5b46f3df65435308a24a1395a6c0b2"
+    },
+    {
+      "architecture": "aarch64",
+      "filesystem": "vfat",
+      "unsafe_binding_exit": 139,
+      "fixed_binding_exit": 0,
+      "unset_optional_paths_accepted": true,
+      "append_and_override_rejected_before_socket_bind": true,
+      "pinned_task_full_suite_passed": true,
+      "log": "outputs/retroarch-magicx-bridge/tests/logs/nullable-path-aarch64.log",
+      "log_sha256": "11970ccb28fa9a6731e4a9d7044197253d5b46f3df65435308a24a1395a6c0b2"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "outputs/retroarch-magicx-bridge/tests/test_retroarch.c",
+      "sha256": "29cd92b5f5fd72986b39ec178117fe58807a30d342f168486b947d954e7828f8"
+    },
+    {
+      "path": "work/nullable-path-tests/binding-fixed.c",
+      "sha256": "fe77adf0e7f3234834f67a067aa9860a331bc772bcc7825e93afe52504d0824b"
+    },
+    {
+      "path": "work/nullable-path-tests/binding-old.c",
+      "sha256": "efa4f96cdd279db1faba0cb70d7abf024f0c7fcd513c9250e62296d26d2de564"
+    },
+    {
+      "path": "work/nullable-path-tests/fixture-fixed",
+      "sha256": "5c3c7433bbc1aa41c0043b38d14ab1f8d1035c90fc33e550601aedf412553a98"
+    },
+    {
+      "path": "work/nullable-path-tests/fixture-old",
+      "sha256": "ac587948f8415f580c2e3b8c946830106f16400a360d33a1bcbd09aff737c249"
+    },
+    {
+      "path": "work/nullable-path-tests/fixture-aarch64-fixed",
+      "sha256": "68c50f23b5d0bd5efc1295384e30d454e69423f5c213666858952742411102aa"
+    },
+    {
+      "path": "work/nullable-path-tests/fixture-aarch64-old",
+      "sha256": "c59645cc11cbed4b527a34da29c2c3e809231a6089fcda6e88ebc871ea99cf29"
+    }
+  ]
+}

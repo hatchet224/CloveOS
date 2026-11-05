@@ -1,0 +1,7 @@
+#!/bin/sh /etc/rc.common
+# Runs as soon as boot's display modules are loaded, before network/services.
+START=12
+boot() {
+    LD_LIBRARY_PATH=/system/lib:/usr/magicx/lib:/lib:/usr/lib \
+        /system/bin/console-boot-status --framebuffer-splash >/dev/null 2>&1 || :
+}

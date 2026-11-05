@@ -1,0 +1,16 @@
+# Run with --mock-suspend.
+200 expect MENU_READY
+300 launch
+700 expect GAME_RUNNING
+800 press
+1000 release
+1800 expect SUSPEND_ENTERING
+2000 wake
+2600 expect GAME_RUNNING
+2800 menu
+3400 expect MENU_READY
+3600 press
+3800 release
+4500 expect SUSPEND_ENTERING
+4700 wake
+5300 expect MENU_READY

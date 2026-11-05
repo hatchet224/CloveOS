@@ -1,0 +1,87 @@
+diff --git a/gfx/drivers/gl2.c b/gfx/drivers/gl2.c
+--- a/gfx/drivers/gl2.c
++++ b/gfx/drivers/gl2.c
+@@ -3714,6 +3714,40 @@
+ 
+    if (gl->ctx_driver->update_window_title)
+       gl->ctx_driver->update_window_title(gl->ctx_data);
++
++#ifdef HAVE_MAGICX_BRIDGE
++   {
++      struct magicx_meter_rect rect[3];
++      if (magicx_retroarch_meter((int)width, (int)height, height > width ? 90 : 0, rect))
++      {
++         static const GLfloat colors[3][3] = {{0.05f, 0.09f, 0.17f},
++                                              {0.10f, 0.16f, 0.25f},
++                                              {0.29f, 0.67f, 1.0f}};
++         GLboolean scissor = glIsEnabled(GL_SCISSOR_TEST), mask[4];
++         GLint box[4];
++         GLfloat clear[4];
++         glGetIntegerv(GL_SCISSOR_BOX, box);
++         glGetBooleanv(GL_COLOR_WRITEMASK, mask);
++         glGetFloatv(GL_COLOR_CLEAR_VALUE, clear);
++         glEnable(GL_SCISSOR_TEST);
++         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
++         for (unsigned i = 0; i < 3; ++i)
++         {
++            if (rect[i].w == 0 || rect[i].h == 0)
++               continue;
++            glScissor(rect[i].x, (int)height - rect[i].y - rect[i].h,
++                      rect[i].w, rect[i].h);
++            glClearColor(colors[i][0], colors[i][1], colors[i][2], 1.0f);
++            glClear(GL_COLOR_BUFFER_BIT);
++         }
++         glClearColor(clear[0], clear[1], clear[2], clear[3]);
++         glColorMask(mask[0], mask[1], mask[2], mask[3]);
++         glScissor(box[0], box[1], box[2], box[3]);
++         if (!scissor)
++            glDisable(GL_SCISSOR_TEST);
++      }
++   }
++#endif
+ 
+    /* Reset state which could easily mess up libretro core. */
+    if (gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT)
+diff --git a/gfx/drivers/sdl2_gfx.c b/gfx/drivers/sdl2_gfx.c
+--- a/gfx/drivers/sdl2_gfx.c
++++ b/gfx/drivers/sdl2_gfx.c
+@@ -42,6 +42,9 @@
+ 
+ #include "../../configuration.h"
+ #include "../../retroarch.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../../magicx/magicx_retroarch.h"
++#endif
+ #include "../../verbosity.h"
+ 
+ /*
+@@ -631,6 +634,29 @@
+ 
+    if (msg)
+       sdl2_render_msg(vid, msg);
++
++#ifdef HAVE_MAGICX_BRIDGE
++   {
++      struct magicx_meter_rect rect[3];
++      int output_width, output_height, clockwise;
++      if (sdl2_moss_geometry(vid, &output_width, &output_height, &clockwise) &&
++          magicx_retroarch_meter(output_width, output_height, clockwise, rect))
++      {
++         static const Uint8 colors[3][3] = {{13, 23, 43}, {26, 41, 64}, {74, 171, 255}};
++         Uint8 r, g, b, a;
++         if (SDL_GetRenderDrawColor(vid->renderer, &r, &g, &b, &a) == 0)
++         {
++            for (unsigned i = 0; i < 3; ++i)
++            {
++               SDL_Rect area = {rect[i].x, rect[i].y, rect[i].w, rect[i].h};
++               SDL_SetRenderDrawColor(vid->renderer, colors[i][0], colors[i][1], colors[i][2], 255);
++               SDL_RenderFillRect(vid->renderer, &area);
++            }
++            SDL_SetRenderDrawColor(vid->renderer, r, g, b, a);
++         }
++      }
++   }
++#endif
+ 
+    SDL_RenderPresent(vid->renderer);
+ 

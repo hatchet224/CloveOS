@@ -1,0 +1,239 @@
+#!/bin/sh
+# Zero 28's stock kernel uses reads of usb_device/usb_host as role commands.
+set -eu
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PATH
+role=
+controller=
+gadget=
+find_role() {
+    role=
+    for attribute in /sys/bus/platform/devices/*/usb_device; do
+        path=${attribute%/usb_device}
+        [ -r "$attribute" ] && [ -r "$path/usb_host" ] || continue
+        [ -z "$role" ] || { echo 'Multiple USB role controls found.' >&2;return 1; }
+        role=$path
+    done
+    [ -n "$role" ] || { echo 'USB role controls are missing from platform devices.' >&2;return 1; }
+    printf 'USB role controls: %s\n' "$role"
+}
+stop_adb() {
+    pidof adbd >/dev/null || return 0
+    if [ -x /etc/init.d/adbd ];then /etc/init.d/adbd stop || :;fi
+    if pidof adbd >/dev/null;then killall adbd || :;fi
+    attempt=0
+    while pidof adbd >/dev/null;do
+        attempt=$((attempt+1));[ "$attempt" -lt 30 ] || return 1
+        sleep 0.1
+    done
+}
+find_controller() {
+    attempt=0
+    while :;do
+        controller=
+        for path in /sys/class/udc/*;do
+            [ -d "$path" ] || continue
+            [ -z "$controller" ] || { echo 'Multiple USB device controllers found.' >&2;return 1; }
+            controller=${path##*/}
+        done
+        [ -z "$controller" ] || return 0
+        attempt=$((attempt+1));[ "$attempt" -lt 50 ] || return 1
+        sleep 0.1
+    done
+}
+configfs_root() {
+    for root in /config /sys/kernel/config; do
+        if [ -d "$root/usb_gadget" ]; then printf '%s\n' "$root";return;fi
+    done
+    mkdir -p /sys/kernel/config
+    mount -t configfs none /sys/kernel/config || return 1
+    [ -d /sys/kernel/config/usb_gadget ] || return 1
+    printf '%s\n' /sys/kernel/config
+}
+unbind() {
+    for root in /config /sys/kernel/config;do
+        for name in g1 onion;do
+            path=$root/usb_gadget/$name/UDC
+            if [ -f "$path" ] && [ -n "$(cat "$path")" ];then printf '\n' > "$path";fi
+        done
+    done
+}
+host() {
+    unbind
+    find_role
+    cat "$role/usb_host" > /dev/null
+}
+release_pc_role() {
+    # Do not force host mode here: it can source VBUS with no cable attached.
+    if [ -r "$role/usb_null" ]; then
+        cat "$role/usb_null" > /dev/null
+    else
+        echo 'USB neutral role unavailable; leaving the unbound PC role.'
+    fi
+}
+wait_for_pc() {
+    local state configured=0 detached=0
+    while kill -0 "$mtp_child" 2>/dev/null; do
+        if state=$(cat "/sys/class/udc/$controller/state" 2>/dev/null); then
+            case "$state" in
+                configured) configured=1; detached=0;;
+                'not attached')
+                    if [ "$configured" = 1 ]; then
+                        detached=$((detached+1))
+                        if [ "$detached" -ge 3 ]; then
+                            echo 'USB cable disconnected; releasing PC role.'
+                            return 0
+                        fi
+                    fi;;
+                *) detached=0;;
+            esac
+        else
+            detached=0
+        fi
+        sleep 1
+    done
+    local result=0
+    wait "$mtp_child" || result=$?
+    mtp_child=
+    return "$result"
+}
+configure_mtp() {
+    stage='finding USB gadget configuration'
+    root=$(configfs_root)
+    # The vendor kernel registers a single android0 device for configfs.
+    # Reuse the same gadget and configuration that stock ADB creates.
+    gadget=$root/usb_gadget/g1
+    config=$gadget/configs/c.1
+    stage='preparing the stock USB gadget'
+    mkdir -p "$gadget/strings/0x409" "$config/strings/0x409"
+    for other in "$gadget"/configs/*; do
+        [ ! -d "$other" ] || [ "$other" = "$config" ] || return 1
+    done
+    for link in "$config"/*; do
+        [ ! -L "$link" ] || rm "$link"
+    done
+    [ ! -L "$gadget/os_desc/c.1" ] || rm "$gadget/os_desc/c.1"
+    [ ! -f "$gadget/os_desc/use" ] || printf '0\n' > "$gadget/os_desc/use"
+    stage='setting MTP USB descriptors'
+    printf '0x1f3a\n' > "$gadget/idVendor"
+    printf '0x100b\n' > "$gadget/idProduct"
+    printf '0x0200\n' > "$gadget/bcdUSB"
+    printf '0x0101\n' > "$gadget/bcdDevice"
+    printf '0x00\n' > "$gadget/bDeviceClass"
+    printf '0x00\n' > "$gadget/bDeviceSubClass"
+    printf '0x00\n' > "$gadget/bDeviceProtocol"
+    printf 'C0280002\n' > "$gadget/strings/0x409/serialnumber"
+    printf 'MagicX\n' > "$gadget/strings/0x409/manufacturer"
+    printf 'CloveOS\n' > "$gadget/strings/0x409/product"
+    printf 'MTP file transfer\n' > "$config/strings/0x409/configuration"
+    printf '250\n' > "$config/MaxPower"
+    stage='adding the MTP function'
+    mkdir -p "$gadget/functions/ffs.mtp"
+    ln -s "$gadget/functions/ffs.mtp" "$config/ffs.mtp"
+    mtp_link=$config/ffs.mtp
+}
+pc() {
+    exec 3>&-
+    mkdir -p /run/console
+    exec >>/run/console/usb.log 2>&1
+    mtp_child=
+    mtp_link=
+    ffs_owned=0
+    mtp_active=0
+    pc_role=0
+    stage='starting USB MTP'
+    cleanup_mtp() {
+        result=$?
+        trap - EXIT TERM INT
+        set +e
+        if [ -n "$mtp_child" ];then kill -TERM "$mtp_child" 2>/dev/null;wait "$mtp_child" 2>/dev/null;fi
+        unbind
+        [ -z "$mtp_link" ] || rm -f "$mtp_link"
+        sync
+        [ "$ffs_owned" = 0 ] || umount /dev/ffs-mtp
+        rm -f /run/console/usb.ready
+        if [ "$pc_role" = 1 ]; then release_pc_role; fi
+        if [ "$result" -ne 0 ];then
+            if [ "$mtp_active" = 1 ];then prefix='USB transfer failed';else prefix='USB setup failed';fi
+            printf '%s: %s.\n' "$prefix" "$stage" > /run/console/usb.status
+        fi
+        exit "$result"
+    }
+    trap cleanup_mtp EXIT
+    trap 'exit 0' TERM INT
+    rm -f /run/console/usb.ready
+    printf 'Preparing USB MTP.\n' > /run/console/usb.status
+    stage='locating OTG role controls'
+    find_role
+    stage='stopping the ADB service'
+    stop_adb
+    stage='releasing the previous USB gadget'
+    unbind
+    stage='switching the OTG port to PC mode'
+    cat "$role/usb_device" > /dev/null
+    pc_role=1
+    stage='waiting for the USB device controller'
+    find_controller
+    configure_mtp
+    stage='mounting the MTP endpoint filesystem'
+    mkdir -p /dev/ffs-mtp
+    mount -t functionfs mtp /dev/ffs-mtp
+    ffs_owned=1
+    stage='starting the MTP responder'
+    [ -f /etc/console/umtprd.conf ]
+    /system/bin/umtprd -conf /etc/console/umtprd.conf &
+    mtp_child=$!
+    attempt=0
+    while [ ! -e /dev/ffs-mtp/ep3 ];do
+        kill -0 "$mtp_child"
+        attempt=$((attempt+1));[ "$attempt" -lt 100 ]
+        sleep 0.1
+    done
+    stage='binding the USB controller'
+    attempt=0
+    until printf '%s\n' "$controller" > "$gadget/UDC";do
+        kill -0 "$mtp_child"
+        attempt=$((attempt+1));[ "$attempt" -lt 20 ]
+        sleep 0.1
+    done
+    printf 'USB MTP active. Open This PC > CloveOS.\n' > /run/console/usb.status
+    mtp_active=1
+    printf 'ready\n' > /run/console/usb.ready
+    stage='running the MTP responder'
+    wait_for_pc
+}
+import_usb() {
+    host
+    rm -f /run/console/usb.cancel
+    mkdir -p /run/console/usb
+    chmod 700 /run/console/usb
+    found=0
+    for disk in /sys/block/sd*;do
+        [ -d "$disk" ] || continue
+        case "$(readlink -f "$disk/device")" in */usb*/*) ;; *) continue;;esac
+        for node in "$disk"/sd*;do
+            [ -f "$node/partition" ] || continue
+            name=${node##*/}
+            case "$name" in sd[a-z][1-9]|sd[a-z][1-9][0-9]) ;; *) continue;;esac
+            mountpoint=/run/console/usb/$name
+            mkdir -p "$mountpoint"
+            if mount -t vfat -o ro,nosuid,nodev,noexec,utf8,fmask=0077,dmask=0077 "/dev/$name" "$mountpoint";then
+                found=1
+                if /system/bin/console-fileserver --import /mnt/SDCARD "$mountpoint";then
+                    umount "$mountpoint"
+                else
+                    umount "$mountpoint";return 1
+                fi
+                rmdir "$mountpoint"
+            fi
+            [ ! -e /run/console/usb.cancel ] || return 1
+        done
+    done
+    [ "$found" = 1 ] || { echo 'No readable FAT32 USB storage found.' >&2;return 1; }
+}
+case "${1:-}" in
+    pc) pc;;
+    host|off) host;;
+    import) import_usb;;
+    *) echo 'Usage: console-usb pc|host|off|import' >&2;exit 2;;
+esac

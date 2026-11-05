@@ -1,0 +1,15 @@
+#!/bin/sh
+# Guard the public poweroff/reboot/halt entry before asking PID 1 to tear down.
+set -eu
+PATH=/system/bin:/usr/sbin:/usr/bin:/sbin:/bin
+LD_LIBRARY_PATH=/system/lib:/usr/magicx/lib:/lib:/usr/lib
+export PATH LD_LIBRARY_PATH
+for argument in "$@"; do
+    case "$argument" in -f|--force) echo 'Forced shutdown is disabled while checkpoint ownership exists.' >&2; exit 1;; esac
+done
+/system/bin/console-rc stop || { echo 'Checkpoint/storage barrier failed; shutdown blocked.' >&2; exit 1; }
+case "${0##*/}" in
+    reboot) exec /bin/busybox reboot "$@";;
+    halt) exec /bin/busybox halt "$@";;
+    *) exec /bin/busybox poweroff "$@";;
+esac

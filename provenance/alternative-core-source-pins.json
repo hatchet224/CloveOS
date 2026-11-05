@@ -1,0 +1,44 @@
+[
+  {
+    "name": "gambatte",
+    "repository": "https://github.com/libretro/gambatte-libretro",
+    "commit": "77f2567d718b8973d02caa2daa8dce4953faf811",
+    "source_url": "https://codeload.github.com/libretro/gambatte-libretro/tar.gz/77f2567d718b8973d02caa2daa8dce4953faf811",
+    "archive_sha256": "45e63bc79390093b78de025172ea289ded139f4ecf1e8072242f34d7dd540338"
+  },
+  {
+    "name": "mgba",
+    "repository": "https://github.com/libretro/mgba",
+    "commit": "7a12d6d4b9acb14c0ae62c9166b6a2f3d08007f6",
+    "source_url": "https://codeload.github.com/libretro/mgba/tar.gz/7a12d6d4b9acb14c0ae62c9166b6a2f3d08007f6",
+    "archive_sha256": "5cbf639e527fb586bf33e14d59037eab35f78f45154e0b79c784fff474c3bc37"
+  },
+  {
+    "name": "fceumm",
+    "repository": "https://github.com/libretro/libretro-fceumm",
+    "commit": "ac0d00a7fc01166f84c7bac01d1084ebfd2b865e",
+    "source_url": "https://codeload.github.com/libretro/libretro-fceumm/tar.gz/ac0d00a7fc01166f84c7bac01d1084ebfd2b865e",
+    "archive_sha256": "364affeeea3d91ab8de4ef2a333cb0ca4d7d8e8992e94366a270b32e309485ca"
+  },
+  {
+    "name": "snes9x",
+    "repository": "https://github.com/libretro/snes9x",
+    "commit": "fae2fea08f74180759ef540ee94259213f503480",
+    "source_url": "https://codeload.github.com/libretro/snes9x/tar.gz/fae2fea08f74180759ef540ee94259213f503480",
+    "archive_sha256": "0d4b0c4181d66668ec0040eb17f90a559f7b7fa6cbd9198593c3bdbe79acd029"
+  },
+  {
+    "name": "genesis_plus_gx",
+    "repository": "https://github.com/libretro/Genesis-Plus-GX",
+    "commit": "f27655b592ef43f317272d79883bcaa10d3ac8ad",
+    "source_url": "https://codeload.github.com/libretro/Genesis-Plus-GX/tar.gz/f27655b592ef43f317272d79883bcaa10d3ac8ad",
+    "archive_sha256": "4720dce8f219994951fe5d021e433f3b107ad7c3c64b6295a6a12928f31a73ea"
+  },
+  {
+    "name": "pcsx_rearmed",
+    "repository": "https://github.com/libretro/pcsx_rearmed",
+    "commit": "7b0e8f8fadfbce3d170d195b9d9eecaabfa08c8e",
+    "source_url": "https://codeload.github.com/libretro/pcsx_rearmed/tar.gz/7b0e8f8fadfbce3d170d195b9d9eecaabfa08c8e",
+    "archive_sha256": "4f47bd98bac6cdf62dd4f7a56069b0b0d9999aa6800e636334d1788c5cf38ccf"
+  }
+]

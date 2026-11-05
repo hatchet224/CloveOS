@@ -1,0 +1,9 @@
+{
+  "mbedtls": "mbedtls-3.6.7",
+  "curl": "8.23.0",
+  "sources": {
+    "cacert.pem": "796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe",
+    "curl.tar.xz": "8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5",
+    "mbedtls.tar.bz2": "a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6"
+  }
+}

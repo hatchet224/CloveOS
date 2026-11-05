@@ -1,0 +1,1974 @@
+{
+  "schema": 1,
+  "baseline": "privacy-clean r48 native source; original bridge integration source and pinned patches",
+  "license_for_original_cloveos_code": "GPL-3.0-or-later",
+  "normalizations": [
+    "UTF-8/LF text",
+    "local home paths removed from provenance and historical docs"
+  ],
+  "files": [
+    {
+      "path": "src/console-sessiond/.clang-format",
+      "source_sha256": "445b6ecaeca7a1898a07f51ae0d79c74c1eee9aee70cbb08839510c8cf170fd8",
+      "published_sha256": "445b6ecaeca7a1898a07f51ae0d79c74c1eee9aee70cbb08839510c8cf170fd8"
+    },
+    {
+      "path": "src/console-sessiond/BRIDGE_PROTOCOL.md",
+      "source_sha256": "23a3d36d79965a4522e6f5328a178313077cc8c95eb8ccec5438ee71bee0d4e7",
+      "published_sha256": "5f16f331dd40cb91701d75b9b66c9116d3aa248f733fbc1985fab77a8b617f37"
+    },
+    {
+      "path": "src/console-sessiond/cmake/toolchains/aarch64-tina-linux.cmake",
+      "source_sha256": "53267282d91bef017a4d9077b8b06b0a5a02318c9f0b156d107a6a1043cc727b",
+      "published_sha256": "53267282d91bef017a4d9077b8b06b0a5a02318c9f0b156d107a6a1043cc727b"
+    },
+    {
+      "path": "src/console-sessiond/CMakeLists.txt",
+      "source_sha256": "72f9f953336139e8e4f73ca6872e5128284aba38b5e662e47398c5ee498acc0a",
+      "published_sha256": "72f9f953336139e8e4f73ca6872e5128284aba38b5e662e47398c5ee498acc0a"
+    },
+    {
+      "path": "src/console-sessiond/config/profile.example.json",
+      "source_sha256": "f91ae9893e5832fa859af4538dc23e9dff9363c4dab00b1b12f939b20e8d4170",
+      "published_sha256": "f91ae9893e5832fa859af4538dc23e9dff9363c4dab00b1b12f939b20e8d4170"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/bios_policy.h",
+      "source_sha256": "b605220885c8736a3dc9b30f27f05cddbf65d0ab4c174fd670d6343770a63c10",
+      "published_sha256": "b605220885c8736a3dc9b30f27f05cddbf65d0ab4c174fd670d6343770a63c10"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/bridge.h",
+      "source_sha256": "a14958a2b091615c66095d60c1967ba306c36e84e9ab6adea77a0971aed87046",
+      "published_sha256": "a14958a2b091615c66095d60c1967ba306c36e84e9ab6adea77a0971aed87046"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/commands.h",
+      "source_sha256": "7802992b6f2e12d92226958bc48a90ce98fe03b10d4a420f06afe58a48b5e323",
+      "published_sha256": "7802992b6f2e12d92226958bc48a90ce98fe03b10d4a420f06afe58a48b5e323"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/control_protocol.h",
+      "source_sha256": "1ff3e075000230ddd15070affb4c0711282602a95b8ba2eb1128cc6cab2416d8",
+      "published_sha256": "1ff3e075000230ddd15070affb4c0711282602a95b8ba2eb1128cc6cab2416d8"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/disc_playlist.h",
+      "source_sha256": "d7e61b2f42a7873f5330ca8f75961c89633ef767cb6ff179ee692925af20e60d",
+      "published_sha256": "d7e61b2f42a7873f5330ca8f75961c89633ef767cb6ff179ee692925af20e60d"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/document.h",
+      "source_sha256": "bd2954329e8f83ad6c7427ae80b7922ac6dab07e870399257474c59a0d38da62",
+      "published_sha256": "bd2954329e8f83ad6c7427ae80b7922ac6dab07e870399257474c59a0d38da62"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/durability.h",
+      "source_sha256": "6203f711f26d6e3280ac9396389cce0e3569775c4ed999f3ecdecfdff40d9c7c",
+      "published_sha256": "6203f711f26d6e3280ac9396389cce0e3569775c4ed999f3ecdecfdff40d9c7c"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/evdev.h",
+      "source_sha256": "3963617a3967a151daf00acf1474847ec254f4079f8ddd2cc253a1f77c04ec78",
+      "published_sha256": "3963617a3967a151daf00acf1474847ec254f4079f8ddd2cc253a1f77c04ec78"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/fake_bridge.h",
+      "source_sha256": "6ca3cd7bf388ca20d562d5ca2debc5971f5930210307585d6f622f6a2e69d4b8",
+      "published_sha256": "6ca3cd7bf388ca20d562d5ca2debc5971f5930210307585d6f622f6a2e69d4b8"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/fsm.h",
+      "source_sha256": "a017a75e93d7575817cd5aa746aff4b91826e1130095fee45618bca5c3aa1211",
+      "published_sha256": "a017a75e93d7575817cd5aa746aff4b91826e1130095fee45618bca5c3aa1211"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/hotkeys.h",
+      "source_sha256": "08ed2940ba86d95d10a294e08f5868efafd79f4249fb616a21f6132ab5856cd2",
+      "published_sha256": "08ed2940ba86d95d10a294e08f5868efafd79f4249fb616a21f6132ab5856cd2"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/json.h",
+      "source_sha256": "3b019209cc2f43bdd901ec56f258ae10d75f382f8d495f9f1603a1cd0af1220e",
+      "published_sha256": "3b019209cc2f43bdd901ec56f258ae10d75f382f8d495f9f1603a1cd0af1220e"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/library.h",
+      "source_sha256": "5336b6b40d9b9490e8df76ad095e3ecabc403ca614a7be0802936c4305cdbce0",
+      "published_sha256": "5336b6b40d9b9490e8df76ad095e3ecabc403ca614a7be0802936c4305cdbce0"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/power_input.h",
+      "source_sha256": "5808e1d1e3faf495a6db450b0b7663ab26842794f3d625b7c84f623b5250f1f9",
+      "published_sha256": "5808e1d1e3faf495a6db450b0b7663ab26842794f3d625b7c84f623b5250f1f9"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/profile.h",
+      "source_sha256": "5e908724d15411c0ef47909ef7ea86578d0cd9f510e8f33135da5bc6761f228a",
+      "published_sha256": "5e908724d15411c0ef47909ef7ea86578d0cd9f510e8f33135da5bc6761f228a"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/retroarch_compat.h",
+      "source_sha256": "ae53a6bdb413b1340944c9eac567c6d9ff6dd948adac2f0786032385a5bfbf8c",
+      "published_sha256": "ae53a6bdb413b1340944c9eac567c6d9ff6dd948adac2f0786032385a5bfbf8c"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/sha256.h",
+      "source_sha256": "ff81e4af641729159b39d7f4024295ca38bd0bba8dae99d09954768820830361",
+      "published_sha256": "ff81e4af641729159b39d7f4024295ca38bd0bba8dae99d09954768820830361"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/store.h",
+      "source_sha256": "deababf996c12501b670a9680f153c07ce61d2e3ea9afd863e61e9479595f408",
+      "published_sha256": "deababf996c12501b670a9680f153c07ce61d2e3ea9afd863e61e9479595f408"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/worker.h",
+      "source_sha256": "798eb13e3ab3eea412cf9a54216f35e3d72fbebe88a37b97c77a2490f8044c34",
+      "published_sha256": "798eb13e3ab3eea412cf9a54216f35e3d72fbebe88a37b97c77a2490f8044c34"
+    },
+    {
+      "path": "src/console-sessiond/LIBRARY_COMPATIBILITY.md",
+      "source_sha256": "ea77f576b22106dbdc286e6eea19bec171ffaa5cb81cbe044080432dec941ed6",
+      "published_sha256": "ea77f576b22106dbdc286e6eea19bec171ffaa5cb81cbe044080432dec941ed6"
+    },
+    {
+      "path": "src/console-sessiond/PERSISTENCE.md",
+      "source_sha256": "bd8088c192227dafc55c7355869f2beb015c4729816015dfb3d4c0d5bde2df65",
+      "published_sha256": "bd8088c192227dafc55c7355869f2beb015c4729816015dfb3d4c0d5bde2df65"
+    },
+    {
+      "path": "src/console-sessiond/README.md",
+      "source_sha256": "3466a37cf74e3a109c90bdb712df02edc3a9161ee95f6c4923e77843b3e3984f",
+      "published_sha256": "3466a37cf74e3a109c90bdb712df02edc3a9161ee95f6c4923e77843b3e3984f"
+    },
+    {
+      "path": "src/console-sessiond/src/bridge.c",
+      "source_sha256": "a43ed24a15603f5c29d498b861c97d5f52db4a626c2c061459c58075354038fa",
+      "published_sha256": "a43ed24a15603f5c29d498b861c97d5f52db4a626c2c061459c58075354038fa"
+    },
+    {
+      "path": "src/console-sessiond/src/commands.c",
+      "source_sha256": "83920a088d0d29f940f82d812ee7e01c20878f1af4abc5ffb14d0522080f7975",
+      "published_sha256": "83920a088d0d29f940f82d812ee7e01c20878f1af4abc5ffb14d0522080f7975"
+    },
+    {
+      "path": "src/console-sessiond/src/disc_playlist.c",
+      "source_sha256": "02a5915e7917d4ece3f045751df8643bafbadc14e7b77aa2ca30f5ebc8709968",
+      "published_sha256": "02a5915e7917d4ece3f045751df8643bafbadc14e7b77aa2ca30f5ebc8709968"
+    },
+    {
+      "path": "src/console-sessiond/src/document.c",
+      "source_sha256": "ac7105a57da7523c3c11c4a2023bb763423149a26ed7178280db59ddef92bf02",
+      "published_sha256": "ac7105a57da7523c3c11c4a2023bb763423149a26ed7178280db59ddef92bf02"
+    },
+    {
+      "path": "src/console-sessiond/src/evdev.c",
+      "source_sha256": "a2a9fe8a5b6b49f1d77d350ef1236b0f1063744bd61a07017b95b789bc22b74a",
+      "published_sha256": "a2a9fe8a5b6b49f1d77d350ef1236b0f1063744bd61a07017b95b789bc22b74a"
+    },
+    {
+      "path": "src/console-sessiond/src/fake_bridge.c",
+      "source_sha256": "6ba2405730a4530b350d0f76373c9854f1c48c1e8c1e7030ff9622e6e6886af2",
+      "published_sha256": "6ba2405730a4530b350d0f76373c9854f1c48c1e8c1e7030ff9622e6e6886af2"
+    },
+    {
+      "path": "src/console-sessiond/src/fsm.c",
+      "source_sha256": "8afa592a324b4ff3cf5ce31432596dbe72a84366e898ec48d423d22b331193ee",
+      "published_sha256": "8afa592a324b4ff3cf5ce31432596dbe72a84366e898ec48d423d22b331193ee"
+    },
+    {
+      "path": "src/console-sessiond/src/hotkeys.c",
+      "source_sha256": "fbbfd3e1072989f14d86aa34b5f1dfa9decf70ee806428701939c69f76c06129",
+      "published_sha256": "fbbfd3e1072989f14d86aa34b5f1dfa9decf70ee806428701939c69f76c06129"
+    },
+    {
+      "path": "src/console-sessiond/src/json.c",
+      "source_sha256": "eb238dbc9c49a9235739751d4045a1389eaa6647e867d70294a538ff21ef7c88",
+      "published_sha256": "eb238dbc9c49a9235739751d4045a1389eaa6647e867d70294a538ff21ef7c88"
+    },
+    {
+      "path": "src/console-sessiond/src/library.c",
+      "source_sha256": "47e333d45cc71adad4459977be8d094901c3810d31edd906a2a29bfac380c82b",
+      "published_sha256": "47e333d45cc71adad4459977be8d094901c3810d31edd906a2a29bfac380c82b"
+    },
+    {
+      "path": "src/console-sessiond/src/main.c",
+      "source_sha256": "1a5a199aa4c292546b22a60dacc3fb764208c1d58b43dd8dc8eb3f82a446c0ab",
+      "published_sha256": "1a5a199aa4c292546b22a60dacc3fb764208c1d58b43dd8dc8eb3f82a446c0ab"
+    },
+    {
+      "path": "src/console-sessiond/src/metadata.c",
+      "source_sha256": "b0acfd0d3e134355922e49a41d931050e5f260fbbd188350b9286d3c3f4b3be2",
+      "published_sha256": "b0acfd0d3e134355922e49a41d931050e5f260fbbd188350b9286d3c3f4b3be2"
+    },
+    {
+      "path": "src/console-sessiond/src/mock_main.c",
+      "source_sha256": "f838583dc4e43a362c041efd0d3e64b12e965ace7b77081f3a9dfe5d56257f31",
+      "published_sha256": "f838583dc4e43a362c041efd0d3e64b12e965ace7b77081f3a9dfe5d56257f31"
+    },
+    {
+      "path": "src/console-sessiond/src/power_input.c",
+      "source_sha256": "c7b3562c22d408f30b3fbcea24865b79511c14b7b0fb3e9921bf410b636d1ee3",
+      "published_sha256": "c7b3562c22d408f30b3fbcea24865b79511c14b7b0fb3e9921bf410b636d1ee3"
+    },
+    {
+      "path": "src/console-sessiond/src/profile.c",
+      "source_sha256": "0c9f148f8fd6707bf9570e2161e64c3bef59d45dba1cce25f483776a0b6d545c",
+      "published_sha256": "0c9f148f8fd6707bf9570e2161e64c3bef59d45dba1cce25f483776a0b6d545c"
+    },
+    {
+      "path": "src/console-sessiond/src/sha256.c",
+      "source_sha256": "5c7640e7dde37817d918d2b421cd97051f01941f08529a8b5da1d1ec4e857a58",
+      "published_sha256": "5c7640e7dde37817d918d2b421cd97051f01941f08529a8b5da1d1ec4e857a58"
+    },
+    {
+      "path": "src/console-sessiond/src/store.c",
+      "source_sha256": "f5245985e8c0403e09e999eda08d1c8ae884d0aa8e049c87cfe3a6765c58de2d",
+      "published_sha256": "f5245985e8c0403e09e999eda08d1c8ae884d0aa8e049c87cfe3a6765c58de2d"
+    },
+    {
+      "path": "src/console-sessiond/src/worker.c",
+      "source_sha256": "681066b6d12fb02e38c135fa818d03fdc96fff42613bb73322451d844e381ba5",
+      "published_sha256": "681066b6d12fb02e38c135fa818d03fdc96fff42613bb73322451d844e381ba5"
+    },
+    {
+      "path": "src/console-sessiond/tests/legacy_schema1_fixture.h",
+      "source_sha256": "f7b23deb4f9dcc6dcb3496e18a64ced58ce16cd333224f0d0bee970859dbed81",
+      "published_sha256": "f7b23deb4f9dcc6dcb3496e18a64ced58ce16cd333224f0d0bee970859dbed81"
+    },
+    {
+      "path": "src/console-sessiond/tests/scenarios/save_failure.txt",
+      "source_sha256": "3490f9a55899f72ab13d82062f6ebb4c0fcd11bfe1fcf0302e6868f57cb624d6",
+      "published_sha256": "3490f9a55899f72ab13d82062f6ebb4c0fcd11bfe1fcf0302e6868f57cb624d6"
+    },
+    {
+      "path": "src/console-sessiond/tests/scenarios/shutdown.txt",
+      "source_sha256": "d42cdf886332e518beeb7f8a56029cc845cc3a6fd70066fcd6df826f91ceeb50",
+      "published_sha256": "d42cdf886332e518beeb7f8a56029cc845cc3a6fd70066fcd6df826f91ceeb50"
+    },
+    {
+      "path": "src/console-sessiond/tests/scenarios/suspend.txt",
+      "source_sha256": "36b1e81b5cb5717e1b64a0c52750990f53b21fdb400e0988bea09958f0252d5c",
+      "published_sha256": "36b1e81b5cb5717e1b64a0c52750990f53b21fdb400e0988bea09958f0252d5c"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_durability.c",
+      "source_sha256": "d12e8812aab271aad5f0efa200d256942afd27c56c298567ed55a8b2063d30c5",
+      "published_sha256": "d12e8812aab271aad5f0efa200d256942afd27c56c298567ed55a8b2063d30c5"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_library_data.c",
+      "source_sha256": "80c0305594769f4c9d8adf6cb215195ac09f672fd04a51e3762b1a4faa200bce",
+      "published_sha256": "80c0305594769f4c9d8adf6cb215195ac09f672fd04a51e3762b1a4faa200bce"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_library_linux.c",
+      "source_sha256": "8bc9a928bd644dbc2d31a5a3f654871dc6256937dd58980b7dbb9132e4858918",
+      "published_sha256": "8bc9a928bd644dbc2d31a5a3f654871dc6256937dd58980b7dbb9132e4858918"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_linux.c",
+      "source_sha256": "c5bb7f2cb5b8e04f880d2e78021422a7fe35ec1d974f1a5bb0cbe19b1010b362",
+      "published_sha256": "c5bb7f2cb5b8e04f880d2e78021422a7fe35ec1d974f1a5bb0cbe19b1010b362"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_presentation.c",
+      "source_sha256": "629c3f49803912cc3865e9b71b987e4fa2c6aba64f10db4f03841ae2f06a4036",
+      "published_sha256": "629c3f49803912cc3865e9b71b987e4fa2c6aba64f10db4f03841ae2f06a4036"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_sessiond.c",
+      "source_sha256": "a4e05d10a47c790217ca8dc725a4ba22728f8b81b91ad70e20bc1ee4a24b0a81",
+      "published_sha256": "a4e05d10a47c790217ca8dc725a4ba22728f8b81b91ad70e20bc1ee4a24b0a81"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_standby.c",
+      "source_sha256": "5bfe86e11da1d48c507dc9189e24ea1fa550603bd321758e588e2e37908085fb",
+      "published_sha256": "5bfe86e11da1d48c507dc9189e24ea1fa550603bd321758e588e2e37908085fb"
+    },
+    {
+      "path": "src/console-sessiond/tests/test_standby_worker.c",
+      "source_sha256": "1bace5acfa57ebc1895e054458b64d8b8129c01d607f709474e726f379eead2c",
+      "published_sha256": "1bace5acfa57ebc1895e054458b64d8b8129c01d607f709474e726f379eead2c"
+    },
+    {
+      "path": "src/console-sessiond/VALIDATION.md",
+      "source_sha256": "c7a6eff91afb7556e0f2b3988dbb7b61f7e9dc5c28581e45dd0cbb46345b090f",
+      "published_sha256": "c7a6eff91afb7556e0f2b3988dbb7b61f7e9dc5c28581e45dd0cbb46345b090f"
+    },
+    {
+      "path": "src/console-launcher/.clang-format",
+      "source_sha256": "fd4cb51515f4757f67af9455d59c02e4fd20af153de58e34099f7c0481a27601",
+      "published_sha256": "fd4cb51515f4757f67af9455d59c02e4fd20af153de58e34099f7c0481a27601"
+    },
+    {
+      "path": "src/console-launcher/CMakeLists.txt",
+      "source_sha256": "a917ab9ed30140df9c3f8d66c32796b2df0ac0f18207c8ba8de18649118b6350",
+      "published_sha256": "0e0d5257b85a1013de2157df8edce84d9da3ea89e19f6305d629e33d31ae6e85"
+    },
+    {
+      "path": "src/console-launcher/CONTROLLER_PERSISTENCE.md",
+      "source_sha256": "413955c3af692b326876e089be2928ef5562059e41d8e577bc018ddc725c332a",
+      "published_sha256": "413955c3af692b326876e089be2928ef5562059e41d8e577bc018ddc725c332a"
+    },
+    {
+      "path": "src/console-launcher/HISTORY_FORMAT.md",
+      "source_sha256": "efe50a6d958cd0e61c6bf8beba9bae3fa41bc991b3a2ac7938b6d61fe3b2ce2e",
+      "published_sha256": "efe50a6d958cd0e61c6bf8beba9bae3fa41bc991b3a2ac7938b6d61fe3b2ce2e"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/app.h",
+      "source_sha256": "c9c79fcbc4e8cf24ccb6aafbc1a9aab0ef13a4c794f1c369cb1390bc35d35311",
+      "published_sha256": "c9c79fcbc4e8cf24ccb6aafbc1a9aab0ef13a4c794f1c369cb1390bc35d35311"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/assets.h",
+      "source_sha256": "9f14e1f42a58337c74c65b1d7baabe62ef9ef186fa49e125df21dc9e9135d34e",
+      "published_sha256": "9f14e1f42a58337c74c65b1d7baabe62ef9ef186fa49e125df21dc9e9135d34e"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/battery.h",
+      "source_sha256": "fcf0a050e2cb108f96ca3ddfbb57347597ea7c2ca200cb320fbcf8c9843cc4d8",
+      "published_sha256": "fcf0a050e2cb108f96ca3ddfbb57347597ea7c2ca200cb320fbcf8c9843cc4d8"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/display.h",
+      "source_sha256": "35625f06ab9d5667f351edffd37b50027bf9e5c557df112e8444a1137aba3704",
+      "published_sha256": "35625f06ab9d5667f351edffd37b50027bf9e5c557df112e8444a1137aba3704"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/favorites.h",
+      "source_sha256": "5e9bd95e69a2a12c05e6738febaf763330e319e5139745bf642a4dc0bc637cd2",
+      "published_sha256": "5e9bd95e69a2a12c05e6738febaf763330e319e5139745bf642a4dc0bc637cd2"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/file_explorer.h",
+      "source_sha256": "b6c245b13b0b61f5d3853a1228fef2bf9ba86f1280632e37c4681850b11dd02d",
+      "published_sha256": "b6c245b13b0b61f5d3853a1228fef2bf9ba86f1280632e37c4681850b11dd02d"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/history.h",
+      "source_sha256": "b4b903592ad9669101fdb9a5c2f431090872e18d1a96825920408b59c3393471",
+      "published_sha256": "b4b903592ad9669101fdb9a5c2f431090872e18d1a96825920408b59c3393471"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/icons.h",
+      "source_sha256": "c6f6670986231a5f999e1b64973a254681b5c60ad7aed38b2534e11e720d6454",
+      "published_sha256": "c6f6670986231a5f999e1b64973a254681b5c60ad7aed38b2534e11e720d6454"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/input.h",
+      "source_sha256": "f7c47390a5727906bc54327fd7d7ef78f173df4edaf4c9c508ad96795e653b7f",
+      "published_sha256": "f7c47390a5727906bc54327fd7d7ef78f173df4edaf4c9c508ad96795e653b7f"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/model.h",
+      "source_sha256": "6889f3f563cb649ed9207714b794d01dc4b3b8a0f3c24ee335e3988f03a01495",
+      "published_sha256": "6889f3f563cb649ed9207714b794d01dc4b3b8a0f3c24ee335e3988f03a01495"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/paging.h",
+      "source_sha256": "f9c0a460db8953da5d91da94237be39feb2945eb8cbc7ba8543bbaa62aad2419",
+      "published_sha256": "f9c0a460db8953da5d91da94237be39feb2945eb8cbc7ba8543bbaa62aad2419"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/preferences.h",
+      "source_sha256": "995bf38f5dfcc7419beef763c1f38ba627dfbef5b6e5bbef4f1f4fbfd63c6052",
+      "published_sha256": "995bf38f5dfcc7419beef763c1f38ba627dfbef5b6e5bbef4f1f4fbfd63c6052"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/qualification.h",
+      "source_sha256": "e519ffb605726fd2dcdc76818e6833a679f9742671ed6ef0e00d56cf6683d4fa",
+      "published_sha256": "e519ffb605726fd2dcdc76818e6833a679f9742671ed6ef0e00d56cf6683d4fa"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/theme.h",
+      "source_sha256": "492dfe701025653d30b159a997a61b46f0863a3d893b40115fa7870df9efa336",
+      "published_sha256": "492dfe701025653d30b159a997a61b46f0863a3d893b40115fa7870df9efa336"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/theme_sound.h",
+      "source_sha256": "bb20215a493b01bbd9f60c0dfcd3efb00800e0de4444d6478ee29b7b602ad947",
+      "published_sha256": "bb20215a493b01bbd9f60c0dfcd3efb00800e0de4444d6478ee29b7b602ad947"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/timezones.h",
+      "source_sha256": "d3ce5fcfc905bd43bec92672f69aa1e19eb8d1bc10a5849d70c717d341976eac",
+      "published_sha256": "d3ce5fcfc905bd43bec92672f69aa1e19eb8d1bc10a5849d70c717d341976eac"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/tools.h",
+      "source_sha256": "c92a94d66cce423a9ffe0292311c886a1423850b632926d99772ce7e2dd894ca",
+      "published_sha256": "c92a94d66cce423a9ffe0292311c886a1423850b632926d99772ce7e2dd894ca"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/view.h",
+      "source_sha256": "82da91ce066040903c50fbdccb61ed8ca1acf09beaa5accc55a84464e57f61bf",
+      "published_sha256": "82da91ce066040903c50fbdccb61ed8ca1acf09beaa5accc55a84464e57f61bf"
+    },
+    {
+      "path": "src/console-launcher/INTEGRATION.md",
+      "source_sha256": "6b12b8a93e94459b60d551c8d12bd8a7fc9e39f3b263f545c5ae40fc29a5a4f2",
+      "published_sha256": "6b12b8a93e94459b60d551c8d12bd8a7fc9e39f3b263f545c5ae40fc29a5a4f2"
+    },
+    {
+      "path": "src/console-launcher/ONION_RENDERER_STATUS.md",
+      "source_sha256": "0f187a8dc6f29ae88be9d557faea7ef563999f182fb3200579cf1a9148117ba7",
+      "published_sha256": "0f187a8dc6f29ae88be9d557faea7ef563999f182fb3200579cf1a9148117ba7"
+    },
+    {
+      "path": "src/console-launcher/patches/0001-sessiond-readonly-checkpoints.patch",
+      "source_sha256": "0a9135a49169f6cf1deb14b41f358a46236ab79f08bc914cde2cc55910c7615e",
+      "published_sha256": "0a9135a49169f6cf1deb14b41f358a46236ab79f08bc914cde2cc55910c7615e"
+    },
+    {
+      "path": "src/console-launcher/PREFERENCES.md",
+      "source_sha256": "b207279cda86967544b7a51a50e557b9c8d18af5e7477d2cd74975ec230e0530",
+      "published_sha256": "b207279cda86967544b7a51a50e557b9c8d18af5e7477d2cd74975ec230e0530"
+    },
+    {
+      "path": "src/console-launcher/README.md",
+      "source_sha256": "b1757c801d5160b45cad3648c84d7cbba6c5939a48ff47fa5ce6441e252f050a",
+      "published_sha256": "b1757c801d5160b45cad3648c84d7cbba6c5939a48ff47fa5ce6441e252f050a"
+    },
+    {
+      "path": "src/console-launcher/SILKY_INTEGRATION.md",
+      "source_sha256": "d2d0d55eac1f01eecf00a87342629d44c4cfd9996b58b559062a21a77fea3773",
+      "published_sha256": "d2d0d55eac1f01eecf00a87342629d44c4cfd9996b58b559062a21a77fea3773"
+    },
+    {
+      "path": "src/console-launcher/src/app.c",
+      "source_sha256": "8b9362b2cdd0b20e108df1f755aa4f5c6ef007502c9b5627728617744575f72d",
+      "published_sha256": "8b9362b2cdd0b20e108df1f755aa4f5c6ef007502c9b5627728617744575f72d"
+    },
+    {
+      "path": "src/console-launcher/src/assets.c",
+      "source_sha256": "243e14237953b4ff64be39f34dae6617d9ce534d6e8b55c8954b1edb76ee3549",
+      "published_sha256": "243e14237953b4ff64be39f34dae6617d9ce534d6e8b55c8954b1edb76ee3549"
+    },
+    {
+      "path": "src/console-launcher/src/disc_groups.c",
+      "source_sha256": "8e22f377a3fc7ab753d11b5f0ca485e5d60ff5fcc5c46bb8cca36a1442a6c7fb",
+      "published_sha256": "8e22f377a3fc7ab753d11b5f0ca485e5d60ff5fcc5c46bb8cca36a1442a6c7fb"
+    },
+    {
+      "path": "src/console-launcher/src/display.c",
+      "source_sha256": "86aac5787d76f73179eaf2d625147592269523c336c4cf28e6e2cb201191375a",
+      "published_sha256": "86aac5787d76f73179eaf2d625147592269523c336c4cf28e6e2cb201191375a"
+    },
+    {
+      "path": "src/console-launcher/src/favorites.c",
+      "source_sha256": "58676b019dafc597fe278e07bbdb1320b0d0107c0a4b779a076dc0d96a215c12",
+      "published_sha256": "58676b019dafc597fe278e07bbdb1320b0d0107c0a4b779a076dc0d96a215c12"
+    },
+    {
+      "path": "src/console-launcher/src/history.c",
+      "source_sha256": "e90c024d34e778812bc747066a7860627a1495df2fe200af02a6ddd495d2eaed",
+      "published_sha256": "e90c024d34e778812bc747066a7860627a1495df2fe200af02a6ddd495d2eaed"
+    },
+    {
+      "path": "src/console-launcher/src/input.c",
+      "source_sha256": "cf3c1cb89f037842aeb1298c74dfe9a80a139b0e261e6ee1ccec5f33c3c660ec",
+      "published_sha256": "cf3c1cb89f037842aeb1298c74dfe9a80a139b0e261e6ee1ccec5f33c3c660ec"
+    },
+    {
+      "path": "src/console-launcher/src/paging.c",
+      "source_sha256": "e95fd80f3636992651a1729abf8da8c5cf44f9f42ba1a89ccd335b02fbc8e21d",
+      "published_sha256": "e95fd80f3636992651a1729abf8da8c5cf44f9f42ba1a89ccd335b02fbc8e21d"
+    },
+    {
+      "path": "src/console-launcher/src/preference_record.c",
+      "source_sha256": "09b3692e416bf2bc9f06e938108d32246b18e8d7f1f6d170ff581675879304d1",
+      "published_sha256": "09b3692e416bf2bc9f06e938108d32246b18e8d7f1f6d170ff581675879304d1"
+    },
+    {
+      "path": "src/console-launcher/src/preference_record.h",
+      "source_sha256": "285c6abfbee958bbba3bca0ff7bfeddc67f8da7aa92ec25b1033fcd45fde3b36",
+      "published_sha256": "285c6abfbee958bbba3bca0ff7bfeddc67f8da7aa92ec25b1033fcd45fde3b36"
+    },
+    {
+      "path": "src/console-launcher/src/preferences.c",
+      "source_sha256": "b3217b0e5241bf524c0ef2cb2e28c715705120c3d93849fc70447c01a60333fa",
+      "published_sha256": "b3217b0e5241bf524c0ef2cb2e28c715705120c3d93849fc70447c01a60333fa"
+    },
+    {
+      "path": "src/console-launcher/src/qualification.c",
+      "source_sha256": "4da60a1803a48a048f8fb767511920254f85e3f91e2d50edd3d8567d171c4c4c",
+      "published_sha256": "4da60a1803a48a048f8fb767511920254f85e3f91e2d50edd3d8567d171c4c4c"
+    },
+    {
+      "path": "src/console-launcher/src/text.c",
+      "source_sha256": "9000f5fa67fa868d864c86a9d8582b6be7db7d0b4f455cb73f0e929980c8c99a",
+      "published_sha256": "9000f5fa67fa868d864c86a9d8582b6be7db7d0b4f455cb73f0e929980c8c99a"
+    },
+    {
+      "path": "src/console-launcher/src/theme.c",
+      "source_sha256": "f2ed9a3a7c2bb8d72a42e72649e6b79cbea72a25c30aac10a8de7f190d677b08",
+      "published_sha256": "f2ed9a3a7c2bb8d72a42e72649e6b79cbea72a25c30aac10a8de7f190d677b08"
+    },
+    {
+      "path": "src/console-launcher/src/theme_file.c",
+      "source_sha256": "8a5cf89a5a19765f79edbb88e5df37bebd67c3f1df1fd01f4f709c64bbac28e8",
+      "published_sha256": "8a5cf89a5a19765f79edbb88e5df37bebd67c3f1df1fd01f4f709c64bbac28e8"
+    },
+    {
+      "path": "src/console-launcher/src/theme_sound.c",
+      "source_sha256": "0e73a194b21a340e11beaa2dd43f77bbcd24f9ea372f814b96db6a83345e26ef",
+      "published_sha256": "0e73a194b21a340e11beaa2dd43f77bbcd24f9ea372f814b96db6a83345e26ef"
+    },
+    {
+      "path": "src/console-launcher/src/tools.c",
+      "source_sha256": "97c3d7ffba8e8957d3e8a6dafd68ef9553c665699a66afb2a1a79d0e351070ac",
+      "published_sha256": "97c3d7ffba8e8957d3e8a6dafd68ef9553c665699a66afb2a1a79d0e351070ac"
+    },
+    {
+      "path": "src/console-launcher/src/view.c",
+      "source_sha256": "854448f0ea4842287dcee8e91289f79424d831f9748380a4f4d53dace09afc77",
+      "published_sha256": "854448f0ea4842287dcee8e91289f79424d831f9748380a4f4d53dace09afc77"
+    },
+    {
+      "path": "src/console-launcher/tests/render_fixture.c",
+      "source_sha256": "3241d59c3f1a59c11fb48d2e7baf2ebd01359fdb2d39411aa18b1c50fd355299",
+      "published_sha256": "3241d59c3f1a59c11fb48d2e7baf2ebd01359fdb2d39411aa18b1c50fd355299"
+    },
+    {
+      "path": "src/console-launcher/tests/render_tools_fixture.c",
+      "source_sha256": "b640314d4241c64ae808646837a205d7f2c8063ede780aaecc316c9e47da10fb",
+      "published_sha256": "b640314d4241c64ae808646837a205d7f2c8063ede780aaecc316c9e47da10fb"
+    },
+    {
+      "path": "src/console-launcher/tests/test_app_dispatch.c",
+      "source_sha256": "0381bd8fb289ad28e52f92edb9969c5d12cdf7c2d078dca7d31fee82dbe10ffc",
+      "published_sha256": "0381bd8fb289ad28e52f92edb9969c5d12cdf7c2d078dca7d31fee82dbe10ffc"
+    },
+    {
+      "path": "src/console-launcher/tests/test_app_handoff.c",
+      "source_sha256": "55dbfe2e91cc107b7905066ad74651b77c0a1b0d0f2386ccf0b722f201c93a9e",
+      "published_sha256": "55dbfe2e91cc107b7905066ad74651b77c0a1b0d0f2386ccf0b722f201c93a9e"
+    },
+    {
+      "path": "src/console-launcher/tests/test_app_paging.c",
+      "source_sha256": "a18aed3cef51b9ca995a92704cfa6ad5fcfc46aa77d897d292426e9a8ea14f0f",
+      "published_sha256": "a18aed3cef51b9ca995a92704cfa6ad5fcfc46aa77d897d292426e9a8ea14f0f"
+    },
+    {
+      "path": "src/console-launcher/tests/test_disc_groups.c",
+      "source_sha256": "1d731ab202f9edb18e283e9e0f764e84d76fb1b4543f06af786927524b4332ef",
+      "published_sha256": "1d731ab202f9edb18e283e9e0f764e84d76fb1b4543f06af786927524b4332ef"
+    },
+    {
+      "path": "src/console-launcher/tests/test_favorites.c",
+      "source_sha256": "c5aac567287ed232a96497048ba5fb33a03d4f9ff60bab27468a33e52ecdf6df",
+      "published_sha256": "c5aac567287ed232a96497048ba5fb33a03d4f9ff60bab27468a33e52ecdf6df"
+    },
+    {
+      "path": "src/console-launcher/tests/test_five_apps.c",
+      "source_sha256": "b15229b1b863c33ea9cfb34bbc94037039fea12f915a032dbff0380bf52c3962",
+      "published_sha256": "b15229b1b863c33ea9cfb34bbc94037039fea12f915a032dbff0380bf52c3962"
+    },
+    {
+      "path": "src/console-launcher/tests/test_history.c",
+      "source_sha256": "1769eb7202d6679f2671cd9263c2d9e8eeb13fe448c07fa574d416be9f864c32",
+      "published_sha256": "1769eb7202d6679f2671cd9263c2d9e8eeb13fe448c07fa574d416be9f864c32"
+    },
+    {
+      "path": "src/console-launcher/tests/test_input.c",
+      "source_sha256": "008eecda17e8c25f3e9c6432db3ce55eadc36553dd59af996dcb8e70e273c544",
+      "published_sha256": "008eecda17e8c25f3e9c6432db3ce55eadc36553dd59af996dcb8e70e273c544"
+    },
+    {
+      "path": "src/console-launcher/tests/test_input_schema2.c",
+      "source_sha256": "10f73b882df69b8ef443908fa1b3f4bf9792fb29a60b822e7715fcba55a99ccb",
+      "published_sha256": "10f73b882df69b8ef443908fa1b3f4bf9792fb29a60b822e7715fcba55a99ccb"
+    },
+    {
+      "path": "src/console-launcher/tests/test_preferences.c",
+      "source_sha256": "333844c766c2cb60cf3a03129127d14d10e2e6c3cf9c7e0ed0a7891d0d97de70",
+      "published_sha256": "333844c766c2cb60cf3a03129127d14d10e2e6c3cf9c7e0ed0a7891d0d97de70"
+    },
+    {
+      "path": "src/console-launcher/tests/test_reference_theme.c",
+      "source_sha256": "2a8c83b95f8ff1fc7ba900c2c3ff7aea5ed82742b1a9b97963c5e864de272d02",
+      "published_sha256": "2a8c83b95f8ff1fc7ba900c2c3ff7aea5ed82742b1a9b97963c5e864de272d02"
+    },
+    {
+      "path": "src/console-launcher/tests/test_tools.c",
+      "source_sha256": "2843ca251eb7d0c738f613ca9106ce1f0b1d5b1e0d6a1b398ad11960610b50bc",
+      "published_sha256": "2843ca251eb7d0c738f613ca9106ce1f0b1d5b1e0d6a1b398ad11960610b50bc"
+    },
+    {
+      "path": "src/console-launcher/THIRD_PARTY.json",
+      "source_sha256": "6735b77a7454ee9a480d1ebaa2ad352e20c2ac0d63e2e45391f45f0f7d6afc54",
+      "published_sha256": "6735b77a7454ee9a480d1ebaa2ad352e20c2ac0d63e2e45391f45f0f7d6afc54"
+    },
+    {
+      "path": "src/console-launcher/tools/build_theme.py",
+      "source_sha256": "4f5b4d7f8a00d40b4adafd453784971765d63b77929ee47909b4868e134b4120",
+      "published_sha256": "4f5b4d7f8a00d40b4adafd453784971765d63b77929ee47909b4868e134b4120"
+    },
+    {
+      "path": "src/console-launcher/TOOLS_UI.md",
+      "source_sha256": "eec4f4a4dc33f3342bab98337ff3c7bd1333bede0dd3db078bf7086248e07b61",
+      "published_sha256": "eec4f4a4dc33f3342bab98337ff3c7bd1333bede0dd3db078bf7086248e07b61"
+    },
+    {
+      "path": "src/console-launcher/VALIDATION.md",
+      "source_sha256": "2ce93106fbdcb5f726c82c0434a3db9eecc8a48b928918a0468c975e7ad4c428",
+      "published_sha256": "2ce93106fbdcb5f726c82c0434a3db9eecc8a48b928918a0468c975e7ad4c428"
+    },
+    {
+      "path": "src/console-launcher/vendor/lodepng.c",
+      "source_sha256": "6aec876971ec860527859458d3095220fc5ee1258ec37eb59e1e7dd9cf136a81",
+      "published_sha256": "6aec876971ec860527859458d3095220fc5ee1258ec37eb59e1e7dd9cf136a81"
+    },
+    {
+      "path": "src/console-launcher/vendor/lodepng.h",
+      "source_sha256": "9a1fca0238c38333bdc8545336961b73fd0b76957bbacf033186991be9d7cf85",
+      "published_sha256": "9a1fca0238c38333bdc8545336961b73fd0b76957bbacf033186991be9d7cf85"
+    },
+    {
+      "path": "src/console-launcher/vendor/minimp3.c",
+      "source_sha256": "c31099e9adf42f8706d6b54fff853a1a65e1271ccb5924920315b5be6c668c8c",
+      "published_sha256": "c31099e9adf42f8706d6b54fff853a1a65e1271ccb5924920315b5be6c668c8c"
+    },
+    {
+      "path": "src/console-launcher/vendor/minimp3.h",
+      "source_sha256": "57e437c5c1f0e8b243885d3929c8973b5e6c778451e0100ab4251d19915cb3ad",
+      "published_sha256": "57e437c5c1f0e8b243885d3929c8973b5e6c778451e0100ab4251d19915cb3ad"
+    },
+    {
+      "path": "src/console-launcher/vendor/SDL_ttf.h",
+      "source_sha256": "03da4cf03fffe259c7626174891f12941468ba3392c6df5fd1b39a240326a64a",
+      "published_sha256": "03da4cf03fffe259c7626174891f12941468ba3392c6df5fd1b39a240326a64a"
+    },
+    {
+      "path": "src/console-supervisor/.clang-format",
+      "source_sha256": "fd4cb51515f4757f67af9455d59c02e4fd20af153de58e34099f7c0481a27601",
+      "published_sha256": "fd4cb51515f4757f67af9455d59c02e4fd20af153de58e34099f7c0481a27601"
+    },
+    {
+      "path": "src/console-supervisor/CATALOG_ENROLLMENT.md",
+      "source_sha256": "5c9ff3653c28e829c665aaee27f6f3963ac4307d4a0cea81e6924de0c8670f32",
+      "published_sha256": "5c9ff3653c28e829c665aaee27f6f3963ac4307d4a0cea81e6924de0c8670f32"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "source_sha256": "e03196792ffd2a20d58c3494a2e67a6f485a5a05680422983a769cc0b3782b4b",
+      "published_sha256": "e03196792ffd2a20d58c3494a2e67a6f485a5a05680422983a769cc0b3782b4b"
+    },
+    {
+      "path": "src/console-supervisor/config/base-profile.json",
+      "source_sha256": "aa53267d656adcb757cd904ce2097b83505d7219733f8dcbbfdc5dd6c8e7b250",
+      "published_sha256": "aa53267d656adcb757cd904ce2097b83505d7219733f8dcbbfdc5dd6c8e7b250"
+    },
+    {
+      "path": "src/console-supervisor/config/bridge-launch.json",
+      "source_sha256": "3d38be76e67e6d62e97c78834630405841aea56bd50769357b48b9b666e02aa0",
+      "published_sha256": "3d38be76e67e6d62e97c78834630405841aea56bd50769357b48b9b666e02aa0"
+    },
+    {
+      "path": "src/console-supervisor/config/cards.conf",
+      "source_sha256": "56bf7ebcddc8555eecc40254d20e75ee08f38c161d5300c998424c43af4d04f9",
+      "published_sha256": "56bf7ebcddc8555eecc40254d20e75ee08f38c161d5300c998424c43af4d04f9"
+    },
+    {
+      "path": "src/console-supervisor/config/catalog.example.json",
+      "source_sha256": "17427300929fc532af08c8727d36d86d519a351d19d81f89f0c81dbca33a400b",
+      "published_sha256": "17427300929fc532af08c8727d36d86d519a351d19d81f89f0c81dbca33a400b"
+    },
+    {
+      "path": "src/console-supervisor/config/supervisor.json",
+      "source_sha256": "e0db6d16bad5b4c017544239017f4bb115859c8d924556e68b52f034609a39d5",
+      "published_sha256": "e0db6d16bad5b4c017544239017f4bb115859c8d924556e68b52f034609a39d5"
+    },
+    {
+      "path": "src/console-supervisor/config/ui.json",
+      "source_sha256": "b652a2e7d3401d7841aebe65c322a7788f7553fca25fbe2aaa29d991fe887a70",
+      "published_sha256": "b652a2e7d3401d7841aebe65c322a7788f7553fca25fbe2aaa29d991fe887a70"
+    },
+    {
+      "path": "src/console-supervisor/config/umtprd.conf",
+      "source_sha256": "eecf009d7fe521cb1f83f7b86caa9d0094ad67597f0eb6272654e21ae17e70fe",
+      "published_sha256": "eecf009d7fe521cb1f83f7b86caa9d0094ad67597f0eb6272654e21ae17e70fe"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/api_document.h",
+      "source_sha256": "bb3dce4231efe5ebb228d3b5d3aee77a18ba03540ba24cddb30f8a9f8f85d367",
+      "published_sha256": "bb3dce4231efe5ebb228d3b5d3aee77a18ba03540ba24cddb30f8a9f8f85d367"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/battery_monitor.h",
+      "source_sha256": "e76a2ce5069cd24d336a24d767f424276f4d58e022164fd257bdaf6d69f991b3",
+      "published_sha256": "e76a2ce5069cd24d336a24d767f424276f4d58e022164fd257bdaf6d69f991b3"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/build.h",
+      "source_sha256": "1f1c02dd32f191a924f5958b3fe36fc95091054d9ae4a4f4b4c9b0cd48426666",
+      "published_sha256": "1f1c02dd32f191a924f5958b3fe36fc95091054d9ae4a4f4b4c9b0cd48426666"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/catalog_index.h",
+      "source_sha256": "8498723e3bbb9afd10b5665ec63fa711db6b23304873290dc37c2dee4bab6671",
+      "published_sha256": "8498723e3bbb9afd10b5665ec63fa711db6b23304873290dc37c2dee4bab6671"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/clock.h",
+      "source_sha256": "f8909cae248c461a36edd61d9b27bf72a43133a672c9800464f23f473291030c",
+      "published_sha256": "f8909cae248c461a36edd61d9b27bf72a43133a672c9800464f23f473291030c"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/config.h",
+      "source_sha256": "f106e5a622dedc3ef131818ab8f9201bb8bb171dea0d8cb1618ee9f040042938",
+      "published_sha256": "f106e5a622dedc3ef131818ab8f9201bb8bb171dea0d8cb1618ee9f040042938"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/core_choice.h",
+      "source_sha256": "6f3928e620bd2c42103cc74d35ed27cef8a9f95cc7cb64258d78af7bb642e3a0",
+      "published_sha256": "6f3928e620bd2c42103cc74d35ed27cef8a9f95cc7cb64258d78af7bb642e3a0"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/cpu_policy.h",
+      "source_sha256": "d883ca8a49c179eda552500769cf2650f206da659a7ac0955664830341fc7551",
+      "published_sha256": "d883ca8a49c179eda552500769cf2650f206da659a7ac0955664830341fc7551"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/diagnostic_policy.h",
+      "source_sha256": "7cb486f28a9e6604be34da60790246da43bf4d1649162eabb3cacb89ec14ef72",
+      "published_sha256": "7cb486f28a9e6604be34da60790246da43bf4d1649162eabb3cacb89ec14ef72"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/diagnostics.h",
+      "source_sha256": "33cf7fbc871d521fb13793c31046a863030447d6e7d5709988030fbd40bbf3a0",
+      "published_sha256": "33cf7fbc871d521fb13793c31046a863030447d6e7d5709988030fbd40bbf3a0"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/disk.h",
+      "source_sha256": "544b4eeceab6bd5efb05a1fcef9b6d0bda263d2dc7cff33a670706098388c09f",
+      "published_sha256": "544b4eeceab6bd5efb05a1fcef9b6d0bda263d2dc7cff33a670706098388c09f"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/elf_dependency.h",
+      "source_sha256": "a11a6a68b8db58326560239d185867fc438d11ed6122c8c511f31e936ce0889a",
+      "published_sha256": "a11a6a68b8db58326560239d185867fc438d11ed6122c8c511f31e936ce0889a"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/file_service.h",
+      "source_sha256": "fa99fa6e3cb33717852f157960f376b1718e14f2175cff37a841cea06a51b613",
+      "published_sha256": "fa99fa6e3cb33717852f157960f376b1718e14f2175cff37a841cea06a51b613"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/glo_scripts.h",
+      "source_sha256": "1dc33e15e2c47a583f5b042668f9f642c919de67c5a1a42b5b78dc942b3740c4",
+      "published_sha256": "1dc33e15e2c47a583f5b042668f9f642c919de67c5a1a42b5b78dc942b3740c4"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/lan_services.h",
+      "source_sha256": "a0c1f24d2ea1145da5888f3e5aae9ea0dc4be679c28f78297fd79835f34bc958",
+      "published_sha256": "a0c1f24d2ea1145da5888f3e5aae9ea0dc4be679c28f78297fd79835f34bc958"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/maintenance.h",
+      "source_sha256": "cad383cda20dcfc5281cfd9bc90468c570d32f82c30b8fc10fba0a22d9deace7",
+      "published_sha256": "cad383cda20dcfc5281cfd9bc90468c570d32f82c30b8fc10fba0a22d9deace7"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/managed.h",
+      "source_sha256": "3a7ec1d5061e2e38b73a7b6d34a9ddaf708ece932b8e6908c89d93629eddf0bb",
+      "published_sha256": "3a7ec1d5061e2e38b73a7b6d34a9ddaf708ece932b8e6908c89d93629eddf0bb"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/menu_observer.h",
+      "source_sha256": "91178a6d4acdcea0e0cd0fa9b1c3815658c750c67dac00cd6804e68b088c07ea",
+      "published_sha256": "91178a6d4acdcea0e0cd0fa9b1c3815658c750c67dac00cd6804e68b088c07ea"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/mount.h",
+      "source_sha256": "47a7b022a49ff07a15337c1ca67ca6d7602ddc4cf02ea00b4eb3f3754e51590b",
+      "published_sha256": "47a7b022a49ff07a15337c1ca67ca6d7602ddc4cf02ea00b4eb3f3754e51590b"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/network.h",
+      "source_sha256": "bc263f8df1a63ac2c133ed58e86f069d6fc54096c20104b997ad717c6c174420",
+      "published_sha256": "bc263f8df1a63ac2c133ed58e86f069d6fc54096c20104b997ad717c6c174420"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/online.h",
+      "source_sha256": "4c4bbc5f6852256bc877f24eba0b7af7b175d793f440dc2d6cdbffcdfb8cd0b0",
+      "published_sha256": "4c4bbc5f6852256bc877f24eba0b7af7b175d793f440dc2d6cdbffcdfb8cd0b0"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/packages.h",
+      "source_sha256": "8d8fd224303d7f97bd2625e486141ff59a898ed2a34a2c01644b0e104bc6767c",
+      "published_sha256": "8d8fd224303d7f97bd2625e486141ff59a898ed2a34a2c01644b0e104bc6767c"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/process.h",
+      "source_sha256": "01f3edba9285c3b9c2f20ca4c3643a402975889113dbefbfb7161dce72047072",
+      "published_sha256": "01f3edba9285c3b9c2f20ca4c3643a402975889113dbefbfb7161dce72047072"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/timezone.h",
+      "source_sha256": "b80025c398c3a3a6c123d0d4e5978e00ecd8b0da5687f393138884c12b0ec47e",
+      "published_sha256": "b80025c398c3a3a6c123d0d4e5978e00ecd8b0da5687f393138884c12b0ec47e"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/tools_backend.h",
+      "source_sha256": "1e7e9319f2c801d150dd25f15e670d656d418cb5d81942ba2b5efd25393c6762",
+      "published_sha256": "1e7e9319f2c801d150dd25f15e670d656d418cb5d81942ba2b5efd25393c6762"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/transfer.h",
+      "source_sha256": "ce81729213e287e683129d6c3e69f28324138044f126e34b3a478d3f45f18013",
+      "published_sha256": "ce81729213e287e683129d6c3e69f28324138044f126e34b3a478d3f45f18013"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/wire.h",
+      "source_sha256": "922c106cc349ad416d4a666a7255122a74ce09127dbeee752d10902fb656928b",
+      "published_sha256": "922c106cc349ad416d4a666a7255122a74ce09127dbeee752d10902fb656928b"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/zip.h",
+      "source_sha256": "c3e5cbb4470fb28598c5e06c323f9e8200f4188191939bbf59fc65611b0fc752",
+      "published_sha256": "c3e5cbb4470fb28598c5e06c323f9e8200f4188191939bbf59fc65611b0fc752"
+    },
+    {
+      "path": "src/console-supervisor/init/advmenu.rc",
+      "source_sha256": "9f1edb4f94acb2461d62a1320339414d1e070b9ff2e06547c3139c6b28cb6523",
+      "published_sha256": "9f1edb4f94acb2461d62a1320339414d1e070b9ff2e06547c3139c6b28cb6523"
+    },
+    {
+      "path": "src/console-supervisor/init/console-advance-launch",
+      "source_sha256": "b131cba2a06fb5968c71bc34c6a246f0ca9253853eb9692d131457c54aacdf32",
+      "published_sha256": "b131cba2a06fb5968c71bc34c6a246f0ca9253853eb9692d131457c54aacdf32"
+    },
+    {
+      "path": "src/console-supervisor/init/console-easy-netplay",
+      "source_sha256": "3667c96c8c5d90b27a00f43afe011691ab30161467ee31afe08b066c8ceebecd",
+      "published_sha256": "3667c96c8c5d90b27a00f43afe011691ab30161467ee31afe08b066c8ceebecd"
+    },
+    {
+      "path": "src/console-supervisor/init/console-poweroff",
+      "source_sha256": "b686aea440f91c9984418f1daf4ebe989e8d27f44163b9386692f0ce712a8209",
+      "published_sha256": "b686aea440f91c9984418f1daf4ebe989e8d27f44163b9386692f0ce712a8209"
+    },
+    {
+      "path": "src/console-supervisor/init/console-startup-app",
+      "source_sha256": "85f6a69c599f00d3ded2c94b2865fe5c29018f7dd3b16451693a0917cafc012e",
+      "published_sha256": "85f6a69c599f00d3ded2c94b2865fe5c29018f7dd3b16451693a0917cafc012e"
+    },
+    {
+      "path": "src/console-supervisor/init/console-usb",
+      "source_sha256": "a2225c3950d423daf0f9259de1ebf8aaa32cf360603d3a7855398dfbfb2e9de3",
+      "published_sha256": "a2225c3950d423daf0f9259de1ebf8aaa32cf360603d3a7855398dfbfb2e9de3"
+    },
+    {
+      "path": "src/console-supervisor/init/rc.init",
+      "source_sha256": "c84ca449925f0376618261064dd795d6d0145290ea68a67cd3424ba9c8b91677",
+      "published_sha256": "c84ca449925f0376618261064dd795d6d0145290ea68a67cd3424ba9c8b91677"
+    },
+    {
+      "path": "src/console-supervisor/init/shutdown-hook.sh",
+      "source_sha256": "3ac22e102bc9666e37e2f13b12f3661a49dab036b2120d7ee9fa4db3cba9037f",
+      "published_sha256": "3ac22e102bc9666e37e2f13b12f3661a49dab036b2120d7ee9fa4db3cba9037f"
+    },
+    {
+      "path": "src/console-supervisor/INSTALLATION.md",
+      "source_sha256": "017762ca34ac7a37a15424cdc8a732d7055d52ab4d05174a72df6cb8b42cd3a2",
+      "published_sha256": "017762ca34ac7a37a15424cdc8a732d7055d52ab4d05174a72df6cb8b42cd3a2"
+    },
+    {
+      "path": "src/console-supervisor/IPC.md",
+      "source_sha256": "d7d40c7d1ee59a94ecbefe0820e255b47775fc2253cbe993b8cde6404cd8ed87",
+      "published_sha256": "d7d40c7d1ee59a94ecbefe0820e255b47775fc2253cbe993b8cde6404cd8ed87"
+    },
+    {
+      "path": "src/console-supervisor/LIBRARY_PAGING.md",
+      "source_sha256": "6531eca2e95d1b5ee71ccf0b7bb70785ae33272509368344917436f27acb4d13",
+      "published_sha256": "6531eca2e95d1b5ee71ccf0b7bb70785ae33272509368344917436f27acb4d13"
+    },
+    {
+      "path": "src/console-supervisor/ONLINE_SERVICES.md",
+      "source_sha256": "f807d39e07ec1672b8db819bb881d4a7f1e67c564e4f6b8bb1d0bdba85920ba5",
+      "published_sha256": "f807d39e07ec1672b8db819bb881d4a7f1e67c564e4f6b8bb1d0bdba85920ba5"
+    },
+    {
+      "path": "src/console-supervisor/PACKAGE_MANAGER.md",
+      "source_sha256": "6946b607644e164c1ab61f31567a091b11112e4d56e21affc9e46ae783605092",
+      "published_sha256": "6946b607644e164c1ab61f31567a091b11112e4d56e21affc9e46ae783605092"
+    },
+    {
+      "path": "src/console-supervisor/patches/0001-moss-startup.patch",
+      "source_sha256": "751d6b85dba6707bd7f2418c12ad83f82e1ef3a8902e7efd9f6431af5ad72a0f",
+      "published_sha256": "751d6b85dba6707bd7f2418c12ad83f82e1ef3a8902e7efd9f6431af5ad72a0f"
+    },
+    {
+      "path": "src/console-supervisor/patches/0002-sessiond-managed-lifecycle.patch",
+      "source_sha256": "56bb41d4fa6e0202523e6a8a3974d115af88bb27621f25c58a48468f3819425a",
+      "published_sha256": "56bb41d4fa6e0202523e6a8a3974d115af88bb27621f25c58a48468f3819425a"
+    },
+    {
+      "path": "src/console-supervisor/README.md",
+      "source_sha256": "e3093cd49d9da4cbdee0e6bdb77f7187ade05f4443e88a0fcb8a13fe8146ad20",
+      "published_sha256": "e3093cd49d9da4cbdee0e6bdb77f7187ade05f4443e88a0fcb8a13fe8146ad20"
+    },
+    {
+      "path": "src/console-supervisor/src/api_document.c",
+      "source_sha256": "4850695cb2d1719dac5479fdb0f4a16faf45a1a12b86a0c6b23ebf7ddff112c7",
+      "published_sha256": "4850695cb2d1719dac5479fdb0f4a16faf45a1a12b86a0c6b23ebf7ddff112c7"
+    },
+    {
+      "path": "src/console-supervisor/src/battery_monitor.c",
+      "source_sha256": "fc178ef875e539deb50cf8895432fad14335853c3b45cb45d4badeaa7c9197ce",
+      "published_sha256": "fc178ef875e539deb50cf8895432fad14335853c3b45cb45d4badeaa7c9197ce"
+    },
+    {
+      "path": "src/console-supervisor/src/catalog.c",
+      "source_sha256": "bf4ecf7f20a19a1039b522fd0869a396579a9f847aaf4b84b5a974ec32da5bac",
+      "published_sha256": "bf4ecf7f20a19a1039b522fd0869a396579a9f847aaf4b84b5a974ec32da5bac"
+    },
+    {
+      "path": "src/console-supervisor/src/catalog_index.c",
+      "source_sha256": "88a170177ac6b3765448c8fc20a1a1845fa80c0b64b1d4ceb631501a5a849e77",
+      "published_sha256": "88a170177ac6b3765448c8fc20a1a1845fa80c0b64b1d4ceb631501a5a849e77"
+    },
+    {
+      "path": "src/console-supervisor/src/clock.c",
+      "source_sha256": "f3ba6b1593332ceed769707f345bce19e5fd2716ee194a7f702b298860fa8f8f",
+      "published_sha256": "f3ba6b1593332ceed769707f345bce19e5fd2716ee194a7f702b298860fa8f8f"
+    },
+    {
+      "path": "src/console-supervisor/src/config.c",
+      "source_sha256": "7c9462d1df4f100f94924582567936ec556e32e349b98b8312cf046990fe2a67",
+      "published_sha256": "7c9462d1df4f100f94924582567936ec556e32e349b98b8312cf046990fe2a67"
+    },
+    {
+      "path": "src/console-supervisor/src/core_choice.c",
+      "source_sha256": "9054a96cef4d049923e47723224cb826e3129831b5924e271cfbedd3770fb076",
+      "published_sha256": "9054a96cef4d049923e47723224cb826e3129831b5924e271cfbedd3770fb076"
+    },
+    {
+      "path": "src/console-supervisor/src/cpu_policy.c",
+      "source_sha256": "c39f9e232a9bd87c0d1bea43e6c8522f10b6fef49dd4c4d71fdfbf536ec113c6",
+      "published_sha256": "c39f9e232a9bd87c0d1bea43e6c8522f10b6fef49dd4c4d71fdfbf536ec113c6"
+    },
+    {
+      "path": "src/console-supervisor/src/ctl.c",
+      "source_sha256": "95b89c3fd8d12ce45ac8ebb79cf5d9bd562f1e9d2445fe824ddc15309f04dca2",
+      "published_sha256": "95b89c3fd8d12ce45ac8ebb79cf5d9bd562f1e9d2445fe824ddc15309f04dca2"
+    },
+    {
+      "path": "src/console-supervisor/src/diagnostics.c",
+      "source_sha256": "55af8c2aad720475cdff53a360c8a2fe0ed901b832e601a4247b8fecb8e4481d",
+      "published_sha256": "55af8c2aad720475cdff53a360c8a2fe0ed901b832e601a4247b8fecb8e4481d"
+    },
+    {
+      "path": "src/console-supervisor/src/disk.c",
+      "source_sha256": "a3debe9ef5b13f2754c89e0d4dce6e01c337a8347c1f8f7f2556bc34ba9c734f",
+      "published_sha256": "a3debe9ef5b13f2754c89e0d4dce6e01c337a8347c1f8f7f2556bc34ba9c734f"
+    },
+    {
+      "path": "src/console-supervisor/src/elf_dependency.c",
+      "source_sha256": "54c01dce15a08e411cabf860f333dd5087f01ba334160421f567fbf443f39c12",
+      "published_sha256": "54c01dce15a08e411cabf860f333dd5087f01ba334160421f567fbf443f39c12"
+    },
+    {
+      "path": "src/console-supervisor/src/file_service.c",
+      "source_sha256": "487dadc696e839b7082a5532b95e8d464ca53e822a7f66b931e7a624ab21146d",
+      "published_sha256": "487dadc696e839b7082a5532b95e8d464ca53e822a7f66b931e7a624ab21146d"
+    },
+    {
+      "path": "src/console-supervisor/src/fileserver.c",
+      "source_sha256": "ab24d20271a3190459a30eccd3c15c101b8f1e7015607499bfbe78b683e261e7",
+      "published_sha256": "ab24d20271a3190459a30eccd3c15c101b8f1e7015607499bfbe78b683e261e7"
+    },
+    {
+      "path": "src/console-supervisor/src/glo_scripts.c",
+      "source_sha256": "4a9691cc885fc7c3b9bce057898c5d0a36e468cb6fe5a46971dd33337ea83671",
+      "published_sha256": "4a9691cc885fc7c3b9bce057898c5d0a36e468cb6fe5a46971dd33337ea83671"
+    },
+    {
+      "path": "src/console-supervisor/src/lan_services.c",
+      "source_sha256": "0319670f6199e57ce95e0b3316bbceef0230a79e04ba65f240bdd37a193c916e",
+      "published_sha256": "0319670f6199e57ce95e0b3316bbceef0230a79e04ba65f240bdd37a193c916e"
+    },
+    {
+      "path": "src/console-supervisor/src/link_cable.c",
+      "source_sha256": "bec86afe4d58ceb452552298047ffd6311aae18be840bcf10182c732008ad381",
+      "published_sha256": "bec86afe4d58ceb452552298047ffd6311aae18be840bcf10182c732008ad381"
+    },
+    {
+      "path": "src/console-supervisor/src/main.c",
+      "source_sha256": "260b30d79c590a1712d32662927492be097a47ea373cad3fdebb59369c438a5b",
+      "published_sha256": "260b30d79c590a1712d32662927492be097a47ea373cad3fdebb59369c438a5b"
+    },
+    {
+      "path": "src/console-supervisor/src/maintenance.c",
+      "source_sha256": "241dbd4493af52c0e7661e0611b92049e7ae7519ee04e9de1568392cc92c16d1",
+      "published_sha256": "241dbd4493af52c0e7661e0611b92049e7ae7519ee04e9de1568392cc92c16d1"
+    },
+    {
+      "path": "src/console-supervisor/src/managed.c",
+      "source_sha256": "24637e4a081df852dbf89467fbc71e9f985aa3f08e52b11f9c68793ead510f40",
+      "published_sha256": "24637e4a081df852dbf89467fbc71e9f985aa3f08e52b11f9c68793ead510f40"
+    },
+    {
+      "path": "src/console-supervisor/src/mount.c",
+      "source_sha256": "667b88a0e33f4c574ea8b345d7a2937b846583ddd5ca8cbf9c617a0215086cfb",
+      "published_sha256": "667b88a0e33f4c574ea8b345d7a2937b846583ddd5ca8cbf9c617a0215086cfb"
+    },
+    {
+      "path": "src/console-supervisor/src/netplay_peer.c",
+      "source_sha256": "c1ce5ee8be833218f9a66e5c75572f9c5dfcd911dd71368ca1932805925e2544",
+      "published_sha256": "c1ce5ee8be833218f9a66e5c75572f9c5dfcd911dd71368ca1932805925e2544"
+    },
+    {
+      "path": "src/console-supervisor/src/network.c",
+      "source_sha256": "43aca118cb17b577ab852d4ee0de7c408ec3b9132e4a7e0efc8089d4ff443cf9",
+      "published_sha256": "43aca118cb17b577ab852d4ee0de7c408ec3b9132e4a7e0efc8089d4ff443cf9"
+    },
+    {
+      "path": "src/console-supervisor/src/online.c",
+      "source_sha256": "218bfc85fe1ac18c6b87e47f65afc2a28051b72376cf6afea253fce0875d7f7b",
+      "published_sha256": "218bfc85fe1ac18c6b87e47f65afc2a28051b72376cf6afea253fce0875d7f7b"
+    },
+    {
+      "path": "src/console-supervisor/src/online_art.c",
+      "source_sha256": "42d2e1c314ad565f6cfe506b33493219e08591e34648d77ce0f80e49788a474d",
+      "published_sha256": "42d2e1c314ad565f6cfe506b33493219e08591e34648d77ce0f80e49788a474d"
+    },
+    {
+      "path": "src/console-supervisor/src/package_manager.c",
+      "source_sha256": "f6d80095ecb219c722dabdac9fb8323b4caa5d198ab07f88e4687a1444f54370",
+      "published_sha256": "f6d80095ecb219c722dabdac9fb8323b4caa5d198ab07f88e4687a1444f54370"
+    },
+    {
+      "path": "src/console-supervisor/src/package_registry.c",
+      "source_sha256": "035540a5678d47c188166f70749e506a1047644ce73ee7393e63c44ab28c92eb",
+      "published_sha256": "035540a5678d47c188166f70749e506a1047644ce73ee7393e63c44ab28c92eb"
+    },
+    {
+      "path": "src/console-supervisor/src/process.c",
+      "source_sha256": "06a5330d91cda1a6b979daf62e593e685fff4fde3c078f349a45ef99535c07a9",
+      "published_sha256": "06a5330d91cda1a6b979daf62e593e685fff4fde3c078f349a45ef99535c07a9"
+    },
+    {
+      "path": "src/console-supervisor/src/scraper_client.h",
+      "source_sha256": "09861411342712aae7aee25aa053fe9c8226e4f3f22d0c23e9be56efbeba673f",
+      "published_sha256": "09861411342712aae7aee25aa053fe9c8226e4f3f22d0c23e9be56efbeba673f"
+    },
+    {
+      "path": "src/console-supervisor/src/standby.c",
+      "source_sha256": "4018664e2b3362a31cdb718dc33e4b2af499b631a47805b83fad49324dfbf9b5",
+      "published_sha256": "4018664e2b3362a31cdb718dc33e4b2af499b631a47805b83fad49324dfbf9b5"
+    },
+    {
+      "path": "src/console-supervisor/src/time_sync.c",
+      "source_sha256": "9099a4aa2c187ecd20682fced80e8cbca7feb61dfd044da587b60caf9a0d46ab",
+      "published_sha256": "9099a4aa2c187ecd20682fced80e8cbca7feb61dfd044da587b60caf9a0d46ab"
+    },
+    {
+      "path": "src/console-supervisor/src/timezone.c",
+      "source_sha256": "4e26518a97f967176c09406cebf0421c775ca022b52c6e59586e91a8815c1f39",
+      "published_sha256": "4e26518a97f967176c09406cebf0421c775ca022b52c6e59586e91a8815c1f39"
+    },
+    {
+      "path": "src/console-supervisor/src/timezone_main.c",
+      "source_sha256": "4c61afef4a586a1e6a58e4c2c7e5fb22bc3eef095ebf5eec0322860d197c4b43",
+      "published_sha256": "4c61afef4a586a1e6a58e4c2c7e5fb22bc3eef095ebf5eec0322860d197c4b43"
+    },
+    {
+      "path": "src/console-supervisor/src/tools_backend.c",
+      "source_sha256": "0b3ebfd7174458e0c9470ad285a00a084fdf72d2dcd675c6d0108edce690e1d3",
+      "published_sha256": "0b3ebfd7174458e0c9470ad285a00a084fdf72d2dcd675c6d0108edce690e1d3"
+    },
+    {
+      "path": "src/console-supervisor/src/transfer.c",
+      "source_sha256": "a0d0ced3ede891ab36d79d320206d6618846326f3742f84ab9a6e7d5e2643deb",
+      "published_sha256": "a0d0ced3ede891ab36d79d320206d6618846326f3742f84ab9a6e7d5e2643deb"
+    },
+    {
+      "path": "src/console-supervisor/src/transfer_pin.h",
+      "source_sha256": "a13447ee3dd164f9e8d865a9f23df5f48ae4d4b87d07ae9573a5fdd170835bee",
+      "published_sha256": "a13447ee3dd164f9e8d865a9f23df5f48ae4d4b87d07ae9573a5fdd170835bee"
+    },
+    {
+      "path": "src/console-supervisor/src/ui_host.c",
+      "source_sha256": "93c92bcfdd92e032302dd41ffe01f8bab606fb338519115229000dd924b4c061",
+      "published_sha256": "93c92bcfdd92e032302dd41ffe01f8bab606fb338519115229000dd924b4c061"
+    },
+    {
+      "path": "src/console-supervisor/src/usb_dhcp.h",
+      "source_sha256": "93050fcb151c57240d24822fa9ac91405d67d95af9b6adf6de88f18d666ea64f",
+      "published_sha256": "93050fcb151c57240d24822fa9ac91405d67d95af9b6adf6de88f18d666ea64f"
+    },
+    {
+      "path": "src/console-supervisor/src/usb_import.h",
+      "source_sha256": "b2e30edfc8bcc2309d7aba3a493b400890bb1bcb3cfb016f0bde4e494721aff6",
+      "published_sha256": "b2e30edfc8bcc2309d7aba3a493b400890bb1bcb3cfb016f0bde4e494721aff6"
+    },
+    {
+      "path": "src/console-supervisor/src/wire.c",
+      "source_sha256": "02fc079414f4e5a3c2070ee2d7d6ae3a32241011e9e2526d58e2d1801785f139",
+      "published_sha256": "02fc079414f4e5a3c2070ee2d7d6ae3a32241011e9e2526d58e2d1801785f139"
+    },
+    {
+      "path": "src/console-supervisor/src/zip.c",
+      "source_sha256": "4ced396ead3c1263e93cc602f30f440da4cb04de1888653e5fa4e5a55093d6b1",
+      "published_sha256": "4ced396ead3c1263e93cc602f30f440da4cb04de1888653e5fa4e5a55093d6b1"
+    },
+    {
+      "path": "src/console-supervisor/STANDBY_DISPLAY.md",
+      "source_sha256": "365794ecb720ff4d18a6d1dfb296b24be1d90477ebd5f3f7f4970ae392fb5e24",
+      "published_sha256": "365794ecb720ff4d18a6d1dfb296b24be1d90477ebd5f3f7f4970ae392fb5e24"
+    },
+    {
+      "path": "src/console-supervisor/STOCK_DISPLAY_EVIDENCE.json",
+      "source_sha256": "4e8488f3d80f22c91d238f752a5e690aefc8bfb1a0101eb31439d59bdf3360d6",
+      "published_sha256": "fd93d48196a22547a4144cfc9c9e5a0d0331db83f7a9374e94317f194f0e60df"
+    },
+    {
+      "path": "src/console-supervisor/tests/generate_reap_barrier_fixture.py",
+      "source_sha256": "2d171330048157f3d15a474a82aa7683416a5ec1e9d91239184b09dcdef7c9f2",
+      "published_sha256": "2d171330048157f3d15a474a82aa7683416a5ec1e9d91239184b09dcdef7c9f2"
+    },
+    {
+      "path": "src/console-supervisor/tests/generate_status_route_fixture.py",
+      "source_sha256": "9930853592baf0321da3d64b5931cd0749f5d18d91b3d08b806c918f38379c88",
+      "published_sha256": "9930853592baf0321da3d64b5931cd0749f5d18d91b3d08b806c918f38379c88"
+    },
+    {
+      "path": "src/console-supervisor/tests/PACKAGE_BACKEND_TESTS.json",
+      "source_sha256": "97f39e86497f7d9522f156cf2bcc3d9fabb4754e5b9d8c376134d1a888798aa0",
+      "published_sha256": "97f39e86497f7d9522f156cf2bcc3d9fabb4754e5b9d8c376134d1a888798aa0"
+    },
+    {
+      "path": "src/console-supervisor/tests/REAP_BARRIER_EXTRACTION.json",
+      "source_sha256": "af32a9dbc52f3231ee2874bc2f022b8547ee59caa3779dc90a5dc216de47a1af",
+      "published_sha256": "af32a9dbc52f3231ee2874bc2f022b8547ee59caa3779dc90a5dc216de47a1af"
+    },
+    {
+      "path": "src/console-supervisor/tests/STATUS_ROUTE_EXTRACTION.json",
+      "source_sha256": "9752963287646da557b6b74be2a643eb3da2bc482b7434d3238277c43fa1b667",
+      "published_sha256": "9752963287646da557b6b74be2a643eb3da2bc482b7434d3238277c43fa1b667"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_catalog_bios.c",
+      "source_sha256": "202a3c733a5f4d18f613963208920a5b40780d129c9c8a74244611763efa6f61",
+      "published_sha256": "202a3c733a5f4d18f613963208920a5b40780d129c9c8a74244611763efa6f61"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_catalog_index.c",
+      "source_sha256": "1a9037b37e13e9f2e62f454e73570b64e61c882dbb92608314e99391aa531a13",
+      "published_sha256": "1a9037b37e13e9f2e62f454e73570b64e61c882dbb92608314e99391aa531a13"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_catalog_runtime.c",
+      "source_sha256": "735ab4806a06f12e06b1ac0f95f905f77588f846e167f848b2329c5fb2548734",
+      "published_sha256": "735ab4806a06f12e06b1ac0f95f905f77588f846e167f848b2329c5fb2548734"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_catalog_sizes.c",
+      "source_sha256": "5a08d1f8a136cc9650c41cb3ec7187640f31e7f96ded89d8c513d21875f76d16",
+      "published_sha256": "5a08d1f8a136cc9650c41cb3ec7187640f31e7f96ded89d8c513d21875f76d16"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_control.c",
+      "source_sha256": "c16366d7c285a09043baa9c0903210ed54a9c399dc6031738fdc9c78ab994017",
+      "published_sha256": "c16366d7c285a09043baa9c0903210ed54a9c399dc6031738fdc9c78ab994017"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_controller_persistence.c",
+      "source_sha256": "3ca6a128331e900c6f0f0a8a5dec5963de311aca79ce1f6c6c73b6a0562e81c9",
+      "published_sha256": "3ca6a128331e900c6f0f0a8a5dec5963de311aca79ce1f6c6c73b6a0562e81c9"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_core_catalog.c",
+      "source_sha256": "1ea001f35193395181ca844a6a669536e2da0288f52d59391e9b98d770dbe571",
+      "published_sha256": "1ea001f35193395181ca844a6a669536e2da0288f52d59391e9b98d770dbe571"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_cpu_policy.c",
+      "source_sha256": "a5ae394b57310b98dec70fb22ad9e278fa70c85cf64ef5c839310e143455919a",
+      "published_sha256": "a5ae394b57310b98dec70fb22ad9e278fa70c85cf64ef5c839310e143455919a"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_diagnostic_retention.c",
+      "source_sha256": "6d69559ab4cce4484e9cdf018501c997f10bf621de14d9bb3a3698af95343486",
+      "published_sha256": "6d69559ab4cce4484e9cdf018501c997f10bf621de14d9bb3a3698af95343486"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_disk_queue.c",
+      "source_sha256": "616881c7836ee88390bbdcf49887df96e99e05986414743fabb0b3b660fbb314",
+      "published_sha256": "616881c7836ee88390bbdcf49887df96e99e05986414743fabb0b3b660fbb314"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_elf_dependency.c",
+      "source_sha256": "b9d0d801ad606d811a46d694d809682f10d0644005d58be198a269b75f4fcadf",
+      "published_sha256": "b9d0d801ad606d811a46d694d809682f10d0644005d58be198a269b75f4fcadf"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_failed_launch_recovery.c",
+      "source_sha256": "4c7450894f37d1d2166e5b3fc19b23045ef0a1cb4f06401fa179bdab2b8dee9e",
+      "published_sha256": "4c7450894f37d1d2166e5b3fc19b23045ef0a1cb4f06401fa179bdab2b8dee9e"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_five_apps_backend.c",
+      "source_sha256": "ee348bd0d6efecc741b7931bd414f2790e1e10f53c637013212a903cda32dc8e",
+      "published_sha256": "ee348bd0d6efecc741b7931bd414f2790e1e10f53c637013212a903cda32dc8e"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_launch_preflight.c",
+      "source_sha256": "1a6f38408834dc7ae44dc69907e6af77753ec445f633291270085c2e7842a1e4",
+      "published_sha256": "1a6f38408834dc7ae44dc69907e6af77753ec445f633291270085c2e7842a1e4"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_level_router.c",
+      "source_sha256": "cf3cd49804b1edcb9e1126989342e76995ef75ca52ad53a4b52c8bdff72b7650",
+      "published_sha256": "cf3cd49804b1edcb9e1126989342e76995ef75ca52ad53a4b52c8bdff72b7650"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_library_cache.c",
+      "source_sha256": "94c01c0480beabd4a24faa64943c6b244b635e55ba6e8e1fa063f4295dd0a633",
+      "published_sha256": "94c01c0480beabd4a24faa64943c6b244b635e55ba6e8e1fa063f4295dd0a633"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_library_paging.c",
+      "source_sha256": "b6dd9ebd824d30eac86bbf884dc4f23ed834c92b608d01d60b57153c0c71e063",
+      "published_sha256": "b6dd9ebd824d30eac86bbf884dc4f23ed834c92b608d01d60b57153c0c71e063"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_managed_control.c",
+      "source_sha256": "265385e9335395f184bd14a1aed828e1086d08bdad09372545386067c1a32efd",
+      "published_sha256": "265385e9335395f184bd14a1aed828e1086d08bdad09372545386067c1a32efd"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_managed_selection.c",
+      "source_sha256": "9ed264fce64bca2370c91e21b20078486caccc006375839090b6e3f1c02c763d",
+      "published_sha256": "9ed264fce64bca2370c91e21b20078486caccc006375839090b6e3f1c02c763d"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_network.c",
+      "source_sha256": "8a98dc3a35bfc4aeeaa950395fcac94345e8823ba9fd323af17238a80ac7379e",
+      "published_sha256": "8a98dc3a35bfc4aeeaa950395fcac94345e8823ba9fd323af17238a80ac7379e"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_online.c",
+      "source_sha256": "7418ee5eaacc14b8b2aac292316db21239e6572f19eb988807550cde97a86a63",
+      "published_sha256": "7418ee5eaacc14b8b2aac292316db21239e6572f19eb988807550cde97a86a63"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_package_inventory.c",
+      "source_sha256": "f4b3c9d58df7fd965fc9459110b66debf4f90ce1e3367b89554911373321337f",
+      "published_sha256": "f4b3c9d58df7fd965fc9459110b66debf4f90ce1e3367b89554911373321337f"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_packages.c",
+      "source_sha256": "d39c03911848b268152dd65c7898a4bebb105b4b9b7b41efa10924cbfa4ee468",
+      "published_sha256": "d39c03911848b268152dd65c7898a4bebb105b4b9b7b41efa10924cbfa4ee468"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_probe_files.c",
+      "source_sha256": "ed6b9280617e7157cfb8b5eb2cfd66b51a94e6b860190f457a5e9060b8165595",
+      "published_sha256": "ed6b9280617e7157cfb8b5eb2cfd66b51a94e6b860190f457a5e9060b8165595"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_public_boot.c",
+      "source_sha256": "1b30e1eedcf2e9b7e04f783e8fa30a924687642477440de214d834894fe79ad5",
+      "published_sha256": "1b30e1eedcf2e9b7e04f783e8fa30a924687642477440de214d834894fe79ad5"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_r18_catalog.c",
+      "source_sha256": "5b9f0656f6ebf85b421e2e236557c417bded8557ed35b7e97cae9b2164e7a0d2",
+      "published_sha256": "5b9f0656f6ebf85b421e2e236557c417bded8557ed35b7e97cae9b2164e7a0d2"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_reap_barrier_fixture.c",
+      "source_sha256": "d06cffd5c8a2767f780a56d28bcf717ab3b589125b1d9176cef3c5ddf28799f7",
+      "published_sha256": "d06cffd5c8a2767f780a56d28bcf717ab3b589125b1d9176cef3c5ddf28799f7"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_scraper_account.c",
+      "source_sha256": "069a144f6c57d61624a3125af4b1c57f1b0747d50061310f35ccd4ded68a4144",
+      "published_sha256": "069a144f6c57d61624a3125af4b1c57f1b0747d50061310f35ccd4ded68a4144"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_scraper_crc.c",
+      "source_sha256": "4265177cf2eb843ae981a5635fe24b0f91c4a87b583cb9ca634a9229d606bc71",
+      "published_sha256": "4265177cf2eb843ae981a5635fe24b0f91c4a87b583cb9ca634a9229d606bc71"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_scraper_large.c",
+      "source_sha256": "03901f2032a8faa1beb482fd4e35156d77109d33e56756231f9a5247c9e4b539",
+      "published_sha256": "03901f2032a8faa1beb482fd4e35156d77109d33e56756231f9a5247c9e4b539"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_scraper_live.c",
+      "source_sha256": "5adbb4fa9149b33d4541817c0f089cd0dc9cc466517c978bc17a5744a2efbac6",
+      "published_sha256": "5adbb4fa9149b33d4541817c0f089cd0dc9cc466517c978bc17a5744a2efbac6"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_scraper_queue.c",
+      "source_sha256": "3552d6d46007ca511920a641bb25df023ceb4a34a535402bda09f180499d65ae",
+      "published_sha256": "3552d6d46007ca511920a641bb25df023ceb4a34a535402bda09f180499d65ae"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_standby_display.c",
+      "source_sha256": "2df59531e6b6b1917481e4b61f9979756266acb577465fe5830f331959afc43f",
+      "published_sha256": "2df59531e6b6b1917481e4b61f9979756266acb577465fe5830f331959afc43f"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_status_route_fixture.c",
+      "source_sha256": "93167c9ce9f217ee4afbbbbb0e772d85026c2c83b8665c847fed3219664f7f5b",
+      "published_sha256": "93167c9ce9f217ee4afbbbbb0e772d85026c2c83b8665c847fed3219664f7f5b"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_system_icons.c",
+      "source_sha256": "b27e4bd856ac8155390cd9aa7bb5e28bfeb9805598be47580b15276fd25e91a1",
+      "published_sha256": "b27e4bd856ac8155390cd9aa7bb5e28bfeb9805598be47580b15276fd25e91a1"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_timezone.c",
+      "source_sha256": "877f021d9b70ffaa58b926494d0eee9f0bdbb3a843cb3ce3f022a59c333816cd",
+      "published_sha256": "877f021d9b70ffaa58b926494d0eee9f0bdbb3a843cb3ce3f022a59c333816cd"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_tools_backend.c",
+      "source_sha256": "72a0d8b5bab800f107ce6fe391a59a39de296c6a7e642a762f6754697fbfa779",
+      "published_sha256": "72a0d8b5bab800f107ce6fe391a59a39de296c6a7e642a762f6754697fbfa779"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_transfer_pairing.c",
+      "source_sha256": "8e6c4bd4a98eac24e01410d3aa196bc932db165818bd93b92a3a06224445f474",
+      "published_sha256": "8e6c4bd4a98eac24e01410d3aa196bc932db165818bd93b92a3a06224445f474"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_ui_exit.c",
+      "source_sha256": "81ce64eb92fc40d732c33ba07e59f7f6ff8261d80889f4ee968a4b755b7ec3dc",
+      "published_sha256": "81ce64eb92fc40d732c33ba07e59f7f6ff8261d80889f4ee968a4b755b7ec3dc"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_ui_handoff.c",
+      "source_sha256": "93e8cb74cc1361ff9f3b1d1caa05911b38e227cc536889a6e233cb26d7c888b2",
+      "published_sha256": "93e8cb74cc1361ff9f3b1d1caa05911b38e227cc536889a6e233cb26d7c888b2"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_usb_clock.c",
+      "source_sha256": "0ccf77e09b37bd99fe9534988d7339be8f1a75ca876d14bbf27a598412d304ad",
+      "published_sha256": "0ccf77e09b37bd99fe9534988d7339be8f1a75ca876d14bbf27a598412d304ad"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_zip_archive.c",
+      "source_sha256": "ad926b542a99de65bff145dcfd721c01a1dc0c5bc5ae3f15b5b5f4aaafa691d5",
+      "published_sha256": "ad926b542a99de65bff145dcfd721c01a1dc0c5bc5ae3f15b5b5f4aaafa691d5"
+    },
+    {
+      "path": "src/console-supervisor/third_party/onion-scraper/LICENSE",
+      "source_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "published_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "src/console-supervisor/third_party/onion-scraper/PROVENANCE.json",
+      "source_sha256": "047bc1db227dee4643eac82939d60ec130c3e8eb2de267b3e435e500007f5142",
+      "published_sha256": "9226ac07616c73b16e4d348a7302735f1bcf8ac75eeca26cb2788600c860232d"
+    },
+    {
+      "path": "src/console-supervisor/third_party/onion-scraper/scrap_screenscraper.sh",
+      "source_sha256": "086be1255582d5856bd459de91dca02fb17f0c8467c0bda4ea90e0353337f15c",
+      "published_sha256": "086be1255582d5856bd459de91dca02fb17f0c8467c0bda4ea90e0353337f15c"
+    },
+    {
+      "path": "src/console-supervisor/TOOLS_BACKEND.md",
+      "source_sha256": "f120900ae373c27efbcefef1106fa4e5bad5abb3ee53e629d09ee3b07f561a8a",
+      "published_sha256": "f120900ae373c27efbcefef1106fa4e5bad5abb3ee53e629d09ee3b07f561a8a"
+    },
+    {
+      "path": "src/console-supervisor/VALIDATION.md",
+      "source_sha256": "aca698d2856db70af298705a19f05f072b41758de218ea643c6be11f61617861",
+      "published_sha256": "aca698d2856db70af298705a19f05f072b41758de218ea643c6be11f61617861"
+    },
+    {
+      "path": "src/console-supervisor/vendor/image_decoder.c",
+      "source_sha256": "f3f4ce0efff0adec0cd174f55e1c2a9d89215be21cb751a575ea620ec10dcc96",
+      "published_sha256": "f3f4ce0efff0adec0cd174f55e1c2a9d89215be21cb751a575ea620ec10dcc96"
+    },
+    {
+      "path": "src/console-supervisor/vendor/stb_image.h",
+      "source_sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
+      "published_sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3"
+    },
+    {
+      "path": "src/console-supervisor/vendor/STB_PIN.json",
+      "source_sha256": "5f6bde0f3582542446191a8bf221f8eac926fe1650acc36269df7e930a58631d",
+      "published_sha256": "5f6bde0f3582542446191a8bf221f8eac926fe1650acc36269df7e930a58631d"
+    },
+    {
+      "path": "src/console-activity/CMakeLists.txt",
+      "source_sha256": "52e93d57191766f872e5c870dd86188b905f3e4c4d7538cdb38f50ea80d84ea7",
+      "published_sha256": "52e93d57191766f872e5c870dd86188b905f3e4c4d7538cdb38f50ea80d84ea7"
+    },
+    {
+      "path": "src/console-activity/include/console_activity/activity.h",
+      "source_sha256": "3138d6d60556a370c64392e966bf214bee047cd548231099231eab2246273a15",
+      "published_sha256": "3138d6d60556a370c64392e966bf214bee047cd548231099231eab2246273a15"
+    },
+    {
+      "path": "src/console-activity/README.md",
+      "source_sha256": "4961c125daee5130943b4cbfc0cd2553407528e7cfba184c66e52998ecd6eb88",
+      "published_sha256": "4961c125daee5130943b4cbfc0cd2553407528e7cfba184c66e52998ecd6eb88"
+    },
+    {
+      "path": "src/console-activity/src/activity.c",
+      "source_sha256": "1c959245e0a549eac499ac3de4702703d9211ac5c6e8a6bf0b93ab9b09c5a79b",
+      "published_sha256": "1c959245e0a549eac499ac3de4702703d9211ac5c6e8a6bf0b93ab9b09c5a79b"
+    },
+    {
+      "path": "src/console-activity/src/database.c",
+      "source_sha256": "2f6efe974f74394e708f749d53d95a5c3c283a4a0d4d6f2af9bb98638022285d",
+      "published_sha256": "2f6efe974f74394e708f749d53d95a5c3c283a4a0d4d6f2af9bb98638022285d"
+    },
+    {
+      "path": "src/console-activity/src/internal.h",
+      "source_sha256": "55b21970665622bba38a3b4801ba660633a9585a74a3a4b17cb3fd6b03e0b314",
+      "published_sha256": "55b21970665622bba38a3b4801ba660633a9585a74a3a4b17cb3fd6b03e0b314"
+    },
+    {
+      "path": "src/console-activity/src/page.c",
+      "source_sha256": "4ca88e63f47009b385c42b4eb29bc4cec44934c70c6b386eeb1d98acaf0e46e3",
+      "published_sha256": "4ca88e63f47009b385c42b4eb29bc4cec44934c70c6b386eeb1d98acaf0e46e3"
+    },
+    {
+      "path": "src/console-activity/src/storage.c",
+      "source_sha256": "94373cfe512e5d521e72408bb130af8d4a02a0006f904a112328479d0a8425fb",
+      "published_sha256": "94373cfe512e5d521e72408bb130af8d4a02a0006f904a112328479d0a8425fb"
+    },
+    {
+      "path": "src/console-activity/tests/test_activity.c",
+      "source_sha256": "3053aea1c36fa5fcbdb9a926c4bc642206baf73e24336705dab89dbde1273e04",
+      "published_sha256": "3053aea1c36fa5fcbdb9a926c4bc642206baf73e24336705dab89dbde1273e04"
+    },
+    {
+      "path": "src/console-activity/vendor/sqlite3/PROVENANCE.json",
+      "source_sha256": "4f1c8d6f9b9a216e4c3928c75c8d72d7b429c9c1ba2aff9dd31956a8aec5e042",
+      "published_sha256": "4f1c8d6f9b9a216e4c3928c75c8d72d7b429c9c1ba2aff9dd31956a8aec5e042"
+    },
+    {
+      "path": "src/console-activity/vendor/sqlite3/sqlite3.c",
+      "source_sha256": "ff57e8d0a1572b35c17cab9a7dea34616bc12b6fb8b29acf5cb00b6ecf025149",
+      "published_sha256": "ff57e8d0a1572b35c17cab9a7dea34616bc12b6fb8b29acf5cb00b6ecf025149"
+    },
+    {
+      "path": "src/console-activity/vendor/sqlite3/sqlite3.h",
+      "source_sha256": "4340a24cda7bc436d62459c3c5237f67b9ab716ddca872faf8052d0ce0d97119",
+      "published_sha256": "4340a24cda7bc436d62459c3c5237f67b9ab716ddca872faf8052d0ce0d97119"
+    },
+    {
+      "path": "src/console-packaging/image/console-boot-status.c",
+      "source_sha256": "1da3e1dc5f8735117ceab9b88c2bcfe075c854d0ca07df4fdb57b011e7d6bd09",
+      "published_sha256": "1da3e1dc5f8735117ceab9b88c2bcfe075c854d0ca07df4fdb57b011e7d6bd09"
+    },
+    {
+      "path": "src/console-packaging/tests/test_splash_fill.c",
+      "source_sha256": "0b1ebdaae9804f22d974c8e9fdff24ffa6e16d3137f1e395f8e5072e025d4aba",
+      "published_sha256": "0b1ebdaae9804f22d974c8e9fdff24ffa6e16d3137f1e395f8e5072e025d4aba"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/.clang-format",
+      "source_sha256": "445b6ecaeca7a1898a07f51ae0d79c74c1eee9aee70cbb08839510c8cf170fd8",
+      "published_sha256": "445b6ecaeca7a1898a07f51ae0d79c74c1eee9aee70cbb08839510c8cf170fd8"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/CMakeLists.txt",
+      "source_sha256": "a74ead9a61cef90fb6724b7db6f2019b30cf7839ddd7441a19ab208958039be5",
+      "published_sha256": "a74ead9a61cef90fb6724b7db6f2019b30cf7839ddd7441a19ab208958039be5"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/HOTKEYS.md",
+      "source_sha256": "02cc6380e3785bb892191b0e22040b74810fca809c128b347df741435dbec34d",
+      "published_sha256": "58e3d6c1799dce5b2b0425346f65a11b837ca4dbc823c692681d60cd814ce0df"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/install.py",
+      "source_sha256": "efbf9a315e60f67a3eeffc54914f45ee2f941380d6970c9c2f45483baf39f7eb",
+      "published_sha256": "efbf9a315e60f67a3eeffc54914f45ee2f941380d6970c9c2f45483baf39f7eb"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/INTEGRATION.md",
+      "source_sha256": "0b52ee6a57a980c85a9b503d94683678ea8a6f3da974dad8b382e8553eddb737",
+      "published_sha256": "4bc55f426d0e3557fa611434e6a12a7abc6f73cce77fbd36cef2d4622dafb8b1"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/launch.example.json",
+      "source_sha256": "52f774485641113209de2f3f2278cf65fc27d94b81b449352f36a3e81f5bea5c",
+      "published_sha256": "52f774485641113209de2f3f2278cf65fc27d94b81b449352f36a3e81f5bea5c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/LICENSE",
+      "source_sha256": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
+      "published_sha256": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_asset_cache.c",
+      "source_sha256": "034b56e0a13ea1ee6b795b232d2a32d70ae6c73adf278f7e015d695393c13d77",
+      "published_sha256": "034b56e0a13ea1ee6b795b232d2a32d70ae6c73adf278f7e015d695393c13d77"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_asset_cache.h",
+      "source_sha256": "6a75cd7786df929183d6498ce4550ff64f9e1606c299a1ce135d54be826dfdd2",
+      "published_sha256": "6a75cd7786df929183d6498ce4550ff64f9e1606c299a1ce135d54be826dfdd2"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_bridge.c",
+      "source_sha256": "351e67e4df3fb74b6a43ab6187f79055ecfc7a6646a0f6cf2666c471b0868771",
+      "published_sha256": "351e67e4df3fb74b6a43ab6187f79055ecfc7a6646a0f6cf2666c471b0868771"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_bridge.h",
+      "source_sha256": "0dfe635f9b500c4430c5c37a4fc96003c449a044917a2c23b0fd7c2caae2df5e",
+      "published_sha256": "0dfe635f9b500c4430c5c37a4fc96003c449a044917a2c23b0fd7c2caae2df5e"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_controls.c",
+      "source_sha256": "e1c0478eaa15e0d51b69161c0e40048358b729fd7556a6c941e56714e614115a",
+      "published_sha256": "e1c0478eaa15e0d51b69161c0e40048358b729fd7556a6c941e56714e614115a"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_controls.h",
+      "source_sha256": "40e94f7192cf449a99cd3c2e472a995c4558a7301be8dace185a4e23698e6871",
+      "published_sha256": "40e94f7192cf449a99cd3c2e472a995c4558a7301be8dace185a4e23698e6871"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_input_layout.h",
+      "source_sha256": "662781bc7154314c61549ebb8989cfbd1c0415f026b59f8c056d660ea26c46b5",
+      "published_sha256": "662781bc7154314c61549ebb8989cfbd1c0415f026b59f8c056d660ea26c46b5"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_io.c",
+      "source_sha256": "1c6d1efd7bcc6041c43e74b949649bb6ae274e0b89029d6a16b566aca8cfde00",
+      "published_sha256": "1c6d1efd7bcc6041c43e74b949649bb6ae274e0b89029d6a16b566aca8cfde00"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_png.c",
+      "source_sha256": "1b99dcc5bd78cb6f837a56c1c85cf752f510e42b90cfc5fb04424b6f83bfec54",
+      "published_sha256": "1b99dcc5bd78cb6f837a56c1c85cf752f510e42b90cfc5fb04424b6f83bfec54"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_retroarch.c",
+      "source_sha256": "11a41e2b30d46a646e6fbfc6affbf28d1b6e986cb7dfde7223cd71fb91072552",
+      "published_sha256": "11a41e2b30d46a646e6fbfc6affbf28d1b6e986cb7dfde7223cd71fb91072552"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_retroarch.h",
+      "source_sha256": "32eb8f8439951eae7c62de48cd91bb80a164f2d44d6ab6a138af7cc78259b82a",
+      "published_sha256": "32eb8f8439951eae7c62de48cd91bb80a164f2d44d6ab6a138af7cc78259b82a"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_saturn_policy.h",
+      "source_sha256": "a82456c45029981be9a6bea9d3860a3e8e3d1138e6b339bae78143593627752f",
+      "published_sha256": "a82456c45029981be9a6bea9d3860a3e8e3d1138e6b339bae78143593627752f"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_screenshot.c",
+      "source_sha256": "d6cda3d62089b58b2ff49a0a9934048ca94f31cde5f481ecdf76397c020960a2",
+      "published_sha256": "d6cda3d62089b58b2ff49a0a9934048ca94f31cde5f481ecdf76397c020960a2"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_screenshot.h",
+      "source_sha256": "6619cd679d7dc3da68177a1e956941981d0ff7e9b6eee07548b5dc7ff298bf14",
+      "published_sha256": "6619cd679d7dc3da68177a1e956941981d0ff7e9b6eee07548b5dc7ff298bf14"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/make_daemon_profile.py",
+      "source_sha256": "a8ce22605173ed5ce6b1c38ebb96c7105d806b97006ff138785b18f299e8f898",
+      "published_sha256": "a8ce22605173ed5ce6b1c38ebb96c7105d806b97006ff138785b18f299e8f898"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/MOSS_MALI_SDL2.md",
+      "source_sha256": "e3d5e42234d092ae024ce1b726a1a51361fc7e7094705d0d25a83d29c1196210",
+      "published_sha256": "e3d5e42234d092ae024ce1b726a1a51361fc7e7094705d0d25a83d29c1196210"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0001-magicx-checkpoint-hooks.patch",
+      "source_sha256": "d847ac97444c8aa1e48e2fe40ad39e2cabe6f40a8fecee486cf9b4607c47d53d",
+      "published_sha256": "d847ac97444c8aa1e48e2fe40ad39e2cabe6f40a8fecee486cf9b4607c47d53d"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0002-magicx-portrait-gl-handoff.patch",
+      "source_sha256": "b16b5cb7f3603e2dd420b69f57f8a91ce15b684911d3f10ff74cdf8df1184bcb",
+      "published_sha256": "b16b5cb7f3603e2dd420b69f57f8a91ce15b684911d3f10ff74cdf8df1184bcb"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0003-moss-mali-sdl2.patch",
+      "source_sha256": "41b9cecb08e6c55f2811b4be4b6b302ea385be7fc7ec8f22b38c3d562fc039e6",
+      "published_sha256": "41b9cecb08e6c55f2811b4be4b6b302ea385be7fc7ec8f22b38c3d562fc039e6"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0004-magicx-gles-texture-init.patch",
+      "source_sha256": "fb7e1ce5cb5b273a195b37d5e68f81f93147804fb1a03108e8b905e44df76c79",
+      "published_sha256": "fb7e1ce5cb5b273a195b37d5e68f81f93147804fb1a03108e8b905e44df76c79"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0005-magicx-first-frame-diagnostics.patch",
+      "source_sha256": "e383aa4dd91afc7243ed51cbad0406c590c5a216cf561c27b38df9d1a98ab631",
+      "published_sha256": "e383aa4dd91afc7243ed51cbad0406c590c5a216cf561c27b38df9d1a98ab631"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0006-magicx-audio-state-overhead.patch",
+      "source_sha256": "86db919f43af7462fdb3371cd13a3586b9039ed82cdb670c5ab1345f65a31e25",
+      "published_sha256": "86db919f43af7462fdb3371cd13a3586b9039ed82cdb670c5ab1345f65a31e25"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0007-magicx-psp-output-sampling.patch",
+      "source_sha256": "6609c7f32c8be339a9dd7aaea325948453733bc2a3f5e664e4bcbecd4ac8e54f",
+      "published_sha256": "6609c7f32c8be339a9dd7aaea325948453733bc2a3f5e664e4bcbecd4ac8e54f"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0008-magicx-level-meter.patch",
+      "source_sha256": "f18f66af05e8e95d5e8acff99523856cf981c15fd85a7a7e519013983c8854f1",
+      "published_sha256": "f18f66af05e8e95d5e8acff99523856cf981c15fd85a7a7e519013983c8854f1"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/PINNED_RETROARCH.json",
+      "source_sha256": "12629c2e77ca48a91732250bf9d0084e44629ca5a96541e0d4600d9d032213db",
+      "published_sha256": "12629c2e77ca48a91732250bf9d0084e44629ca5a96541e0d4600d9d032213db"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/README.md",
+      "source_sha256": "0396bb6abebd9f1b7f923337acc5ec909074bdf68debb5c6f40ebc222c86851b",
+      "published_sha256": "e5ecaac7b8a749663c00e7b5ed093206155a56e04706e0d2a0f5c4c16a4e94ee"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/retroarch-managed.cfg",
+      "source_sha256": "b788a7fa480fe51d5825661d760d05bdbec7fe3b4415fc2ac34a72fdc667c22b",
+      "published_sha256": "b788a7fa480fe51d5825661d760d05bdbec7fe3b4415fc2ac34a72fdc667c22b"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/json.c",
+      "source_sha256": "eb238dbc9c49a9235739751d4045a1389eaa6647e867d70294a538ff21ef7c88",
+      "published_sha256": "eb238dbc9c49a9235739751d4045a1389eaa6647e867d70294a538ff21ef7c88"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sessiond/bios_policy.h",
+      "source_sha256": "b605220885c8736a3dc9b30f27f05cddbf65d0ab4c174fd670d6343770a63c10",
+      "published_sha256": "b605220885c8736a3dc9b30f27f05cddbf65d0ab4c174fd670d6343770a63c10"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sessiond/control_protocol.h",
+      "source_sha256": "1ff3e075000230ddd15070affb4c0711282602a95b8ba2eb1128cc6cab2416d8",
+      "published_sha256": "1ff3e075000230ddd15070affb4c0711282602a95b8ba2eb1128cc6cab2416d8"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sessiond/durability.h",
+      "source_sha256": "6203f711f26d6e3280ac9396389cce0e3569775c4ed999f3ecdecfdff40d9c7c",
+      "published_sha256": "6203f711f26d6e3280ac9396389cce0e3569775c4ed999f3ecdecfdff40d9c7c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sessiond/json.h",
+      "source_sha256": "3b019209cc2f43bdd901ec56f258ae10d75f382f8d495f9f1603a1cd0af1220e",
+      "published_sha256": "3b019209cc2f43bdd901ec56f258ae10d75f382f8d495f9f1603a1cd0af1220e"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sessiond/retroarch_compat.h",
+      "source_sha256": "ae53a6bdb413b1340944c9eac567c6d9ff6dd948adac2f0786032385a5bfbf8c",
+      "published_sha256": "ae53a6bdb413b1340944c9eac567c6d9ff6dd948adac2f0786032385a5bfbf8c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sessiond/sha256.h",
+      "source_sha256": "ff81e4af641729159b39d7f4024295ca38bd0bba8dae99d09954768820830361",
+      "published_sha256": "ff81e4af641729159b39d7f4024295ca38bd0bba8dae99d09954768820830361"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sha256.c",
+      "source_sha256": "5c7640e7dde37817d918d2b421cd97051f01941f08529a8b5da1d1ec4e857a58",
+      "published_sha256": "5c7640e7dde37817d918d2b421cd97051f01941f08529a8b5da1d1ec4e857a58"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/advertised_subsystem_core.c",
+      "source_sha256": "80fb8b0c0e3bb367947ef9f7639d315103d3b37bae1d09169d990ce872e1c31f",
+      "published_sha256": "80fb8b0c0e3bb367947ef9f7639d315103d3b37bae1d09169d990ce872e1c31f"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/moss_sdl2_mock_main.c",
+      "source_sha256": "7d53d276b590560bc5320caee27a3123a9b772edc5bda94d2f59c515be3fc756",
+      "published_sha256": "7d53d276b590560bc5320caee27a3123a9b772edc5bda94d2f59c515be3fc756"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/moss_sdl2_mock_prefix.h",
+      "source_sha256": "0d3cb3ecdedc69f4c53862cdc98f61a08e11bf78caa165a48844ad06dd465f6f",
+      "published_sha256": "0d3cb3ecdedc69f4c53862cdc98f61a08e11bf78caa165a48844ad06dd465f6f"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/MOSS_SDL2_MOCK_TESTS.json",
+      "source_sha256": "c8cad30cd3476690d7ab62f006bf593908896d63e053c004b5bc4ec34dc6db7b",
+      "published_sha256": "c8cad30cd3476690d7ab62f006bf593908896d63e053c004b5bc4ec34dc6db7b"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/NULL_PATH_REGRESSION.json",
+      "source_sha256": "a622ed584377e801ef73b212271f3da942079ad9010bdff5a2f72b02896a61ee",
+      "published_sha256": "a622ed584377e801ef73b212271f3da942079ad9010bdff5a2f72b02896a61ee"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/NULL_PATH_REGRESSION.md",
+      "source_sha256": "511218c3353770305569e64449af057afe009eead1865730acdb50d893183e7d",
+      "published_sha256": "511218c3353770305569e64449af057afe009eead1865730acdb50d893183e7d"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/raw_joypad_mock_main.c",
+      "source_sha256": "ea7f2180a67b41bb77f4edf4d92ace6692dfca072191ee271cf0fc6e0100bf81",
+      "published_sha256": "ea7f2180a67b41bb77f4edf4d92ace6692dfca072191ee271cf0fc6e0100bf81"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/raw_joypad_mock_prefix.h",
+      "source_sha256": "fdebfc5d0e3ff5bb133c6a47bfd458fd8881c07f0aedbd65fa1131d13fd8e89f",
+      "published_sha256": "fdebfc5d0e3ff5bb133c6a47bfd458fd8881c07f0aedbd65fa1131d13fd8e89f"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/real_session_client.c",
+      "source_sha256": "af6d23b4aad2181bfa5b07e82b72472b6444d2a909adf9678ac3fa0df66f96d2",
+      "published_sha256": "af6d23b4aad2181bfa5b07e82b72472b6444d2a909adf9678ac3fa0df66f96d2"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/recovery_panel_mock_main.c",
+      "source_sha256": "c50f6c36bf0fc38539bf0bd8c2fa99755c5a25e586f3f539aa37211353d03b04",
+      "published_sha256": "c50f6c36bf0fc38539bf0bd8c2fa99755c5a25e586f3f539aa37211353d03b04"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/recovery_panel_mock_prefix.c",
+      "source_sha256": "ee9c643e68a0cc3fd6f614f7db7c43620bab18b8fdf4cb6359fe7f9d05a7f3f2",
+      "published_sha256": "ee9c643e68a0cc3fd6f614f7db7c43620bab18b8fdf4cb6359fe7f9d05a7f3f2"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_asset_cache.c",
+      "source_sha256": "d34327d6b90544b5838fd1370d089d0b7db79c5630e440c6c0db3af1cb2cc3be",
+      "published_sha256": "d34327d6b90544b5838fd1370d089d0b7db79c5630e440c6c0db3af1cb2cc3be"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_bridge.c",
+      "source_sha256": "06a5ffc614d01c5338bebc855fe3158c834e6b1ade13715dec430e9a3f03d27b",
+      "published_sha256": "06a5ffc614d01c5338bebc855fe3158c834e6b1ade13715dec430e9a3f03d27b"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_controls.c",
+      "source_sha256": "679543818155ff89e94846bde9d7c5074bc92a467b5c33d9206a88cff09e0c82",
+      "published_sha256": "679543818155ff89e94846bde9d7c5074bc92a467b5c33d9206a88cff09e0c82"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_exit_signal.c",
+      "source_sha256": "a2cf305c1d6010331b6d9570ccefc68c278334d629493efcd3736cdc71681d82",
+      "published_sha256": "a2cf305c1d6010331b6d9570ccefc68c278334d629493efcd3736cdc71681d82"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_gl2_allocation.py",
+      "source_sha256": "cc03a851f2ba475570a69bc404f2386a991862594d9d94b3dab2e4f6baa7fbd8",
+      "published_sha256": "cc03a851f2ba475570a69bc404f2386a991862594d9d94b3dab2e4f6baa7fbd8"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_input_layout.c",
+      "source_sha256": "bb3ef971648363e0049983cd80e9aa2b0a63179db10c7178b3f8483adac99731",
+      "published_sha256": "bb3ef971648363e0049983cd80e9aa2b0a63179db10c7178b3f8483adac99731"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_moss_sdl2_helpers.py",
+      "source_sha256": "bc7993a77d0c57c9bdea92c86ddb681f0a62296d64f1b53ff37569851891d5bc",
+      "published_sha256": "bc7993a77d0c57c9bdea92c86ddb681f0a62296d64f1b53ff37569851891d5bc"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_raw_joypad.py",
+      "source_sha256": "d12a79ae547a06ce034a691ea4a8e7943fbf77d3374d786b8e891048c44b0bc4",
+      "published_sha256": "d12a79ae547a06ce034a691ea4a8e7943fbf77d3374d786b8e891048c44b0bc4"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_recovery_panel.py",
+      "source_sha256": "cb0c099f68b77a76c58c091d9e195652b9938d0e229de755d2077eca3096f16e",
+      "published_sha256": "cb0c099f68b77a76c58c091d9e195652b9938d0e229de755d2077eca3096f16e"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_retroarch.c",
+      "source_sha256": "bbb4ee39388a92ffb85edd5de99a4c881f32bcd1bf3c7ccfde5fcdfd7948051c",
+      "published_sha256": "bbb4ee39388a92ffb85edd5de99a4c881f32bcd1bf3c7ccfde5fcdfd7948051c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_screenshot.c",
+      "source_sha256": "a1cccb26fedbbe88bbb2755344cdf523b362220fbcb31a3590b143ececc53d68",
+      "published_sha256": "a1cccb26fedbbe88bbb2755344cdf523b362220fbcb31a3590b143ececc53d68"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_sdl_audio_buffer.c",
+      "source_sha256": "8598005c618bf147c4d7ce65d8efed7186c5a045c0b7700aaa5b58a35b48653c",
+      "published_sha256": "8598005c618bf147c4d7ce65d8efed7186c5a045c0b7700aaa5b58a35b48653c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_verified_input.py",
+      "source_sha256": "e508f41393dd19ec096bdf93accc9a98f0a7e0471e02a237491e324e487cff3e",
+      "published_sha256": "e508f41393dd19ec096bdf93accc9a98f0a7e0471e02a237491e324e487cff3e"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/verified_input_mock_main.c",
+      "source_sha256": "2cab268243fd05682539726e182889c3c07b5f51a05d0d429874c25e95af23c9",
+      "published_sha256": "2cab268243fd05682539726e182889c3c07b5f51a05d0d429874c25e95af23c9"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/verified_input_mock_prefix.h",
+      "source_sha256": "a008338375178bcccfe436d3cd9227df3a3eb9e158a46b3e24058192f5d5dee1",
+      "published_sha256": "a008338375178bcccfe436d3cd9227df3a3eb9e158a46b3e24058192f5d5dee1"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/VALIDATION.md",
+      "source_sha256": "7adaedf40f6c47f025f49a41b2fb6d0735132a120a9c3d3bb0f88293541558b4",
+      "published_sha256": "7adaedf40f6c47f025f49a41b2fb6d0735132a120a9c3d3bb0f88293541558b4"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/vendor/lodepng.c",
+      "source_sha256": "6aec876971ec860527859458d3095220fc5ee1258ec37eb59e1e7dd9cf136a81",
+      "published_sha256": "6aec876971ec860527859458d3095220fc5ee1258ec37eb59e1e7dd9cf136a81"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/vendor/lodepng.h",
+      "source_sha256": "9a1fca0238c38333bdc8545336961b73fd0b76957bbacf033186991be9d7cf85",
+      "published_sha256": "9a1fca0238c38333bdc8545336961b73fd0b76957bbacf033186991be9d7cf85"
+    },
+    {
+      "path": "src/console-lan-services/cmd/vmtest/main.go",
+      "source_sha256": "cd3cb03b0bbeb17e056f7142b94e39e40f90912a528b15f11bfbda40e6885cad",
+      "published_sha256": "cd3cb03b0bbeb17e056f7142b94e39e40f90912a528b15f11bfbda40e6885cad"
+    },
+    {
+      "path": "src/console-lan-services/go.mod",
+      "source_sha256": "e022d46d345b8fef6139f203cf774bab22550d152cfee00041afe39c5e68e394",
+      "published_sha256": "e022d46d345b8fef6139f203cf774bab22550d152cfee00041afe39c5e68e394"
+    },
+    {
+      "path": "src/console-lan-services/go.sum",
+      "source_sha256": "56195db7d1d71aeb2e3b085f8616473b7060a33490f9b4f643c5a0456b442e1f",
+      "published_sha256": "56195db7d1d71aeb2e3b085f8616473b7060a33490f9b4f643c5a0456b442e1f"
+    },
+    {
+      "path": "src/console-lan-services/main.go",
+      "source_sha256": "46731f33c2a79dc8722fa3c951c0a2a907d36cc1ebde88a389040c3147de3685",
+      "published_sha256": "46731f33c2a79dc8722fa3c951c0a2a907d36cc1ebde88a389040c3147de3685"
+    },
+    {
+      "path": "src/console-lan-services/share.go",
+      "source_sha256": "9cf54e39018d5819d5f3396f0e94a2661ae49ef5dc083f3e9ac5f2d9ff9650f7",
+      "published_sha256": "9cf54e39018d5819d5f3396f0e94a2661ae49ef5dc083f3e9ac5f2d9ff9650f7"
+    },
+    {
+      "path": "src/console-packaging/image/console-board-probe.c",
+      "source_sha256": "c452437de1cb85e8ea2cd3ac3eb99d62b4096038cd0042605cc4d64435ea0001",
+      "published_sha256": "c452437de1cb85e8ea2cd3ac3eb99d62b4096038cd0042605cc4d64435ea0001"
+    },
+    {
+      "path": "src/console-packaging/image/console-boot-status.c",
+      "source_sha256": "1da3e1dc5f8735117ceab9b88c2bcfe075c854d0ca07df4fdb57b011e7d6bd09",
+      "published_sha256": "1da3e1dc5f8735117ceab9b88c2bcfe075c854d0ca07df4fdb57b011e7d6bd09"
+    },
+    {
+      "path": "src/console-packaging/image/console-dhcp.sh",
+      "source_sha256": "a9b51cb02fe36dda4ed736947fe423589427e3ee36041c47eedb04f8126a9c27",
+      "published_sha256": "a9b51cb02fe36dda4ed736947fe423589427e3ee36041c47eedb04f8126a9c27"
+    },
+    {
+      "path": "src/console-packaging/image/console-level.c",
+      "source_sha256": "4666d23e4c1e484ff7fa2d0a28b5f65d9e25a00114b10bce55d528febeb4d51d",
+      "published_sha256": "4666d23e4c1e484ff7fa2d0a28b5f65d9e25a00114b10bce55d528febeb4d51d"
+    },
+    {
+      "path": "src/console-packaging/image/console-media",
+      "source_sha256": "39ddf1a8d6df84d8533e48db724b2cb1b6ad7c4000a79241bb2886a3f4381529",
+      "published_sha256": "39ddf1a8d6df84d8533e48db724b2cb1b6ad7c4000a79241bb2886a3f4381529"
+    },
+    {
+      "path": "src/console-packaging/image/console-network-init.sh",
+      "source_sha256": "dab1deada9df800e84cf0250646f50ff3a4f6334842f25d2a472cde744564780",
+      "published_sha256": "dab1deada9df800e84cf0250646f50ff3a4f6334842f25d2a472cde744564780"
+    },
+    {
+      "path": "src/console-packaging/image/console-ntp-event.sh",
+      "source_sha256": "d0d9c74f8f929042972f6fc835694dea861c1e89221b62e6cf95fb9a4bacd2b5",
+      "published_sha256": "d0d9c74f8f929042972f6fc835694dea861c1e89221b62e6cf95fb9a4bacd2b5"
+    },
+    {
+      "path": "src/console-packaging/image/console-poweroff",
+      "source_sha256": "99718d52856d4b28a0799fde30abc4c7b8880399f8f64e2e0e4e7de3151977fb",
+      "published_sha256": "99718d52856d4b28a0799fde30abc4c7b8880399f8f64e2e0e4e7de3151977fb"
+    },
+    {
+      "path": "src/console-packaging/image/console-rc",
+      "source_sha256": "a9933342b5c310e141572f14c2bc9c827269cc65410d4b1a51c86cb8038e1fa3",
+      "published_sha256": "a9933342b5c310e141572f14c2bc9c827269cc65410d4b1a51c86cb8038e1fa3"
+    },
+    {
+      "path": "src/console-packaging/image/console-rc.sh",
+      "source_sha256": "e947633d5032316b9155b1d0700f62b3ee05e7cff8bb3c1a8d217581c9206113",
+      "published_sha256": "e947633d5032316b9155b1d0700f62b3ee05e7cff8bb3c1a8d217581c9206113"
+    },
+    {
+      "path": "src/console-packaging/image/console-splash.init",
+      "source_sha256": "e393cdeb7e487187ff2bb3af3d0d9d770652e65543c659310c9df33032a850a7",
+      "published_sha256": "e393cdeb7e487187ff2bb3af3d0d9d770652e65543c659310c9df33032a850a7"
+    },
+    {
+      "path": "src/console-packaging/image/console-start.sh",
+      "source_sha256": "6fc62a83c744a4dbe484c7ffe4f3baf06136b4eaaf49b495a974677c324d6132",
+      "published_sha256": "6fc62a83c744a4dbe484c7ffe4f3baf06136b4eaaf49b495a974677c324d6132"
+    },
+    {
+      "path": "src/console-packaging/image/console-stop-service",
+      "source_sha256": "34bc9c674e22a9256fc6c26fc909eb176260494176f06caf51be017357bc0a9c",
+      "published_sha256": "34bc9c674e22a9256fc6c26fc909eb176260494176f06caf51be017357bc0a9c"
+    },
+    {
+      "path": "src/console-packaging/image/INPUT_ROUTING.md",
+      "source_sha256": "5abb0909b1d1ec55d888fa53b741dfa18d7dbd757e3b1e3aa4f86121436f5839",
+      "published_sha256": "5abb0909b1d1ec55d888fa53b741dfa18d7dbd757e3b1e3aa4f86121436f5839"
+    },
+    {
+      "path": "src/console-packaging/image/level-state.c",
+      "source_sha256": "277cbaee9ac41f1e60d0733e46b4fe17145660c4f278024def3b37f1b4f5f096",
+      "published_sha256": "277cbaee9ac41f1e60d0733e46b4fe17145660c4f278024def3b37f1b4f5f096"
+    },
+    {
+      "path": "src/console-packaging/image/level-state.h",
+      "source_sha256": "397c3b937d9f5e7ec4408a24257c3ad61552791d34a70ada420fe14d97d3bcda",
+      "published_sha256": "397c3b937d9f5e7ec4408a24257c3ad61552791d34a70ada420fe14d97d3bcda"
+    },
+    {
+      "path": "src/console-grow/console-grow.c",
+      "source_sha256": "cb40582cf8bae3f8ccfaede730e409cebdbbb999233deaf0b91a8e549fb65a9d",
+      "published_sha256": "cb40582cf8bae3f8ccfaede730e409cebdbbb999233deaf0b91a8e549fb65a9d"
+    },
+    {
+      "path": "src/console-grow/layout.h",
+      "source_sha256": "4a63282f6b520f661752f3bf7e5f244acf7f563161a3490c23aea74318cfc8ed",
+      "published_sha256": "4a63282f6b520f661752f3bf7e5f244acf7f563161a3490c23aea74318cfc8ed"
+    },
+    {
+      "path": "src/console-grow/MUSL-COPYRIGHT",
+      "source_sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
+      "published_sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af"
+    },
+    {
+      "path": "ports/emulator-patches/console-cxx-dso-fini.c",
+      "source_sha256": "866bb17c5415500a36dd6629f4ca1d2471e3a9445bc2bec1899c0a1d5fc957e9",
+      "published_sha256": "866bb17c5415500a36dd6629f4ca1d2471e3a9445bc2bec1899c0a1d5fc957e9"
+    },
+    {
+      "path": "ports/emulator-patches/gambatte-dso-finalizer.patch",
+      "source_sha256": "968ebaadd2d1f01cd2f3da1d098611e9762975062e448c49301cba886966ff07",
+      "published_sha256": "968ebaadd2d1f01cd2f3da1d098611e9762975062e448c49301cba886966ff07"
+    },
+    {
+      "path": "ports/emulator-patches/pcsx-common-dependencies.patch",
+      "source_sha256": "5520d96860cd51ad0fef03f57f982925f091ad8914e9c8be5f81ba9ad6ac4aae",
+      "published_sha256": "5520d96860cd51ad0fef03f57f982925f091ad8914e9c8be5f81ba9ad6ac4aae"
+    },
+    {
+      "path": "ports/emulator-patches/README.md",
+      "source_sha256": "d2dc2b54a18b8f90ac2cdeece8d5fddc00df5142fcc3318f12923f300e3f57da",
+      "published_sha256": "d2dc2b54a18b8f90ac2cdeece8d5fddc00df5142fcc3318f12923f300e3f57da"
+    }
+  ],
+  "publication_changes": [
+    "Theme asset installation made opt-in; no runtime C source was changed during publication."
+  ]
+}

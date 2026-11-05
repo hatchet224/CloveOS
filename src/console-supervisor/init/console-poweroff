@@ -1,0 +1,6 @@
+#!/bin/sh
+# Call this before asking PID 1 to terminate services/unmount filesystems.
+# The configured normal poweroff executable must not point back to this wrapper.
+set -eu
+/usr/magicx/bin/console-rc stop
+exec /sbin/poweroff

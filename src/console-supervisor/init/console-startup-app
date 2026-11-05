@@ -1,0 +1,97 @@
+#!/bin/sh
+set -eu
+
+card=/mnt/SDCARD
+base="$card/.console"
+test -d "$base" && test ! -L "$base"
+/bin/busybox awk '$2 == "/mnt/SDCARD" && $3 == "vfat" { found=1 } END { exit !found }' /proc/mounts
+umask 077
+
+case "${1-}" in
+  retroarch)
+    profile="$base/standalone-retroarch"
+    saves="$card/Saves/StandaloneRetroArch"
+    for path in "$profile" "$profile/config" "$profile/remaps" "$card/Saves" "$saves" "$saves/saves" "$saves/states"; do
+        test ! -L "$path"
+        /bin/busybox mkdir -p "$path"
+    done
+    config="$profile/retroarch.cfg"
+    test ! -L "$config"
+    if [ ! -e "$config" ]; then
+        pending="$profile/.retroarch.cfg.new"
+        test ! -L "$pending"
+        /bin/busybox awk '
+            !/^(config_save_on_exit|auto_overrides_enable|auto_remaps_enable|core_options_path|input_remapping_directory|savefile_directory|savestate_directory|input_enable_hotkey_btn|input_menu_toggle_btn|input_save_state_btn|input_load_state_btn|input_toggle_fast_forward_btn|input_state_slot_decrease_btn|input_state_slot_increase_btn|game_specific_options|global_core_options|rgui_config_directory|rgui_browser_directory|content_history_path|content_favorites_path)[[:space:]]*=/ { print }
+        ' /etc/console/retroarch.cfg >"$pending"
+        {
+            printf 'config_save_on_exit = "true"\nauto_overrides_enable = "true"\nauto_remaps_enable = "true"\ngame_specific_options = "true"\nglobal_core_options = "true"\n'
+            printf 'input_enable_hotkey_btn = "nul"\ninput_menu_toggle_btn = "19"\n'
+            printf 'core_options_path = "%s/core-options.cfg"\nrgui_config_directory = "%s/config"\n' "$profile" "$profile"
+            printf 'input_remapping_directory = "%s/remaps"\n' "$profile"
+            printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\n' "$saves" "$saves"
+            printf 'rgui_browser_directory = "%s/Roms"\ncontent_history_path = "%s/content_history.lpl"\n' "$card" "$profile"
+            printf 'content_favorites_path = "%s/content_favorites.lpl"\n' "$profile"
+        } >>"$pending"
+        /bin/busybox mv -f "$pending" "$config"
+    fi
+    test -f "$config"
+    options="$profile/core-options.cfg"
+    test ! -L "$options"
+    if [ ! -e "$options" ]; then
+        pending=$(/bin/busybox mktemp "$profile/.core-options.XXXXXX")
+        /bin/busybox cp /etc/console/retroarch-core-options.cfg "$pending"
+        /bin/busybox mv -f "$pending" "$options"
+    fi
+    export HOME="$profile" XDG_CONFIG_HOME="$profile"
+    exec /system/bin/retroarch --menu --config "$config"
+    ;;
+  netplay)
+    test "$#" = 6
+    case "$2" in host|join) ;; *) exit 2 ;; esac
+    test -r "$4" && test -r "$5" && test -r "$6"
+    saves="$card/Saves/Netplay"
+    for path in "$card/Saves" "$saves" "$saves/saves" "$saves/states"; do
+        test ! -L "$path"
+        /bin/busybox mkdir -p "$path"
+    done
+    config=/run/console/netplay.cfg
+    pending=$(/bin/busybox mktemp /run/console/netplay.XXXXXX)
+    /bin/busybox awk -v easy="${CLOVE_EASY_NETPLAY:-0}" '
+        easy && /^(netplay_ip_port|netplay_nat_traversal)[[:space:]]*=/ { next }
+        !/^(savefile_directory|savestate_directory|history_list_enable|netplay_public_announce|netplay_use_mitm_server|input_menu_toggle_btn|libretro_info_path|libretro_directory|core_info_cache_enable)[[:space:]]*=/ { print }
+    ' "$4" >"$pending"
+    {
+        printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\n' "$saves" "$saves"
+        printf 'history_list_enable = "false"\nnetplay_public_announce = "false"\nnetplay_use_mitm_server = "false"\n'
+        printf 'libretro_info_path = "/system/share/console/core-info"\n'
+        printf 'libretro_directory = "/system/lib/libretro"\ncore_info_cache_enable = "false"\n'
+        printf 'input_menu_toggle_btn = "19"\n'
+        if [ "${CLOVE_EASY_NETPLAY:-0}" = 1 ]; then
+            printf 'netplay_ip_port = "55435"\nnetplay_nat_traversal = "false"\n'
+        fi
+    } >>"$pending"
+    /bin/busybox mv -f "$pending" "$config"
+    if [ "$2" = host ]; then
+        exec /system/bin/retroarch --config "$config" --host -L "$5" "$6"
+    fi
+    exec /system/bin/retroarch --config "$config" --connect "$3" -L "$5" "$6"
+    ;;
+  advance)
+    test -x /system/bin/advmenu
+    profile="$base/standalone-advance"
+    test ! -L "$profile"
+    /bin/busybox mkdir -p "$profile"
+    config="$profile/advmenu.rc"
+    test ! -L "$config"
+    if [ ! -e "$config" ]; then
+        pending="$profile/.advmenu.rc.new"
+        test ! -L "$pending"
+        /bin/busybox cp /etc/console/advmenu.rc "$pending"
+        /bin/busybox mv -f "$pending" "$config"
+    fi
+    test -f "$config"
+    export ADVANCE="$profile"
+    exec /system/bin/advmenu
+    ;;
+  *) exit 2 ;;
+esac

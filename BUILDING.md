@@ -1,0 +1,98 @@
+# Building CloveOS source
+
+This import publishes the privacy-clean r48 native application source and the
+pinned RetroArch integration, LAN service, capacity helper, and build/provenance
+records. R49 changes are still being developed and must be committed separately
+with their validation results. This is not a claim of a complete rebuild of every
+vendor component in the existing image.
+
+## Portable daemon tests
+
+With Python 3 and a C11 compiler available:
+
+```sh
+python3 tools/check-source.py
+python3 tools/test-portable.py
+```
+
+`CC` can select a compiler, including `CC="zig cc"`. The script compiles and runs
+the existing state-machine, standby, document/metadata, and library-data tests.
+It does not exercise Linux adapters, SDL, emulator performance, or the handheld.
+
+The CMake equivalent on a suitable host is:
+
+```sh
+cmake -S src/console-sessiond -B build/sessiond \
+  -DSESSIOND_BUILD_DAEMON=OFF -DBUILD_TESTING=ON
+cmake --build build/sessiond --parallel
+ctest --test-dir build/sessiond --output-on-failure
+```
+
+## Managed launcher and services
+
+Use Linux and a matching target toolchain/sysroot for deployment. The device
+baseline is AArch64 Cortex-A53, Linux 4.9, glibc 2.29. The historical builds used
+Zig 0.13.0/Clang 18.1.6 with target `aarch64-linux-gnu.2.29` and
+`-mcpu=cortex_a53`. A host build is useful for tests but is not a device binary.
+
+Dependencies include SDL 2.26.1, SDL_ttf 2.0.14-compatible headers/libraries,
+libcurl 8.23.0 and Mbed TLS 3.6.7 built for the same target. The exact downloaded
+online-library archive hashes are in `provenance/online-library-pins.json`.
+SQLite, LodePNG, minimp3, and stb_image source are included with their notices.
+
+Configure the dependency prefix and toolchain explicitly:
+
+```sh
+cmake -S src/console-supervisor -B build/appliance \
+  -DCMAKE_TOOLCHAIN_FILE=/path/to/matching-toolchain.cmake \
+  -DCMAKE_BUILD_TYPE=MinSizeRel \
+  -DCONSOLE_ONLINE_PREFIX=/path/to/target-curl-mbedtls-prefix \
+  -DCMAKE_PREFIX_PATH=/path/to/target-sdl-prefix \
+  -DBUILD_TESTING=OFF
+cmake --build build/appliance --parallel
+```
+
+The build consumes the sibling launcher, session daemon, activity, packaging,
+and bridge sources. Included configuration files are templates; replace their
+explicit placeholders with qualified board profiles before deployment. Theme
+assets are separate inputs with separate licenses. Installing optional themes
+from this source tree is disabled by default; the protected fallback renderer
+remains in source. This does not change artwork on an existing personal card.
+
+## RetroArch integration
+
+```sh
+git clone https://github.com/libretro/RetroArch.git build/RetroArch
+git -C build/RetroArch checkout 0792144fe3a7b59908b0afdb2c01722e79040360
+python3 src/retroarch-magicx-bridge/install.py --retroarch build/RetroArch
+```
+
+The installer checks the upstream pin and applies the included integration
+patches to a clean checkout. Use the target compiler/sysroot and the SDL/Mali
+integration described in `src/retroarch-magicx-bridge/MOSS_MALI_SDL2.md`, with
+`HAVE_MAGICX_BRIDGE=1`. See that module's integration map and tests. Later R49
+patches are not implied by this r48 integration snapshot.
+
+## LAN services
+
+`src/console-lan-services/go.mod` and `go.sum` pin the Go dependencies. The module
+declares Go 1.26; the recorded device build used Go 1.27.3. From that directory:
+
+```sh
+go mod verify
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o console-lan-server .
+```
+
+Preserve `LICENSES/LAN-SERVICES.txt` with a distribution. Generated credentials
+and host keys are runtime data and must never be committed.
+
+## Capacity helper and image reconstruction
+
+The automatic-capacity helper source is in `src/console-grow`. Its original
+declarations and Musl notice are included. `tools/reconstruct-r48` contains the
+existing hash-based image reconstruction recipe and metadata, not executable
+firmware or artwork. See [its README](tools/reconstruct-r48/README.md).
+
+It still requires independently acquired exact vendor/runtime/artwork inputs.
+Do not substitute an arbitrary kernel/module set or flash a build merely because
+it compiles. The source and rights gaps in `REDISTRIBUTION.md` remain applicable.

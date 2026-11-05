@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "source": "MinUI native Zero28 and pinned CrossMix AArch64 releases",
+  "packages": [
+    {
+      "id": "core.gambatte",
+      "core": "gambatte",
+      "url": "https://github.com/shauninman/MinUI/releases/download/v20251127-1/MinUI-20251127-1-base.zip",
+      "archive_sha256": "b1a5ffefb7599ea0f68bddd66ebc8158ee5bb371dfa1990c6fed07117b131632",
+      "nested": "MinUI.zip",
+      "member": ".system/zero28/cores/gambatte_libretro.so",
+      "core_sha256": "82cb3a583ad04e508edf599f234fdb585fcf9f3204fc35521af5470c1c8a31cd"
+    },
+    {
+      "id": "core.mgba",
+      "core": "mgba",
+      "url": "https://github.com/shauninman/MinUI/releases/download/v20251127-1/MinUI-20251127-1-extras.zip",
+      "archive_sha256": "0b242d533e635f9112db9f548a0dfa614b9d5bde8924d024bdd19f1ea1fd3bda",
+      "nested": "",
+      "member": "Emus/zero28/MGBA.pak/mgba_libretro.so",
+      "core_sha256": "9a0a2f19eea1755a364eb0a25286e15a710c75f72df59b236ab25c4ce634db5d"
+    },
+    {
+      "id": "core.fceumm",
+      "core": "fceumm",
+      "url": "https://github.com/shauninman/MinUI/releases/download/v20251127-1/MinUI-20251127-1-base.zip",
+      "archive_sha256": "b1a5ffefb7599ea0f68bddd66ebc8158ee5bb371dfa1990c6fed07117b131632",
+      "nested": "MinUI.zip",
+      "member": ".system/zero28/cores/fceumm_libretro.so",
+      "core_sha256": "187fccd14d0bf5882c2168049f57728d6c96800ff971c4666ff646fddc322a79"
+    },
+    {
+      "id": "core.snes9x",
+      "core": "snes9x2005_plus",
+      "url": "https://github.com/shauninman/MinUI/releases/download/v20251127-1/MinUI-20251127-1-base.zip",
+      "archive_sha256": "b1a5ffefb7599ea0f68bddd66ebc8158ee5bb371dfa1990c6fed07117b131632",
+      "nested": "MinUI.zip",
+      "member": ".system/zero28/cores/snes9x2005_plus_libretro.so",
+      "core_sha256": "629a50c2047fdca9222760aa550341ef3e699cb18c8cc9e1fea6ba3a36d8d009"
+    },
+    {
+      "id": "core.genesis",
+      "core": "picodrive",
+      "url": "https://github.com/shauninman/MinUI/releases/download/v20251127-1/MinUI-20251127-1-base.zip",
+      "archive_sha256": "b1a5ffefb7599ea0f68bddd66ebc8158ee5bb371dfa1990c6fed07117b131632",
+      "nested": "MinUI.zip",
+      "member": ".system/zero28/cores/picodrive_libretro.so",
+      "core_sha256": "5f1bf0ce96e1d60b3e0b016c2fb8d71b00fa6c695d80a019619516b3d28c6463"
+    },
+    {
+      "id": "core.pcsx",
+      "core": "pcsx_rearmed",
+      "url": "https://github.com/shauninman/MinUI/releases/download/v20251127-1/MinUI-20251127-1-base.zip",
+      "archive_sha256": "b1a5ffefb7599ea0f68bddd66ebc8158ee5bb371dfa1990c6fed07117b131632",
+      "nested": "MinUI.zip",
+      "member": ".system/zero28/cores/pcsx_rearmed_libretro.so",
+      "core_sha256": "5e86cfb1c48647c64e39c7431c612ee38594c5b158d57e698cd8a4a7f95d8492"
+    },
+    {
+      "id": "core.mupen64plus",
+      "core": "mupen64plus_next",
+      "url": "https://raw.githubusercontent.com/cizia64/CrossMix-OS/206d612fdef83972ed54a17de955125d0c0b3528/RetroArch/.retroarch/cores/mupen64plus_next_libretro.so",
+      "archive_sha256": "62576b7d6b9f48c424080e17392305bb41934b7898b4c4f23b2097256dfcd53b",
+      "nested": "",
+      "member": "",
+      "core_sha256": "62576b7d6b9f48c424080e17392305bb41934b7898b4c4f23b2097256dfcd53b"
+    },
+    {
+      "id": "core.flycast",
+      "core": "flycast",
+      "url": "https://raw.githubusercontent.com/cizia64/CrossMix-OS/206d612fdef83972ed54a17de955125d0c0b3528/RetroArch/.retroarch/cores/flycast_libretro.so",
+      "archive_sha256": "dc6dc1690a26993463be491563fdafa794911108f7c81474c19ab25e6eefa60a",
+      "nested": "",
+      "member": "",
+      "core_sha256": "dc6dc1690a26993463be491563fdafa794911108f7c81474c19ab25e6eefa60a"
+    },
+    {
+      "id": "core.ppsspp",
+      "core": "ppsspp",
+      "url": "https://raw.githubusercontent.com/cizia64/CrossMix-OS/206d612fdef83972ed54a17de955125d0c0b3528/RetroArch/.retroarch/cores/ppsspp_libretro.so",
+      "archive_sha256": "657c9b897cb3e295efeeea823eef1327d5a4039209acb6b616b7938aa637cd39",
+      "nested": "",
+      "member": "",
+      "core_sha256": "657c9b897cb3e295efeeea823eef1327d5a4039209acb6b616b7938aa637cd39"
+    },
+    {
+      "id": "core.yabasanshiro",
+      "core": "yabasanshiro",
+      "url": "https://raw.githubusercontent.com/cizia64/CrossMix-OS/206d612fdef83972ed54a17de955125d0c0b3528/RetroArch/.retroarch/cores/yabasanshiro_libretro.so",
+      "archive_sha256": "fadcef0729de15597318fe25c49f8b132c0faaec7c275e33cb36760757af5a01",
+      "nested": "",
+      "member": "",
+      "core_sha256": "a17902eadbc52fb3d86e4bb986603de0b9d8e4f48448c2705327f7e8d554ca4b",
+      "drop_needed": "libtmenu.so"
+    }
+  ]
+}

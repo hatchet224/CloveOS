@@ -1,0 +1,4 @@
+#ifndef CONSOLE_SUPERVISOR_BUILD_H
+#define CONSOLE_SUPERVISOR_BUILD_H
+#define SC_BUILD_ID "20261104-cloveos-atari-r45"
+#endif

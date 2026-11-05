@@ -1,0 +1,124 @@
+diff --git a/tasks/task_save.c b/tasks/task_save.c
+--- a/tasks/task_save.c
++++ b/tasks/task_save.c
+@@ -1833,24 +1833,29 @@
+  * writer task because the legacy writer truncates and has no fsync contract. */
+ bool content_magicx_snapshot(void **data, size_t *size, size_t maximum)
+ {
+-   size_t core_size = core_serialize_size();
++   rastate_size_info_t info;
+    size_t total;
+-   if (!data || !size || !core_info_current_supports_savestate() ||
+-       core_size == 0 || core_size > maximum || maximum < 32)
++   if (!data || !size)
+       return false;
+    *data = NULL;
+    *size = 0;
+-   total = content_get_serialized_size();
+-   if (total == 0 || total > maximum)
+-      return false;
+-   *data = content_get_serialized_data(size);
+-   if (!*data || *size > maximum)
++   if (maximum < 32 || !core_info_current_supports_savestate())
++      return false;
++   /* Query once: PPSSPP pauses/measures its entire state here. Keep the
++    * resulting size and serialize that exact native container without a
++    * second measurement or an allocation before checking the bound. */
++   total = content_get_rastate_size(&info, false);
++   if (total < 32 || total > maximum || info.coremem_size > maximum)
++      return false;
++   if (!(*data = calloc(total, 1)))
++      return false;
++   if (!content_write_serialized_state(*data, &info, false))
+    {
+       free(*data);
+       *data = NULL;
+-      *size = 0;
+-      return false;
+-   }
++      return false;
++   }
++   *size = total;
+    return true;
+ }
+ 
+diff --git a/audio/drivers/sdl_audio.c b/audio/drivers/sdl_audio.c
+--- a/audio/drivers/sdl_audio.c
++++ b/audio/drivers/sdl_audio.c
+@@ -197,12 +197,11 @@
+    bufsize             = out.samples * 4 * sizeof(int16_t);
+    tmp                 = calloc(1, bufsize);
+    sdl->speaker_buffer = fifo_new(bufsize);
+-
+-   if (tmp)
+-   {
+-      fifo_write(sdl->speaker_buffer, tmp, bufsize);
+-      free(tmp);
+-   }
++   if (!tmp || !sdl->speaker_buffer)
++      goto error;
++   fifo_write(sdl->speaker_buffer, tmp, bufsize);
++   free(tmp);
++   tmp = NULL;
+ 
+    RARCH_DBG("[SDL audio]: Initialized speaker sample queue with %u bytes\n", bufsize);
+ 
+@@ -211,6 +210,17 @@
+    return sdl;
+ 
+ error:
++   free(tmp);
++   if (sdl->speaker_device > 0)
++      SDL_CloseAudioDevice(sdl->speaker_device);
++   if (sdl->speaker_buffer)
++      fifo_free(sdl->speaker_buffer);
++#ifdef HAVE_THREADS
++   if (sdl->lock)
++      slock_free(sdl->lock);
++   if (sdl->cond)
++      scond_free(sdl->cond);
++#endif
+    free(sdl);
+    return NULL;
+ }
+@@ -341,9 +351,30 @@
+ 
+ static size_t sdl_audio_write_avail(void *data)
+ {
+-   /* stub */
+-   (void)data;
+-   return 0;
++   sdl_audio_t *sdl = (sdl_audio_t*)data;
++   size_t available;
++   if (!sdl || !sdl->speaker_buffer)
++      return 0;
++   /* The callback consumes this queue on SDL's audio thread. Report bytes,
++    * as required by RetroArch's rate controller, under the same device lock
++    * used by the producer. */
++   SDL_LockAudioDevice(sdl->speaker_device);
++   available = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
++   SDL_UnlockAudioDevice(sdl->speaker_device);
++   return available;
++}
++
++static size_t sdl_audio_buffer_size(void *data)
++{
++   sdl_audio_t *sdl = (sdl_audio_t*)data;
++   size_t capacity;
++   if (!sdl || !sdl->speaker_buffer)
++      return 0;
++   SDL_LockAudioDevice(sdl->speaker_device);
++   capacity = FIFO_READ_AVAIL(sdl->speaker_buffer) +
++         FIFO_WRITE_AVAIL(sdl->speaker_buffer);
++   SDL_UnlockAudioDevice(sdl->speaker_device);
++   return capacity;
+ }
+ 
+ audio_driver_t audio_sdl = {
+@@ -363,5 +394,5 @@
+    NULL,
+    NULL,
+    sdl_audio_write_avail,
+-   NULL
++   sdl_audio_buffer_size
+ };

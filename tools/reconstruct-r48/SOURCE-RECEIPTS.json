@@ -1,0 +1,176 @@
+{
+  "direct_upstream_files_verified": [
+    {
+      "name": "Exo-2-Bold-Italic_Universal.ttf",
+      "sha256": "a7cf62abb846e12fcebd1808b013d047b14b3804ff448d782995ce06074266b4",
+      "verified": true
+    },
+    {
+      "name": "wqy-microhei.ttc",
+      "sha256": "e4bca8df123ce01b104780f576ea1a58b9a5ff1662a91124b6d3180cb6c88212",
+      "verified": true
+    },
+    {
+      "name": "gb.png",
+      "sha256": "7a3c21d5dadd2e9ad7392b79ebe1c565708aae4631e1f19255a5fe5d9824cce6",
+      "verified": true
+    },
+    {
+      "name": "gbc.png",
+      "sha256": "20d54fcc37e4914905c3baf2c62c027c62568cbbc0fbeabbd978e61ef4378782",
+      "verified": true
+    },
+    {
+      "name": "gba.png",
+      "sha256": "6857072f38c138626bad9d3d2122264c4260ea0913433d7739b15d6eabc30a8a",
+      "verified": true
+    },
+    {
+      "name": "fc.png",
+      "sha256": "8066ce96015e75497f5dd46bde20261675504661a2fffa979dcab084d1cec525",
+      "verified": true
+    },
+    {
+      "name": "sfc.png",
+      "sha256": "a4e5bd9da2e3fc23274033be228b6897cc1dce7cd0ce027993fdaa402d39bf8b",
+      "verified": true
+    },
+    {
+      "name": "md.png",
+      "sha256": "61034fc1f78f7943d62f9ecb219ad5874ef71eaf7f2ca190eb049624cdc3fe6e",
+      "verified": true
+    },
+    {
+      "name": "ps.png",
+      "sha256": "76dc938afe20e86433cdff65a40bdfd40f7d1fd3db3666c20150c1225aae8254",
+      "verified": true
+    },
+    {
+      "name": "pce.png",
+      "sha256": "24b3c3e7b78131f8d2a5516775b2a7ea4b7af792adf3a31a5b392374210fec79",
+      "verified": true
+    },
+    {
+      "name": "ngp.png",
+      "sha256": "c4eaf6d5892b6a4f441afd49b7658007e9dc8e26f7bab05b8b05cb64c9ba283c",
+      "verified": true
+    },
+    {
+      "name": "ws.png",
+      "sha256": "48a60939ca1f069224c10810654fa1d78a9525d5bb5576b7cb99baa65f5081de",
+      "verified": true
+    },
+    {
+      "name": "arcade.png",
+      "sha256": "72116c1295087f19c6848421aa0c15c43ee982d216d38977ad9dc5ed480f4475",
+      "verified": true
+    },
+    {
+      "name": "app/gameswitcher.png",
+      "sha256": "4c6c91a116b674ed64f50aff867a599a6a2a1f1496dad83a8b3111488d8b2092",
+      "verified": true
+    },
+    {
+      "name": "app/activity.png",
+      "sha256": "bb32eec4e33bd23f0c34ba25449a9b12d56fb5917c65d87de90555733c00d7d7",
+      "verified": true
+    },
+    {
+      "name": "app/tweaks.png",
+      "sha256": "6e7cabee6e40884420f16f2773807d30d1120aa0f2f6d122ac2180674e9a8870",
+      "verified": true
+    },
+    {
+      "name": "ms.png",
+      "sha256": "1d77edacde5b84f1d9cb2a31ecb1ea72f177794f35cbfd280875d2db4d0cfa52",
+      "verified": true
+    },
+    {
+      "name": "gg.png",
+      "sha256": "adb3f871ccfbba28a6fcd5021f99c9b7a9c20484cdd23dad2335ed00bafec5e3",
+      "verified": true
+    },
+    {
+      "name": "neogeo.png",
+      "sha256": "467b7cc01707a9360dc33ce345318592abd68a86d77b88ed8a6cb8975a2538bb",
+      "verified": true
+    },
+    {
+      "name": "pico.png",
+      "sha256": "cece2d3fbc1959217ef0ec6d2fce395cfd59a2be23aee034d252bfd12deef3f8",
+      "verified": true
+    },
+    {
+      "name": "gambatte_libretro.info",
+      "sha256": "084975942c06a658972890c12a8251fe8d0f6c7ffd2b268850458628bbbe68f4",
+      "verified": true
+    },
+    {
+      "name": "mgba_libretro.info",
+      "sha256": "64444beb8268d3a57d53a45564c55049f39ff621315401fef86e82f3849042d6",
+      "verified": true
+    },
+    {
+      "name": "fceumm_libretro.info",
+      "sha256": "eda6fbfdc1fda5ea80c2caed205345b0cbbfa9427acf3626e0cffd6ee5a96721",
+      "verified": true
+    },
+    {
+      "name": "snes9x2005_plus_libretro.info",
+      "sha256": "2e1f46c49714bcfb59926ebfe394d98004c20e7c0c38d1412dc4196e0eb34dd4",
+      "verified": true
+    },
+    {
+      "name": "picodrive_libretro.info",
+      "sha256": "35cef57b4b61d95a86e1ceee3a7c325d9d16bbdc136b4b3a556e808864de06c5",
+      "verified": true
+    },
+    {
+      "name": "pcsx_rearmed_libretro.info",
+      "sha256": "83e98e7b7068b99330db52741a369f217ebadcdbd1eb182a5a435c76ab6ae704",
+      "verified": true
+    },
+    {
+      "name": "mupen64plus_next_libretro.info",
+      "sha256": "8d1fcd13a17310e233be4ff247bf1032f8f786fe685e24cef5ed4ea474ccdfb6",
+      "verified": true
+    },
+    {
+      "name": "flycast_libretro.info",
+      "sha256": "4abbd7d3f629e8a09906a23fc9c8068c2c2c44483cee4fa49b1262d0770915f1",
+      "verified": true
+    },
+    {
+      "name": "ppsspp_libretro.info",
+      "sha256": "2e9becab17d0db4222e9655bb9b065167e5bcf599ca16256be72beb8f38e646d",
+      "verified": true
+    },
+    {
+      "name": "fbneo_libretro.info",
+      "sha256": "c95c3e177d61adf6662af7adf7361d7fefd9cd87ab0773d105a97818767e5815",
+      "verified": true
+    },
+    {
+      "name": "mednafen_pce_fast_libretro.info",
+      "sha256": "b75e4f64518d4161bef48068f6d4be24c4ea0f478431b749b490251430d8ec35",
+      "verified": true
+    },
+    {
+      "name": "fake08_libretro.info",
+      "sha256": "2c44dee60fa090a08f4198d001f3fb09c73f59caed60ab40d949a4576e7a5a9d",
+      "verified": true
+    },
+    {
+      "name": "flycast_libretro.so",
+      "sha256": "dc6dc1690a26993463be491563fdafa794911108f7c81474c19ab25e6eefa60a",
+      "verified": true
+    }
+  ],
+  "core_info_mit_notice": {
+    "url": "https://raw.githubusercontent.com/libretro/libretro-core-info/445421549abc0638a2f5ecf05db8437e580dcc69/COPYING",
+    "sha256": "13d593901fad682d6e5b4e7f487e865098f6019aa94f8e22c0d8ec80bcdd0dad"
+  },
+  "umtp_corresponding_source_archive_sha256": "4df3feecb956c52708671f6ea89b2c7d611bab4e41110f04dd12b4cd1247beeb",
+  "umtp_archive_includes_modified_source_license_and_build_reference": true,
+  "umtp_separate_local_patch_sha256": "125fe21e58e059da0ad23bd66df3c49f901f24394592a94fdc6034385b21b07a"
+}

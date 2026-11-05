@@ -1,0 +1,323 @@
+diff --git a/Makefile.common b/Makefile.common
+index 2a715f4..c71c3c8 100644
+--- a/Makefile.common
++++ b/Makefile.common
+@@ -2519,3 +2519,12 @@ ifeq ($(HAVE_ODROIDGO2), 1)
+ endif
+ 
+ ##################################
++
++# MagicX Linux checkpoint endpoint; opt-in, absent from ordinary builds.
++ifeq ($(HAVE_MAGICX_BRIDGE), 1)
++   DEFINES += -DHAVE_MAGICX_BRIDGE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
++   INCLUDE_DIRS += -I$(ROOT_DIR)/magicx/support
++   OBJ += magicx/magicx_bridge.o magicx/magicx_io.o magicx/magicx_retroarch.o magicx/magicx_controls.o \
++           magicx/magicx_screenshot.o magicx/magicx_png.o magicx/magicx_asset_cache.o \
++           magicx/support/json.o magicx/support/sha256.o
++endif
+diff --git a/input/drivers_joypad/sdl_joypad.c b/input/drivers_joypad/sdl_joypad.c
+index fb9c78e..4bea81c 100644
+--- a/input/drivers_joypad/sdl_joypad.c
++++ b/input/drivers_joypad/sdl_joypad.c
+@@ -26,6 +26,9 @@
+ 
+ #include "../../tasks/tasks_internal.h"
+ #include "../../verbosity.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../../magicx/magicx_retroarch.h"
++#endif
+ 
+ typedef struct _sdl_joypad
+ {
+@@ -103,7 +106,14 @@ static void sdl_pad_connect(unsigned id)
+    SDL_JoystickGUID guid;
+    uint16_t *guid_ptr         = NULL;
+ 
+-   if (SDL_IsGameController(id))
++   /* Verified MagicX profiles contain raw SDL_Joystick indices. SDL's
++    * GameController API uses a different, remapped button enumeration (and
++    * cannot represent raw MENU21). Choose the raw path before pad init. */
++   if (SDL_IsGameController(id)
++#ifdef HAVE_MAGICX_BRIDGE
++         && !magicx_retroarch_requested()
++#endif
++      )
+    {
+       pad->controller = SDL_GameControllerOpen(id);
+       pad->joypad     = SDL_GameControllerGetJoystick(pad->controller);
+diff --git a/input/input_driver.c b/input/input_driver.c
+index 97b0056..15316b4 100644
+--- a/input/input_driver.c
++++ b/input/input_driver.c
+@@ -26,6 +26,9 @@
+ #include <retro_endianness.h>
+ 
+ #include "input_driver.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../magicx/magicx_retroarch.h"
++#endif
+ #include "input_keymaps.h"
+ #include "input_remapping.h"
+ #include "input_osk.h"
+@@ -6473,6 +6476,10 @@ void input_driver_poll(void)
+ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
+       unsigned idx, unsigned id)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_input_gated())
++      return 0;
++#endif
+    input_driver_state_t
+       *input_st                = &input_driver_st;
+    settings_t *settings        = config_get_ptr();
+diff --git a/menu/menu_displaylist.c b/menu/menu_displaylist.c
+index 8f006ca..f5d1467 100644
+--- a/menu/menu_displaylist.c
++++ b/menu/menu_displaylist.c
+@@ -17,6 +17,9 @@
+  */
+ 
+ #include <stddef.h>
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../magicx/magicx_retroarch.h"
++#endif
+ 
+ #include <compat/strl.h>
+ #include <compat/strcasestr.h>
+@@ -7194,6 +7197,27 @@ unsigned menu_displaylist_build_list(
+ #endif
+          break;
+       case DISPLAYLIST_CONTENT_SETTINGS:
++#ifdef HAVE_MAGICX_BRIDGE
++         if (magicx_retroarch_requested())
++         {
++            /* Managed sessions never expose mutable native settings. The
++             * menu action filter routes these five selections to sessiond. */
++            static const struct { const char *title; enum msg_hash_enums label; } entries[] = {
++               {"Resume Game", MENU_ENUM_LABEL_RESUME_CONTENT},
++               {"Save Selected Slot", MENU_ENUM_LABEL_SAVE_STATE},
++               {"Load Selected Slot", MENU_ENUM_LABEL_LOAD_STATE},
++               {"Take Screenshot", MENU_ENUM_LABEL_TAKE_SCREENSHOT},
++               {"Save and Exit to MainUI", MENU_ENUM_LABEL_CLOSE_CONTENT}
++            };
++            size_t i;
++            for (i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i)
++               if (menu_entries_append(list, magicx_retroarch_menu_label((unsigned int)i),
++                     msg_hash_to_str(entries[i].label), entries[i].label,
++                     MENU_SETTING_ACTION, 0, 0, NULL))
++                  ++count;
++            break;
++         }
++#endif
+          count = menu_displaylist_parse_load_content_settings(list,
+                settings, false);
+ 
+diff --git a/menu/menu_driver.c b/menu/menu_driver.c
+index 569bfe7..67bf69b 100644
+--- a/menu/menu_driver.c
++++ b/menu/menu_driver.c
+@@ -44,6 +44,9 @@
+ #include "../audio/audio_driver.h"
+ 
+ #include "menu_driver.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../magicx/magicx_retroarch.h"
++#endif
+ #include "menu_cbs.h"
+ #include "../driver.h"
+ #include "../list_special.h"
+@@ -7865,6 +7868,9 @@ bool menu_driver_iterate(
+       enum menu_action action,
+       retro_time_t current_time)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   action = (enum menu_action)magicx_retroarch_menu_action((unsigned int)action, menu_st->selection_ptr);
++#endif
+    return ( menu_st->driver_data
+          && generic_menu_iterate(
+             menu_st,
+diff --git a/retroarch.c b/retroarch.c
+index 1551e7c..a237761 100644
+--- a/retroarch.c
++++ b/retroarch.c
+@@ -117,6 +117,9 @@
+ #include "location_driver.h"
+ 
+ #include "runloop.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "magicx/magicx_retroarch.h"
++#endif
+ #include "camera/camera_driver.h"
+ #include "location_driver.h"
+ #include "record/record_driver.h"
+@@ -3091,6 +3094,10 @@ bool command_event(enum event_command cmd, void *data)
+    settings_t *settings            = config_get_ptr();
+    recording_state_t *recording_st = recording_state_get_ptr();
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if (!magicx_retroarch_command_allowed((unsigned int)cmd))
++      return false;
++#endif
+    switch (cmd)
+    {
+       case CMD_EVENT_SAVE_FILES:
+@@ -5751,6 +5758,10 @@ void main_exit(void *args)
+ #endif
+    settings_t     *settings     = config_get_ptr();
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   /* Drain checkpoint callbacks while the task queue/core still exist. */
++   magicx_retroarch_deinit();
++#endif
+    video_driver_restore_cached(settings);
+ 
+ #if defined(HAVE_GFX_WIDGETS)
+@@ -5922,6 +5933,13 @@ int rarch_main(int argc, char *argv[], void *data)
+          return 1;
+    }
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if (!magicx_retroarch_init())
++   {
++      main_exit(data);
++      return 1;
++   }
++#endif
+    ui_companion_driver_init_first();
+ #if HAVE_CLOUDSYNC
+    task_push_cloud_sync();
+diff --git a/runloop.c b/runloop.c
+index a4bc004..3d5af13 100644
+--- a/runloop.c
++++ b/runloop.c
+@@ -115,6 +115,9 @@
+ 
+ #include "runtime_file.h"
+ #include "runloop.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "magicx/magicx_retroarch.h"
++#endif
+ #include "camera/camera_driver.h"
+ #include "location_driver.h"
+ #include "record/record_driver.h"
+@@ -5818,6 +5821,11 @@ static enum runloop_state_enum runloop_check_state(
+       if (    (pressed && !old_pressed)
+             || core_type_is_dummy)
+       {
++#ifdef HAVE_MAGICX_BRIDGE
++         if (magicx_retroarch_requested())
++            magicx_retroarch_menu_toggle();
++         else
++#endif
+          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+          {
+             if (rarch_is_initialized && !core_type_is_dummy)
+@@ -6400,6 +6408,22 @@ static enum runloop_state_enum runloop_check_state(
+       return RUNLOOP_STATE_POLLED_AND_SLEEP;
+    }
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   {
++      /* These meta keys bypass command_event; consume MENU on their edge
++       * without changing the existing fast/slow-motion implementation. */
++      static bool old_magicx_chord = false;
++      bool magicx_chord = BIT256_GET(current_bits, RARCH_FAST_FORWARD_KEY)
++         || BIT256_GET(current_bits, RARCH_FAST_FORWARD_HOLD_KEY)
++         || BIT256_GET(current_bits, RARCH_SLOWMOTION_KEY)
++         || BIT256_GET(current_bits, RARCH_SLOWMOTION_HOLD_KEY)
++         || BIT256_GET(current_bits, RARCH_REWIND);
++      if (magicx_chord && !old_magicx_chord)
++         magicx_retroarch_hotkey_consumed();
++      old_magicx_chord = magicx_chord;
++   }
++#endif
++
+    /* Apply any pending fastmotion override parameters */
+    if (runloop_st->fastmotion_override.pending)
+    {
+@@ -6834,6 +6858,13 @@ static enum runloop_state_enum runloop_check_state(
+  **/
+ int runloop_iterate(void)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   /* EXIT releases the devices but keeps IPC alive until the supervisor reaps
++    * us. Honour SIGINT/SIGTERM here: the ordinary input quit path is skipped
++    * after those devices have been released. main_exit still drains tasks. */
++   if (magicx_retroarch_poll())
++      return frontend_driver_get_signal_handler_state() ? -1 : 0;
++#endif
+    int i;
+    enum analog_dpad_mode dpad_mode[MAX_USERS];
+    input_driver_state_t               *input_st = input_state_get_ptr();
+@@ -7786,6 +7817,10 @@ void core_reset(void)
+ 
+ void core_run(void)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (!magicx_retroarch_core_allowed())
++      return;
++#endif
+    runloop_state_t *runloop_st = &runloop_state;
+    struct retro_core_t *
+       current_core             = &runloop_st->current_core;
+@@ -7816,6 +7851,9 @@ void core_run(void)
+       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
+ 
+    current_core->retro_run();
++#ifdef HAVE_MAGICX_BRIDGE
++   magicx_retroarch_frame_complete();
++#endif
+ 
+    if (      late_polling
+          && (!(current_core->flags & RETRO_CORE_FLAG_INPUT_POLLED)))
+diff --git a/tasks/task_save.c b/tasks/task_save.c
+index c21be14..cbb539d 100644
+--- a/tasks/task_save.c
++++ b/tasks/task_save.c
+@@ -48,6 +48,9 @@
+ #include "../runloop.h"
+ #include "../verbosity.h"
+ #include "tasks_internal.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../magicx/magicx_retroarch.h"
++#endif
+ 
+ #ifdef EMSCRIPTEN
+ /* Filesystem is in-memory anyway, use huge chunks since each
+@@ -1823,3 +1826,36 @@ void set_save_state_in_background(bool state)
+ {
+    save_state_in_background = state;
+ }
++
++#ifdef HAVE_MAGICX_BRIDGE
++/* Expose the native serializer, not content_save_state()'s enqueue-only result.
++ * Serialization stays on the runloop thread; MagicX owns a separate durable
++ * writer task because the legacy writer truncates and has no fsync contract. */
++bool content_magicx_snapshot(void **data, size_t *size, size_t maximum)
++{
++   size_t core_size = core_serialize_size();
++   size_t total;
++   if (!data || !size || !core_info_current_supports_savestate() ||
++       core_size == 0 || core_size > maximum || maximum < 32)
++      return false;
++   *data = NULL;
++   *size = 0;
++   total = content_get_serialized_size();
++   if (total == 0 || total > maximum)
++      return false;
++   *data = content_get_serialized_data(size);
++   if (!*data || *size > maximum)
++   {
++      free(*data);
++      *data = NULL;
++      *size = 0;
++      return false;
++   }
++   return true;
++}
++
++bool content_magicx_legacy_save_busy(void)
++{
++   return content_save_state_in_progress(NULL);
++}
++#endif

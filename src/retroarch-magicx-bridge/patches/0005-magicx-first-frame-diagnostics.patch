@@ -1,0 +1,12 @@
+--- a/runloop.c
++++ b/runloop.c
+@@ -7850,6 +7850,9 @@
+    else if (late_polling)
+       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   magicx_retroarch_frame_begin();
++#endif
+    current_core->retro_run();
+ #ifdef HAVE_MAGICX_BRIDGE
+    magicx_retroarch_frame_complete();

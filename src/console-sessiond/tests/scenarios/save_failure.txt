@@ -1,0 +1,10 @@
+300 launch
+700 fail write
+800 press
+1000 release
+1600 expect CHECKPOINT_ERROR
+1800 continue
+2200 expect GAME_RUNNING
+2400 press
+2600 release
+3400 expect OFF

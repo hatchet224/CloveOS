@@ -1,0 +1,18 @@
+{
+  "daemon": "/opt/console/bin/console-sessiond",
+  "ui": "/opt/console/bin/console-launcher",
+  "retroarch": "/opt/console/bin/retroarch",
+  "base_profile": "/etc/console/base-profile.json",
+  "ui_profile": "/etc/console/ui.json",
+  "bridge_launch": "/etc/console/bridge-launch.json",
+  "catalog": "/etc/console/catalog",
+  "control_socket": "/run/console/control.sock",
+  "system_path": "/opt/console",
+  "poweroff": "/sbin/poweroff",
+  "level_helper": "",
+  "menu_input_name": "REPLACE WITH VERIFIED MENU EVDEV NAME",
+  "menu_code": 158,
+  "card_helper": "/usr/magicx/bin/console-rc",
+  "library_secondary": "",
+  "library_secondary_identity": ""
+}

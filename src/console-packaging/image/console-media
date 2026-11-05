@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+PATH=/system/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+probe() {
+    # UUID enrollment is protected in the immutable root configuration. Insertion
+    # only reports availability; the primary profile/save volume never changes.
+    secondary=$(sed -n 's/^SECONDARY_CARD_UUID=//p' /etc/console/cards.conf)
+    if [ -z "$secondary" ]; then echo 'secondary=not-enrolled primary=selected'; return 0; fi
+    case "$secondary" in *[!A-Za-z0-9-]*) return 1;; esac
+    if /sbin/block info | grep -F "UUID=\"$secondary\""; then
+        echo 'secondary=present primary=selected'
+    else
+        echo 'secondary=absent primary=selected'
+    fi
+}
+case "${1:-}" in
+    probe-secondary|status) probe;;
+    mount-games) probe || :; exec /system/bin/console-rc mount-games;;
+    *) exit 1;;
+esac

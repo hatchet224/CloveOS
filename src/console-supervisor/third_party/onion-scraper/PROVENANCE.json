@@ -1,0 +1,11 @@
+{
+  "source_archive": "<local-workspace-path>",
+  "archive_sha256": "4739938e45688ade02d2c8947d4012345916d1ca04ab33f5b2b1949bf8e66166",
+  "source_pak": "miyoo/app/.tmp_update/onion.pak",
+  "source_member": ".tmp_update\\script\\scraper\\scrap_screenscraper.sh",
+  "source_sha256": "086be1255582d5856bd459de91dca02fb17f0c8467c0bda4ea90e0353337f15c",
+  "license": "GPL-3.0",
+  "modified_port": true,
+  "software_name": "CloveOS",
+  "user_credentials_not_included": true
+}

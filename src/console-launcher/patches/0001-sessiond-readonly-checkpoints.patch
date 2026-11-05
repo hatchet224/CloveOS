@@ -1,0 +1,249 @@
+diff --git a/include/sessiond/store.h b/include/sessiond/store.h
+--- a/include/sessiond/store.h
++++ b/include/sessiond/store.h
+@@ -45,7 +45,7 @@
+     char card_path[CS_PATH_MAX], uuid[65], instance[33], staging[96];
+     struct cs_identity identity;
+     struct cs_record selected;
+-    bool has_selected, fallback, fat, qualified_fat_syncfs, test_root, poisoned;
++    bool has_selected, fallback, fat, qualified_fat_syncfs, test_root, poisoned, read_only;
+     uint64_t max_state_bytes;
+ };
+ bool cs_identity_valid(const struct cs_identity *identity);
+@@ -53,6 +53,16 @@
+ void cs_store_init(struct cs_store *store);
+ void cs_store_close(struct cs_store *store);
+ enum cs_store_status cs_store_open(struct cs_store *store, const struct cs_store_config *config);
++/* Read-only launcher view: no lock acquisition, mkdir, counter/attempt update or repair.
++ * Close with cs_store_close. Use on a storage worker, never on the SDL event thread. */
++enum cs_store_status cs_store_open_reader(struct cs_store *store,
++                                          const struct cs_store_config *config);
++enum cs_store_status cs_store_read_checkpoint(struct cs_store *store,
++                                              const struct cs_identity *identity,
++                                              uint64_t generation, const char manifest_hash[65],
++                                              struct cs_record *record);
++enum cs_store_status cs_store_read_resume(struct cs_store *store, bool previous,
++                                          struct cs_record *record);
+ enum cs_store_status cs_store_check_media(const struct cs_store *store);
+ enum cs_store_status cs_store_load(struct cs_store *store);
+ enum cs_store_status cs_store_stage(struct cs_store *store, uint64_t generation,
+diff --git a/src/store.c b/src/store.c
+--- a/src/store.c
++++ b/src/store.c
+@@ -283,6 +283,10 @@
+ {
+     int fd;
+     struct stat st;
++    if (create && store->read_only) {
++        errno = EROFS;
++        return -1;
++    }
+     if (create && mkdirat(parent, name, 0700) != 0 && errno != EEXIST) {
+         return -1;
+     }
+@@ -362,7 +366,11 @@
+     char temp[96];
+     int fd;
+     bool ok;
+-    enum cs_store_status media = cs_store_check_media(store);
++    enum cs_store_status media;
++    if (store->read_only) {
++        return CS_STORE_CONFLICT;
++    }
++    media = cs_store_check_media(store);
+     if (media != CS_STORE_OK) {
+         return media;
+     }
+@@ -844,6 +852,9 @@
+     int dir;
+     size_t i;
+     uint64_t needed = store->max_state_bytes + aux_limits[1] + aux_limits[2] + 65536U;
++    if (store->read_only) {
++        return CS_STORE_CONFLICT;
++    }
+     result = cs_store_check_media(store);
+     if (result != CS_STORE_OK) {
+         return result;
+@@ -906,6 +917,9 @@
+     int dir;
+     struct stat st;
+     enum cs_store_status result;
++    if (store->read_only) {
++        return CS_STORE_CONFLICT;
++    }
+     result = cs_store_check_media(store);
+     if (result != CS_STORE_OK) {
+         return result;
+@@ -1052,3 +1066,172 @@
+     }
+     return atomic_write(store, store->data_fd, "resume-attempt.json", data, (size_t)m);
+ }
++
++/* Launcher readers never take the daemon's writer lock or create an empty store.
++ * The immutable-generation path and existing decoder/hasher are shared so UI
++ * markers cannot silently introduce a weaker definition of a valid checkpoint. */
++enum cs_store_status cs_store_open_reader(struct cs_store *store,
++                                          const struct cs_store_config *config)
++{
++    struct stat st;
++    struct statfs fs;
++    enum cs_store_status result = CS_STORE_MEDIA;
++    cs_store_init(store);
++    store->read_only = true;
++    if (config == NULL || !uuid_valid(config->card_uuid) || config->card_path == NULL ||
++        strlen(config->card_path) >= sizeof(store->card_path) || config->max_state_bytes == 0U ||
++        config->max_state_bytes > 64U * 1024U * 1024U) {
++        return CS_STORE_INCOMPATIBLE;
++    }
++    strcpy(store->card_path, config->card_path);
++    strcpy(store->uuid, config->card_uuid);
++    store->max_state_bytes = config->max_state_bytes;
++    store->qualified_fat_syncfs = config->qualified_fat_syncfs;
++    store->test_root = config->test_root;
++    store->card_fd = open_absolute_dir(store->card_path);
++    if (store->card_fd < 0 || fstat(store->card_fd, &st) != 0 ||
++        fstatfs(store->card_fd, &fs) != 0) {
++        goto fail;
++    }
++    store->device = st.st_dev;
++    store->inode = st.st_ino;
++    store->fat = (unsigned long)fs.f_type == 0x4d44UL;
++    if ((!store->test_root && (unsigned long)fs.f_type != 0xef53UL && !store->fat) ||
++        (store->fat && !store->qualified_fat_syncfs)) {
++        result = CS_STORE_UNSUPPORTED;
++        goto fail;
++    }
++    if (!store->test_root && !fd_mount_id(store->card_fd, &store->mount_id)) {
++        goto fail;
++    }
++    result = cs_store_check_media(store);
++    if (result != CS_STORE_OK) {
++        goto fail;
++    }
++    store->data_fd = child_dir(store, store->card_fd, ".console", false);
++    if (store->data_fd < 0) {
++        result = errno == ENOENT ? CS_STORE_EMPTY : CS_STORE_IO;
++        goto fail;
++    }
++    return CS_STORE_OK;
++fail:
++    cs_store_close(store);
++    store->read_only = true;
++    return result;
++}
++
++static int reader_game(struct cs_store *store, const struct cs_identity *identity)
++{
++    int sessions, game;
++    sessions = child_dir(store, store->data_fd, "sessions", false);
++    if (sessions < 0) {
++        return -1;
++    }
++    game = child_dir(store, sessions, identity->game, false);
++    if (close(sessions) != 0) {
++        if (game >= 0) {
++            (void)close(game);
++        }
++        return -1;
++    }
++    return game;
++}
++
++enum cs_store_status cs_store_read_checkpoint(struct cs_store *store,
++                                              const struct cs_identity *identity,
++                                              uint64_t generation, const char manifest_hash[65],
++                                              struct cs_record *record)
++{
++    struct cs_store view = *store;
++    struct cs_record candidate;
++    char name[40], data[CS_JSON_MAX + 1U], digest[65];
++    size_t length, i;
++    int dir = -1;
++    enum cs_store_status result = cs_store_check_media(store);
++    if (result != CS_STORE_OK) {
++        return result;
++    }
++    if (record == NULL || identity == NULL || !cs_identity_valid(identity) || generation == 0U ||
++        !cs_hex_valid(manifest_hash, 64U)) {
++        return CS_STORE_INCOMPATIBLE;
++    }
++    view.game_fd = reader_game(store, identity);
++    if (view.game_fd < 0) {
++        return CS_STORE_CORRUPT;
++    }
++    (void)snprintf(name, sizeof(name), "g-%020" PRIu64, generation);
++    dir = child_dir(store, view.game_fd, name, false);
++    result = CS_STORE_CORRUPT;
++    if (dir < 0 || !read_small(dir, "manifest.json", data, &length)) {
++        goto done;
++    }
++    cs_sha256_hex(data, length, digest);
++    if (strcmp(digest, manifest_hash) != 0 || !decode_record(store, data, length, &candidate) ||
++        candidate.generation != generation || candidate.menu ||
++        strcmp(candidate.manifest, zero_hash) != 0) {
++        goto done;
++    }
++    if (!cs_identity_equal(identity, &candidate.identity)) {
++        result = CS_STORE_INCOMPATIBLE;
++        goto done;
++    }
++    for (i = 0U; i < CS_STORE_ARTIFACTS; ++i) {
++        uint64_t size;
++        if (!hash_artifact(store, dir, i, false, &size, digest) || size != candidate.size[i] ||
++            strcmp(digest, candidate.hash[i]) != 0) {
++            goto done;
++        }
++    }
++    strcpy(candidate.manifest, manifest_hash);
++    result = cs_store_check_media(store);
++done:
++    if (dir >= 0 && close(dir) != 0) {
++        result = CS_STORE_IO;
++    }
++    if (close(view.game_fd) != 0) {
++        result = CS_STORE_IO;
++    }
++    if (result == CS_STORE_OK) {
++        *record = candidate;
++    }
++    return result;
++}
++
++enum cs_store_status cs_store_read_resume(struct cs_store *store, bool previous,
++                                          struct cs_record *record)
++{
++    const char *name = previous ? "resume.previous.json" : "resume.json";
++    char data[CS_JSON_MAX + 1U];
++    struct cs_record candidate;
++    struct cs_store view = *store;
++    struct stat st;
++    size_t length;
++    enum cs_store_status result = cs_store_check_media(store);
++    if (result != CS_STORE_OK || record == NULL) {
++        return result == CS_STORE_OK ? CS_STORE_INCOMPATIBLE : result;
++    }
++    if (fstatat(store->data_fd, name, &st, AT_SYMLINK_NOFOLLOW) != 0) {
++        return errno == ENOENT ? CS_STORE_EMPTY : CS_STORE_IO;
++    }
++    if (!read_small(store->data_fd, name, data, &length) ||
++        !decode_record(store, data, length, &candidate)) {
++        return CS_STORE_CORRUPT;
++    }
++    view.identity = candidate.identity;
++    view.game_fd = reader_game(store, &view.identity);
++    if (view.game_fd < 0) {
++        return CS_STORE_CORRUPT;
++    }
++    /* Re-read atomically replaced pointer through the existing complete validator. */
++    result = validate_pointer(&view, name, &candidate);
++    if (close(view.game_fd) != 0) {
++        result = CS_STORE_IO;
++    }
++    if (result == CS_STORE_OK) {
++        result = cs_store_check_media(store);
++    }
++    if (result == CS_STORE_OK) {
++        *record = candidate;
++    }
++    return result;
++}

@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "kind": "stock-display-static-comparison",
+  "stock_vendor_readonly": true,
+  "onion_source_revision": "07505ea58c7bba698d6b9220ff43946a43cac76b",
+  "onion_image_connected": false,
+  "stock_target_binaries_executed": false,
+  "rea_objdump_provider_unavailable": true,
+  "local_disassembly_engine": "Capstone 5.0.6 / pyelftools 0.32; ordinary local tools, not REA Evidence",
+  "sources": [
+    {
+      "path": "work/sleep-display-r3/onion-display.h",
+      "sha256": "5a464ad2a20a2062660af23af41ede7ea869f1802c68f520a7f9e6c5e623fbc3"
+    },
+    {
+      "path": "work/onion-reference/src/keymon/keymon.c",
+      "sha256": "6c3c99c4eb3b334f561bc7e0529089f62020f3ab6122a88dde3540ab3701aa05"
+    },
+    {
+      "path": "work/MinUI/workspace/zero28/platform/platform.c",
+      "sha256": "2d1b46ec3f3cdc9bc5169caf491958a3c1001bfd5514c53c4a8fef3a17de0a34"
+    },
+    {
+      "path": "work/MinUI/workspace/zero28/bl/bl_disable.c",
+      "sha256": "cfb032c55f878a1267f8cd4263cf3fabadf95208685a1d4212d9b26b3f25d2f0"
+    },
+    {
+      "path": "work/MinUI/workspace/zero28/bl/bl_enable.c",
+      "sha256": "c77f282296f463059d8324878ece5e4947e553cae402b8dd675a4a5bf44d21e5"
+    },
+    {
+      "path": "work/sleep-display-r3/runmagicx.sh",
+      "sha256": "7c2ef949acc644a186510967b6562d9108f1f96acff570f9e87fde8ce5dd4fb4"
+    },
+    {
+      "path": "work/sleep-display-r3/power",
+      "sha256": "5e81f600a141e497058fdf1ccf3b619b74b19447302c41423234eb579527927b"
+    }
+  ],
+  "stock_library_artifacts": [
+    {
+      "path": "<local-workspace-path>",
+      "sha256": "3ae18d17196b5be2420c43326c29582434aae33a51ad4f044ed8aee0cd4ba8ab",
+      "bytes": 15368
+    },
+    {
+      "path": "<local-workspace-path>",
+      "sha256": "7340bea0baa609425846e86be90f1990264619bdd6446ed29e2d88beb0a511bd",
+      "bytes": 19592
+    },
+    {
+      "path": "<local-workspace-path>",
+      "sha256": "9d0a1bcfd18d17efd00234639b18477f2d1793734ab46b9aa66a61a037bd568f",
+      "bytes": 15120
+    },
+    {
+      "path": "<local-workspace-path>",
+      "sha256": "a360bfe1eb6f663e85464b25fce9463972a92e3e2f7139a9f2fbbf3393ffee82",
+      "bytes": 312928
+    }
+  ],
+  "stock_brightness": {
+    "symbol": "lights.ceres.so brightness callback",
+    "instruction": "0x1164 mov w1, #0x102",
+    "ioctl_plt": "0x1280"
+  },
+  "stock_blanking": {
+    "symbol": "_Z9blankCtrlii",
+    "start": "0x30068",
+    "instruction": "0x3009c mov w1, #0xc",
+    "ioctl_call": "0x300a0",
+    "ioctl_plt": "0x46640",
+    "native_ulong_arguments": [
+      "screen",
+      "blank",
+      0,
+      0
+    ]
+  },
+  "minui_zero28_off": [
+    "brightness=0",
+    "backlight_disable=0x105",
+    "fb0/blank=4"
+  ],
+  "minui_zero28_on": [
+    "brightness=8",
+    "saved_brightness",
+    "backlight_enable=0x104",
+    "fb0/blank=0"
+  ],
+  "custom_off": [
+    "brightness=0",
+    "backlight_disable=0x105",
+    "DISP_BLANK=0x0c args=[0,1,0,0]"
+  ],
+  "custom_on": [
+    "brightness=8",
+    "saved_brightness",
+    "backlight_enable=0x104",
+    "DISP_BLANK=0x0c args=[0,0,0,0]"
+  ],
+  "physical_screen_off_verified": false,
+  "physical_wake_verified": false,
+  "kernel_suspend_enabled": false
+}

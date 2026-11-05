@@ -3,6 +3,15 @@
 /outputs/
 /build/
 /dist/
+.zig-cache/
+zig-cache/
+*.o
+*.a
+*.so
+*.exe
+*.dll
+*.d
+*.log
 *.img
 *.sqfs
 *.zip

@@ -1,0 +1,12 @@
+diff --git a/etc/rc.local b/etc/rc.local
+--- a/etc/rc.local
++++ b/etc/rc.local
+@@ -25,6 +25,7 @@
+ amixer -D hw:sndac10710036 cset name='Channel 1 PGA Gain' 20
+ amixer -D hw:sndac10710036 cset name='Channel 2 PGA Gain' 20
+ 
+-/usr/magicx/bin/runmagicx.sh
++# Preserve the stock audio setup above; replace its application owner only.
++/usr/magicx/bin/console-rc start
+ 
+ exit 0

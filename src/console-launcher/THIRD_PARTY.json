@@ -1,0 +1,19 @@
+{
+  "lodepng": {
+    "source": "https://github.com/lvandeve/lodepng",
+    "commit": "e584a8490db1b76b81bf298c11c09d3b55d9c270",
+    "license": "zlib; notices embedded in unmodified source",
+    "renamed_source": "lodepng.cpp -> lodepng.c for C compilation"
+  },
+  "font": {
+    "source": "https://github.com/google/fonts/tree/main/ofl/atkinsonhyperlegible",
+    "license": "SIL Open Font License 1.1",
+    "identity_basis": "downloaded file SHA256"
+  },
+  "files_sha256": {
+    "vendor/lodepng.c": "6aec876971ec860527859458d3095220fc5ee1258ec37eb59e1e7dd9cf136a81",
+    "vendor/lodepng.h": "9a1fca0238c38333bdc8545336961b73fd0b76957bbacf033186991be9d7cf85",
+    "themes/Clove/fonts/AtkinsonHyperlegible-Regular.ttf": "7fb917c89019896d0b52ee84b7cbb3304c18cb90b19a62f5e32712bd23e97669",
+    "themes/Clove/fonts/OFL.txt": "f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143"
+  }
+}

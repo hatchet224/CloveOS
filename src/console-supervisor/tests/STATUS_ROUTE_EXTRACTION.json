@@ -1,0 +1,7 @@
+{
+  "source": "outputs/console-supervisor/src/main.c",
+  "source_sha256": "4f5d813a05a942cb58f15ba1b686b2e131b899dd025eb0473190b9d11ba98285",
+  "exact_branch_sha256": "e75f714950c25bb76acf6bdc627ac543f29ffe8214954f35cf80bab8751e1c2a",
+  "fixture_sha256": "93167c9ce9f217ee4afbbbbb0e772d85026c2c83b8665c847fed3219664f7f5b",
+  "method": "Exact SC_SESSION_STATUS branch extraction; fixture supplies only the supervisor fields it reads."
+}

@@ -1,0 +1,268 @@
+From: MagicX Moss port
+Subject: [PATCH 3/3] SDL2: bound Moss Mali NPOT uploads and adapt scanout
+
+Base: RetroArch v1.19.1, 0792144fe3a7b59908b0afdb2c01722e79040360
+Only the vendor SDL video driver named mali takes the new upload/window path.
+Logical core/menu dimensions are independent of promoted backing allocations.
+Clockwise portrait scanout follows the Zero 28 MinUI convention.
+
+diff --git a/gfx/drivers/sdl2_gfx.c b/gfx/drivers/sdl2_gfx.c
+--- a/gfx/drivers/sdl2_gfx.c
++++ b/gfx/drivers/sdl2_gfx.c
+@@ -17,6 +17,7 @@
+ 
+ #include <stdlib.h>
+ #include <string.h>
++#include <limits.h>
+ 
+ #include <retro_inline.h>
+ #include <gfx/scaler/scaler.h>
+@@ -48,6 +49,72 @@
+  */
+ 
+ static void sdl2_gfx_free(void *data);
++
++/* Moss's vendor SDL Mali backend promotes NPOT backing textures and accepts
++ * SHOWN-only windows. Keep these adaptations out of every other SDL backend. */
++#define SDL2_FLAG_MOSS_MALI (1U << 2)
++
++static unsigned sdl2_window_flags(bool moss_mali, bool fullscreen,
++      bool windowed_fullscreen)
++{
++   if (moss_mali)
++      return SDL_WINDOW_SHOWN;
++   if (fullscreen)
++      return windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
++   return SDL_WINDOW_RESIZABLE;
++}
++
++static bool sdl2_moss_geometry(sdl2_video_t *vid, int *width, int *height,
++      int *scanout_rotation)
++{
++   if (SDL_GetRendererOutputSize(vid->renderer, width, height) != 0 ||
++       *width < 1 || *height < 1 || *width > 16384 || *height > 16384)
++      return false;
++   /* Same clockwise portrait convention as the Zero 28 MinUI platform. */
++   *scanout_rotation = *height > *width ? 90 : 0;
++   return true;
++}
++
++static bool sdl2_moss_upload(SDL_Texture *texture, const void *pixels,
++      unsigned width, unsigned height, unsigned pitch, bool rgb32, bool menu)
++{
++   SDL_Rect logical = {0, 0, (int)width, (int)height};
++   Uint32 format, expected = menu ?
++      (rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGBA4444) :
++      (rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB565);
++   int access, backing_width, backing_height;
++   if (!texture || !pixels || !width || !height || width > 16384 || height > 16384 ||
++       pitch > INT_MAX || (uint64_t)pitch < (uint64_t)width * (rgb32 ? 4U : 2U) ||
++       SDL_QueryTexture(texture, &format, &access, &backing_width, &backing_height) != 0 ||
++       format != expected || access != SDL_TEXTUREACCESS_STREAMING ||
++       backing_width < (int)width || backing_height < (int)height ||
++       backing_width > 16384 || backing_height > 16384)
++      return false;
++   /* NULL would upload the padded allocation, overreading the core's buffer. */
++   return SDL_UpdateTexture(texture, &logical, pixels, (int)pitch) == 0;
++}
++
++static bool sdl2_moss_copy(sdl2_video_t *vid, SDL_Texture *texture,
++      const SDL_Rect *source, const SDL_Rect *logical_destination, double rotation)
++{
++   SDL_Rect destination;
++   int width, height, scanout_rotation;
++   if (!texture || !source || !logical_destination || source->x < 0 || source->y < 0 ||
++       source->w < 1 || source->h < 1 ||
++       logical_destination->w < 1 || logical_destination->h < 1 ||
++       !sdl2_moss_geometry(vid, &width, &height, &scanout_rotation))
++      return false;
++   destination = *logical_destination;
++   if (scanout_rotation)
++   {
++      /* Rotate around the physical output centre, retaining the game viewport's
++       * logical aspect ratio and centring. This also handles portrait letterbox. */
++      destination.x += (width - height) / 2;
++      destination.y += (height - width) / 2;
++   }
++   return SDL_RenderCopyEx(vid->renderer, texture, source, &destination,
++         rotation + scanout_rotation, NULL, SDL_FLIP_NONE) == 0;
++}
+ 
+ static INLINE void sdl_tex_zero(sdl2_tex_t *t)
+ {
+@@ -176,8 +243,15 @@
+       dst_rect.w = (int)gly->width;
+       dst_rect.h = (int)gly->height;
+ 
+-      SDL_RenderCopyEx(vid->renderer, vid->font.tex,
+-            &src_rect, &dst_rect, 0, NULL, SDL_FLIP_NONE);
++      if (vid->flags & SDL2_FLAG_MOSS_MALI)
++      {
++         dst_rect.x += vid->vp.x;
++         dst_rect.y += vid->vp.y;
++         (void)sdl2_moss_copy(vid, vid->font.tex, &src_rect, &dst_rect, 0);
++      }
++      else
++         SDL_RenderCopyEx(vid->renderer, vid->font.tex,
++               &src_rect, &dst_rect, 0, NULL, SDL_FLIP_NONE);
+ 
+       delta_x += gly->advance_x;
+       delta_y -= gly->advance_y;
+@@ -216,7 +290,8 @@
+    r.w      = (int)vid->vp.width;
+    r.h      = (int)vid->vp.height;
+ 
+-   SDL_RenderSetViewport(vid->renderer, &r);
++   SDL_RenderSetViewport(vid->renderer,
++         (vid->flags & SDL2_FLAG_MOSS_MALI) ? NULL : &r);
+ 
+    /* breaks int scaling */
+ #if 0
+@@ -232,6 +307,22 @@
+    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+ 
+    SDL_GetWindowSize(vid->window, &win_w, &win_h);
++   if (vid->flags & SDL2_FLAG_MOSS_MALI)
++   {
++      int scanout_rotation;
++      if (!sdl2_moss_geometry(vid, &win_w, &win_h, &scanout_rotation))
++      {
++         RARCH_ERR("[SDL2]: Invalid Moss renderer output geometry.\n");
++         vid->flags |= SDL2_FLAG_QUITTING;
++         return;
++      }
++      if (scanout_rotation)
++      {
++         int swap = win_w;
++         win_w = win_h;
++         win_h = swap;
++      }
++   }
+ 
+    vid->vp.x           = 0;
+    vid->vp.y           = 0;
+@@ -338,6 +429,7 @@
+    sdl2_video_t *vid            = NULL;
+    uint32_t sdl_subsystem_flags = SDL_WasInit(0);
+    settings_t *settings         = config_get_ptr();
++   const char *sdl_driver;
+ #if defined(HAVE_X11) || defined(HAVE_WAYLAND)
+    const char *video_driver     = NULL;
+ #endif
+@@ -361,6 +453,9 @@
+    vid = (sdl2_video_t*)calloc(1, sizeof(*vid));
+    if (!vid)
+       return NULL;
++   sdl_driver = SDL_GetCurrentVideoDriver();
++   if (sdl_driver && strcmp(sdl_driver, "mali") == 0)
++      vid->flags |= SDL2_FLAG_MOSS_MALI;
+ 
+    RARCH_LOG("[SDL2]: Available renderers (change with $SDL_RENDER_DRIVER):\n");
+    for (i = 0; i < SDL_GetNumRenderDrivers(); ++i)
+@@ -385,13 +480,12 @@
+    if (!video->fullscreen)
+       RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
+ 
+-   if (video->fullscreen)
+-      flags = settings->bools.video_windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
+-   else
+-      flags = SDL_WINDOW_RESIZABLE;
++   flags = sdl2_window_flags((vid->flags & SDL2_FLAG_MOSS_MALI) != 0,
++         video->fullscreen, settings->bools.video_windowed_fullscreen);
+ 
+    vid->window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+-                                  video->width, video->height, flags);
++                                  (vid->flags & SDL2_FLAG_MOSS_MALI) ? 640 : video->width,
++                                  (vid->flags & SDL2_FLAG_MOSS_MALI) ? 480 : video->height, flags);
+ 
+    if (!vid->window)
+    {
+@@ -410,6 +504,8 @@
+       SDL_ShowCursor(SDL_DISABLE);
+ 
+    sdl2_init_renderer(vid);
++   if (!vid->renderer)
++      goto error;
+    sdl2_init_font(vid,
+          settings->paths.path_font,
+          settings->floats.video_font_size);
+@@ -483,22 +579,55 @@
+ 
+    if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)
+       sdl_refresh_viewport(vid);
++   if (vid->flags & SDL2_FLAG_QUITTING)
++      return false;
+ 
+    if (frame)
+    {
+       SDL_RenderClear(vid->renderer);
+       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
+-      SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
+-   }
+-
+-   SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
++      if (vid->flags & SDL2_FLAG_MOSS_MALI)
++      {
++         if (!sdl2_moss_upload(vid->frame.tex, frame, width, height,
++                  pitch, vid->video.rgb32, false))
++         {
++            RARCH_ERR("[SDL2]: Moss logical frame upload failed: %s\n", SDL_GetError());
++            return false;
++         }
++      }
++      else
++         SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
++   }
++
++   if (vid->flags & SDL2_FLAG_MOSS_MALI)
++   {
++      SDL_Rect source = {0, 0, (int)vid->frame.w, (int)vid->frame.h};
++      SDL_Rect destination = {vid->vp.x, vid->vp.y,
++         (int)vid->vp.width, (int)vid->vp.height};
++      if (vid->frame.tex &&
++          !sdl2_moss_copy(vid, vid->frame.tex, &source, &destination, vid->rotation))
++         return false;
++   }
++   else
++      SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
+ 
+ #ifdef HAVE_MENU
+    menu_driver_frame(menu_is_alive, video_info);
+ #endif
+ 
+    if (vid->menu.active)
+-      SDL_RenderCopy(vid->renderer, vid->menu.tex, NULL, NULL);
++   {
++      if (vid->flags & SDL2_FLAG_MOSS_MALI)
++      {
++         SDL_Rect source = {0, 0, (int)vid->menu.w, (int)vid->menu.h};
++         SDL_Rect destination = {vid->vp.x, vid->vp.y,
++            (int)vid->vp.width, (int)vid->vp.height};
++         if (!sdl2_moss_copy(vid, vid->menu.tex, &source, &destination, 0))
++            return false;
++      }
++      else
++         SDL_RenderCopy(vid->renderer, vid->menu.tex, NULL, NULL);
++   }
+ 
+    if (msg)
+       sdl2_render_msg(vid, msg);
+@@ -637,7 +766,17 @@
+       sdl_refresh_input_size(vid, true, rgb32, width, height,
+             width * (rgb32 ? 4 : 2));
+ 
+-      SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
++      if (vid->flags & SDL2_FLAG_MOSS_MALI)
++      {
++         if (!sdl2_moss_upload(vid->menu.tex, frame, width, height,
++                  vid->menu.pitch, rgb32, true))
++         {
++            RARCH_ERR("[SDL2]: Moss logical menu upload failed: %s\n", SDL_GetError());
++            vid->flags |= SDL2_FLAG_QUITTING;
++         }
++      }
++      else
++         SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
+    }
+ }
+ 

@@ -1,0 +1,111 @@
+#!/bin/sh
+# Tina/Moss entry after PID 1 mounted proc/sys/dev and stock audio initialization.
+# Install this bootstrap script on the original root image as console-rc.
+set -eu
+PATH=/usr/magicx/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+CONF=/etc/console/cards.conf
+CTL=/usr/magicx/bin/console-ctl
+die() { echo "console-rc: $*" >&2; exit 1; }
+trusted_config() {
+    [ -f "$CONF" ] && [ ! -L "$CONF" ] || die "missing trusted cards.conf"
+    [ "$(stat -c %u "$CONF")" = 0 ] || die "cards.conf must be root owned"
+    case "$(stat -c %a "$CONF")" in 400|600) ;; *) die "cards.conf must have mode 0400/0600";; esac
+}
+trusted_config
+. "$CONF"
+[ "$SYSTEM_UUID" != "$GAMES_UUID" ] || die "system and games cards must have distinct UUIDs"
+runtime() {
+    [ -r /proc/self/mountinfo ] && [ -d /sys/class ] && [ -d /dev ] || die "PID 1 must initialize proc/sys/dev"
+    if ! mountpoint -q /run; then
+        mkdir -p /run
+        [ -z "$(ls -A /run)" ] || die "refusing to hide an existing /run"
+        mount -t tmpfs -o "mode=0755,size=$RUN_TMPFS_SIZE" tmpfs /run || die "runtime tmpfs failed"
+    fi
+    [ ! -L /run/console ] || die "runtime directory is a symlink"
+    mkdir -p /run/console
+    chmod 0700 /run/console
+    "$CTL" runtime-check || die "runtime must be protected tmpfs"
+}
+mount_card() {
+    # UUID is checked with qualified util-linux blkid, then independently compare
+    # block device, mount ID, path, filesystem type and ro/rw through the C helper.
+    mc_kind=$1 mc_device=$2 mc_uuid=$3 mc_target=$4 mc_type=$5 mc_mode=$6 mc_options=$7
+    mc_count=0
+    while [ ! -b "$mc_device" ] && [ "$mc_count" -lt 25 ]; do
+        sleep 0.2
+        mc_count=$((mc_count + 1))
+    done
+    [ -b "$mc_device" ] || return 1
+    mc_found=$("$BLKID" -s UUID -o value "$mc_device") || return 1
+    [ "$mc_found" = "$mc_uuid" ] || return 1
+    case "$mc_uuid" in ''|*[!A-Za-z0-9-]*) return 1;; esac
+    mkdir -p /dev/disk/by-uuid
+    if [ ! -e "/dev/disk/by-uuid/$mc_uuid" ] && [ ! -L "/dev/disk/by-uuid/$mc_uuid" ]; then
+        ln -s "$(readlink -f "$mc_device")" "/dev/disk/by-uuid/$mc_uuid" || return 1
+    fi
+    if mountpoint -q "$mc_target"; then
+        "$CTL" verify-mount "$mc_target" "$mc_device" "$mc_uuid" "$mc_type" "$mc_mode"
+        return $?
+    fi
+    [ ! -L "$mc_target" ] || return 1
+    mkdir -p "$mc_target"
+    mount -t "$mc_type" -o "$mc_options" "$mc_device" "$mc_target" || return 1
+    "$CTL" verify-mount "$mc_target" "$mc_device" "$mc_uuid" "$mc_type" "$mc_mode" || return 1
+    (umask 077; : > "/run/console/$mc_kind.owned")
+}
+mount_games() {
+    case "$GAMES_TYPE" in ext4|vfat) ;; *) die "unsupported games filesystem";; esac
+    mount_card games "$GAMES_DEVICE" "$GAMES_UUID" "$GAMES_MOUNT" "$GAMES_TYPE" rw "$GAMES_OPTIONS"
+}
+prepare() {
+    runtime
+    mount_card system "$SYSTEM_DEVICE" "$SYSTEM_UUID" "$SYSTEM_MOUNT" "$SYSTEM_TYPE" ro "$SYSTEM_OPTIONS" || die "system TF identity/mount failed"
+    for module in $INPUT_MODULES; do
+        case "$module" in ''|-*|*[!A-Za-z0-9_-]*) die "invalid input module name";; esac
+        modprobe "$module" || die "input module failed: $module"
+    done
+    if ! mount_games; then
+        echo "console-rc: game TF unavailable; starting controller recovery, without save writes" >&2
+    fi
+}
+unmount_owned() {
+    uo_kind=$1 uo_target=$2 uo_device=$3 uo_uuid=$4 uo_type=$5 uo_mode=$6
+    [ -f "/run/console/$uo_kind.owned" ] || return 0
+    if ! mountpoint -q "$uo_target"; then rm -f "/run/console/$uo_kind.owned"; return 0; fi
+    "$CTL" verify-mount "$uo_target" "$uo_device" "$uo_uuid" "$uo_type" "$uo_mode" || die "mount changed; refusing to unmount $uo_target"
+    uo_count=0
+    while [ "$uo_count" -lt 20 ]; do
+        if umount "$uo_target" 2>/dev/null; then rm -f "/run/console/$uo_kind.owned"; return 0; fi
+        uo_count=$((uo_count + 1))
+        sleep 0.1
+    done
+    die "unmount failed/busy: $uo_target; no forced or lazy unmount attempted"
+}
+case "${1:-}" in
+    prepare) prepare;;
+    mount-games) runtime; mount_games;;
+    start)
+        prepare
+        # Preserve the working vendor SDL/GPU ABI; only matching libraries belong here.
+        LD_LIBRARY_PATH="$SYSTEM_MOUNT/lib:/usr/magicx/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        export LD_LIBRARY_PATH
+        "$SYSTEM_MOUNT/bin/console-supervisor" --config /etc/console/supervisor.json &
+        # Readiness is a real status reply, never elapsed sleep or a PID-file guess.
+        startup_count=0
+        while [ "$startup_count" -lt 100 ]; do
+            if "$CTL" --socket "$CONTROL_SOCKET" status >/dev/null 2>&1; then exit 0; fi
+            startup_count=$((startup_count + 1)); sleep 0.1
+        done
+        die "not ready; recovery may still be active. No kill/restart loop was started"
+        ;;
+    stop)
+        if ! "$CTL" check-stopped; then
+            "$CTL" --socket "$CONTROL_SOCKET" stop || die "barrier failed; unmount forbidden"
+        fi
+        "$CTL" check-stopped || die "no same-boot completed shutdown barrier"
+        unmount_owned games "$GAMES_MOUNT" "$GAMES_DEVICE" "$GAMES_UUID" "$GAMES_TYPE" rw
+        unmount_owned system "$SYSTEM_MOUNT" "$SYSTEM_DEVICE" "$SYSTEM_UUID" "$SYSTEM_TYPE" ro
+        ;;
+    *) die "usage: console-rc prepare|mount-games|start|stop";;
+esac

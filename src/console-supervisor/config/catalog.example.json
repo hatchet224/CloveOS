@@ -1,0 +1,9 @@
+{
+  "title": "REPLACE GAME TITLE",
+  "system": "REPLACE SYSTEM",
+  "context": "single file, no disc",
+  "content_path": "/mnt/SDCARD/roms/REPLACE.rom",
+  "core_path": "/opt/console/cores/REPLACE_libretro.so",
+  "config_path": "/etc/console/retroarch.cfg",
+  "profile": "/etc/console/profiles/REPLACE.json"
+}

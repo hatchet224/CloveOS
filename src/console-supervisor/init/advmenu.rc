@@ -1,0 +1,60 @@
+device_video sdl
+device_video_output window
+display_size 640x480
+device_keyboard sdl
+device_joystick sdl
+config save_at_exit
+misc_exit esc
+mode text
+event_assign enter enter or joy_button1
+event_assign esc esc or joy_button2
+event_assign up up or joy_button14
+event_assign down down or joy_button17
+event_assign left left or joy_button15
+event_assign right right or joy_button16
+event_assign menu tab or joy_button10
+emulator "ARCADE" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "ARCADE" "/mnt/SDCARD/Roms/ARCADE"
+emulator_roms_filter "ARCADE" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "NEOGEO" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "NEOGEO" "/mnt/SDCARD/Roms/NEOGEO"
+emulator_roms_filter "NEOGEO" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "FC" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "FC" "/mnt/SDCARD/Roms/FC"
+emulator_roms_filter "FC" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "SFC" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "SFC" "/mnt/SDCARD/Roms/SFC"
+emulator_roms_filter "SFC" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "GB" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "GB" "/mnt/SDCARD/Roms/GB"
+emulator_roms_filter "GB" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "GBC" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "GBC" "/mnt/SDCARD/Roms/GBC"
+emulator_roms_filter "GBC" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "GBA" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "GBA" "/mnt/SDCARD/Roms/GBA"
+emulator_roms_filter "GBA" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "GG" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "GG" "/mnt/SDCARD/Roms/GG"
+emulator_roms_filter "GG" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "MD" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "MD" "/mnt/SDCARD/Roms/MD"
+emulator_roms_filter "MD" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "MS" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "MS" "/mnt/SDCARD/Roms/MS"
+emulator_roms_filter "MS" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "PCE" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "PCE" "/mnt/SDCARD/Roms/PCE"
+emulator_roms_filter "PCE" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "PS" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "PS" "/mnt/SDCARD/Roms/PS"
+emulator_roms_filter "PS" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "PSP" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "PSP" "/mnt/SDCARD/Roms/PSP"
+emulator_roms_filter "PSP" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "N64" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "N64" "/mnt/SDCARD/Roms/N64"
+emulator_roms_filter "N64" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"
+emulator "DC" generic "/system/bin/console-advance-launch" "%p"
+emulator_roms "DC" "/mnt/SDCARD/Roms/DC"
+emulator_roms_filter "DC" "*.zip:*.7z:*.nes:*.fds:*.sfc:*.smc:*.gb:*.gbc:*.gba:*.gg:*.md:*.gen:*.bin:*.sms:*.pce:*.chd:*.cue:*.m3u:*.pbp:*.iso:*.cso:*.z64:*.n64:*.v64:*.gdi:*.cdi"

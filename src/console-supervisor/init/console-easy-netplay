@@ -1,0 +1,264 @@
+#!/bin/sh
+# The supervisor checks the content and supplies the frozen profile proof.
+set -eu
+umask 077
+PATH=/system/bin:/sbin:/bin
+export PATH
+unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY all_proxy ALL_PROXY
+bb=/bin/busybox
+root=/run/console
+session=$root/easy-netplay
+host_ip=192.168.77.1
+client_ip=192.168.77.2
+peer_port=55436
+radio=wlan0
+
+[ "$#" = 5 ] || { [ "$#" = 6 ] && [ "$6" = link ]; } || exit 2
+role=$1 proof=$2 config=$3 core=$4 content=$5
+mode=${6:-standard}
+case "$role" in host|join) ;; *) exit 2 ;; esac
+case "$proof" in ''|*[!0-9a-f]*) exit 2 ;; esac
+[ "${#proof}" = 64 ] || exit 2
+if [ "$mode" = link ]; then
+    own_hash=$proof
+    core=/system/lib/libretro/tgbdual_libretro.so
+    [ -x /system/bin/console-link-cable ] && [ -r "$core" ] || exit 22
+    core_hash=$("$bb" sha256sum "$core")
+    retroarch_hash=$("$bb" sha256sum /system/bin/retroarch)
+    proof=$(printf 'Clove link cable 1\n%.64s\n%.64s\n' "$core_hash" "$retroarch_hash" | "$bb" sha256sum)
+    proof=${proof%% *}
+fi
+tag=$(printf '%.12s' "$proof")
+mkdir "$session" || exit 22
+exec </dev/null >>"$root/easy-netplay.log" 2>&1
+ra= ap= peer= ready_peer= pairing= station= notice= recover= prior_ssid= prior_state=
+
+system_wpa() { wpa_cli -p "$root/wpa" -i "$radio" "$@"; }
+temporary_wpa() { wpa_cli -p "$session/wpa" -i "$radio" "$@"; }
+wait_until() {
+    local attempts=$1
+    shift
+    until "$@"; do
+        attempts=$((attempts - 1))
+        [ "$attempts" -gt 0 ] || return 1
+        sleep 0.25
+    done
+}
+stop_child() {
+    [ -n "$1" ] || return 0
+    kill -TERM "$1" 2>/dev/null || :
+    wait_until 20 child_gone "$1" || kill -KILL "$1" 2>/dev/null || :
+    wait "$1" 2>/dev/null || :
+}
+child_gone() { ! kill -0 "$1" 2>/dev/null; }
+netplay_listening() {
+    kill -0 "$ra" 2>/dev/null && "$bb" netstat -lnt 2>/dev/null |
+        "$bb" awk '$4 ~ /:55435$/ && $6 == "LISTEN" { found=1 } END { exit !found }'
+}
+link_pair() {
+    mkdir -p "$session/link/saves/.netplay" "$session/link/states"
+    console-link-cable prepare "$role" /mnt/SDCARD "$content" "$own_hash" "$session/link" "$host_ip" "$proof" &
+    pairing=$!
+    local status=0
+    wait "$pairing" || status=$?
+    pairing=
+    [ "$status" != 142 ] || status=20
+    [ "$status" = 0 ] || exit "$status"
+}
+launch_link() {
+    local player=1
+    [ "$role" != join ] || player=2
+    local run=$session/link
+    "$bb" awk '
+        !/^(libretro_info_path|libretro_directory|core_info_cache_enable|savefile_directory|savestate_directory|savefiles_in_content_dir|savestates_in_content_dir|sort_savefiles_enable|sort_savefiles_by_content_enable|sort_savestates_enable|sort_savestates_by_content_enable|core_options_path|global_core_options|game_specific_options|config_save_on_exit|auto_overrides_enable|history_list_enable|autosave_interval|savestate_auto_save|savestate_auto_load|netplay_ip_port|netplay_public_announce|netplay_use_mitm_server|netplay_nat_traversal|input_enable_hotkey_btn|input_menu_toggle_btn)[[:space:]]*=/ { print }
+    ' "$config" >"$run/retroarch.cfg"
+    {
+        printf 'libretro_info_path = "/system/share/console/core-info"\nlibretro_directory = "/system/lib/libretro"\ncore_info_cache_enable = "false"\n'
+        printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\ncore_options_path = "%s/options.cfg"\n' "$run" "$run" "$run"
+        for setting in savefiles_in_content_dir savestates_in_content_dir sort_savefiles_enable sort_savefiles_by_content_enable sort_savestates_enable sort_savestates_by_content_enable game_specific_options config_save_on_exit auto_overrides_enable history_list_enable savestate_auto_save savestate_auto_load netplay_public_announce netplay_use_mitm_server netplay_nat_traversal; do
+            printf '%s = "false"\n' "$setting"
+        done
+        printf 'global_core_options = "true"\nautosave_interval = "0"\nnetplay_ip_port = "55435"\ninput_enable_hotkey_btn = "19"\ninput_menu_toggle_btn = "8"\n'
+    } >>"$run/retroarch.cfg"
+    printf 'tgbdual_gblink_enable = "enabled"\ntgbdual_single_screen_mp = "player %s only"\ntgbdual_audio_output = "Game Boy #%s"\n' "$player" "$player" >"$run/options.cfg"
+    stop_child "$notice"; notice=
+    /system/bin/retroarch --verbose --config "$run/retroarch.cfg" "$@" -L "$core" --subsystem gb_link_2p \
+        "$run/player1.gb" "$run/player2.gb" >"$run/retroarch.log" 2>&1 & ra=$!
+}
+wpa_available() { [ "$(system_wpa ping 2>/dev/null)" = PONG ]; }
+wpa_stopped() { [ ! -S "$root/wpa/$radio" ]; }
+prior_associated() {
+    local current
+    current=$(system_wpa status) || return 1
+    printf '%s\n' "$current" | "$bb" grep -qx wpa_state=COMPLETED &&
+        printf '%s\n' "$current" | "$bb" grep -Fqx "ssid=$prior_ssid"
+}
+restore_station() {
+    # The regular init script owns the regular station and its DHCP client.
+    # Keep that profile intact and avoid recording the temporary network.
+    wpa_available || {
+        /system/init/console-network-init.sh --restore &
+        wait_until 32 wpa_available || return 1
+    }
+    if [ "$prior_state" = DISCONNECTED ]; then
+        [ "$(system_wpa disconnect)" = OK ] || return 1
+    elif [ -n "$prior_ssid" ]; then
+        saved_ssid=$prior_ssid
+        export saved_ssid
+        id=$(system_wpa list_networks | "$bb" awk -F '\t' '$2 == ENVIRON["saved_ssid"] && $1 ~ /^[0-9]+$/ { print $1; exit }')
+        [ -n "$id" ] && [ "$(system_wpa select_network "$id")" = OK ] || return 1
+        if [ "$prior_state" = COMPLETED ]; then wait_until 40 prior_associated || return 1; fi
+    fi
+}
+cleanup() {
+    result=$?
+    trap - EXIT
+    trap '' INT TERM
+    stop_child "$notice"
+    stop_child "$peer"
+    stop_child "$ready_peer"
+    stop_child "$pairing"
+    stop_child "$ra"
+    stop_child "$station"
+    stop_child "$ap"
+    if [ -n "$recover" ]; then
+        "$bb" ifconfig "$radio" 0.0.0.0 || :
+        restore_station || result=23
+    fi
+    if [ "$mode" = link ] && [ -d "$session/link" ]; then
+        if [ "$result" != 0 ]; then "$bb" tail -n 24 "$session/link/retroarch.log" 2>/dev/null || :; fi
+        rm -rf -- "$session/link"
+    fi
+    rm -f "$session/hostapd.conf" "$session/join.conf" "$session/wpa/$radio" "$session/ap/$radio"
+    rmdir "$session/wpa" "$session/ap" "$session" 2>/dev/null || :
+    exit "$result"
+}
+trap cleanup EXIT
+trap 'exit 0' INT TERM
+
+# Check the backend binaries before touching the radio.
+for program in hostapd hostapd_cli wpa_cli wpa_supplicant console-netplay-peer; do
+    [ -x "/system/bin/$program" ] || exit 22
+done
+[ -f "$root/wpa.conf" ] && [ ! -L "$root/wpa.conf" ] && wpa_available || exit 22
+original=$(system_wpa status) || exit 22
+prior_state=$(printf '%s\n' "$original" | "$bb" sed -n 's/^wpa_state=//p')
+prior_ssid=$(printf '%s\n' "$original" | "$bb" sed -n 's/^ssid=//p')
+if [ "$role" = host ]; then
+    if [ "$mode" = link ]; then message='Pokémon link: starting hotspot and waiting for player 2...';
+    else message='Easy Netplay: starting the local hotspot...'; fi
+else
+    message='Easy Netplay: looking for a compatible nearby host...'
+fi
+/system/bin/console-boot-status --progress --message "$message" & notice=$!
+
+# Identify the station DHCP process before changing either service.
+dhcp=
+if [ -f "$root/dhcp.pid" ]; then
+    read -r dhcp <"$root/dhcp.pid" || exit 22
+    case "$dhcp" in ''|*[!0-9]*) exit 22 ;; esac
+    [ "$dhcp" -gt 1 ] || exit 22
+    if kill -0 "$dhcp" 2>/dev/null; then
+        args=$("$bb" tr '\000' ' ' <"/proc/$dhcp/cmdline") || exit 22
+        case "$args" in *udhcpc\ *-i\ wlan0\ *-p\ /run/console/dhcp.pid\ *) ;; *) exit 22 ;; esac
+    else dhcp=; fi
+fi
+recover=1
+[ "$(system_wpa terminate)" = OK ] && wait_until 20 wpa_stopped || exit 22
+if [ -n "$dhcp" ]; then
+    kill -TERM "$dhcp" 2>/dev/null || :
+    wait_until 20 child_gone "$dhcp" || exit 22
+fi
+"$bb" route del default dev "$radio" 2>/dev/null || :
+"$bb" ifconfig "$radio" 0.0.0.0 up || exit 22
+
+if [ "$role" = host ]; then
+    mkdir "$session/ap"
+    nonce=$("$bb" cut -c1-6 /proc/sys/kernel/random/uuid)
+    case "$nonce" in ??????) ;; *) exit 22 ;; esac
+    ssid=ClovePlay-$tag-$nonce
+    # The SSID advertises the compatibility prefix and discovery suffix. The
+    # protocol is local and uses the advertised suffix to derive its WPA key.
+    printf '%s\n' "interface=$radio" 'driver=nl80211' "ctrl_interface=$session/ap" \
+        "ssid=$ssid" 'hw_mode=g' 'channel=1' 'wpa=2' 'wpa_key_mgmt=WPA-PSK' \
+        'rsn_pairwise=CCMP' "wpa_passphrase=ClovePlay-$nonce" 'max_num_sta=1' >"$session/hostapd.conf"
+    hostapd "$session/hostapd.conf" & ap=$!
+    ap_ready() { hostapd_cli -p "$session/ap" -i "$radio" status 2>/dev/null | "$bb" grep -qx state=ENABLED; }
+    wait_until 48 ap_ready || exit 22
+    "$bb" ifconfig "$radio" "$host_ip" netmask 255.255.255.0 up || exit 22
+    if [ "$mode" = link ]; then
+        console-netplay-peer listen "$host_ip" "$peer_port" "$proof" & peer=$!
+        link_pair
+        launch_link --host
+        wait_until 80 netplay_listening || exit 22
+        console-netplay-peer listen "$host_ip" 55438 "$proof" & ready_peer=$!
+    else
+        stop_child "$notice"; notice=
+        CLOVE_EASY_NETPLAY=1 /system/bin/console-startup-app netplay host '' "$config" "$core" "$content" & ra=$!
+        wait_until 80 netplay_listening || exit 22
+        console-netplay-peer listen "$host_ip" "$peer_port" "$proof" & peer=$!
+        peer_ready() { [ "$(console-netplay-peer query "$host_ip" "$peer_port")" = "$proof" ]; }
+        wait_until 8 peer_ready || exit 22
+    fi
+else
+    mkdir "$session/wpa"
+    printf 'ctrl_interface=%s/wpa\nupdate_config=0\n' "$session" >"$session/join.conf"
+    wpa_supplicant -D nl80211 -i "$radio" -c "$session/join.conf" & station=$!
+    temporary_available() { [ "$(temporary_wpa ping 2>/dev/null)" = PONG ]; }
+    wait_until 32 temporary_available || exit 22
+    temporary_wpa scan >/dev/null || exit 22
+    prefix=ClovePlay-$tag-
+    export prefix
+    discover() {
+        results=$(temporary_wpa scan_results) || return 1
+        candidate=$(printf '%s\n' "$results" | "$bb" awk -F '\t' '
+            index($5, ENVIRON["prefix"]) == 1 && $4 ~ /WPA2-PSK-CCMP/ {
+                suffix = substr($5, length(ENVIRON["prefix"]) + 1)
+                if (length(suffix) == 6 && suffix ~ /^[0-9a-f]+$/ &&
+                    length($1) == 17 && $1 ~ /^[0-9a-f:]+$/ && (!seen || $3 + 0 > signal)) {
+                    seen=1; signal=$3 + 0; mac=$1; name=$5
+                }
+            }
+            END { if (seen) print mac, name }')
+        [ -n "$candidate" ]
+    }
+    if ! wait_until 48 discover; then
+        if printf '%s\n' "$results" | "$bb" grep -q 'ClovePlay-'; then exit 21; fi
+        exit 20
+    fi
+    mac=${candidate%% *} ssid=${candidate#* } nonce=${candidate##*-}
+    id=$(temporary_wpa add_network) || exit 22
+    case "$id" in ''|*[!0-9]*) exit 22 ;; esac
+    set_network() { [ "$(temporary_wpa set_network "$id" "$@")" = OK ]; }
+    set_network ssid "\"$ssid\"" && set_network bssid "$mac" &&
+        set_network psk "\"ClovePlay-$nonce\"" && set_network key_mgmt WPA-PSK &&
+        set_network proto RSN && set_network pairwise CCMP &&
+        [ "$(temporary_wpa select_network "$id")" = OK ] || exit 22
+    associated() { temporary_wpa status | "$bb" grep -qx wpa_state=COMPLETED; }
+    wait_until 56 associated || exit 22
+    "$bb" ifconfig "$radio" "$client_ip" netmask 255.255.255.0 up || exit 22
+    tries=6
+    until remote=$(console-netplay-peer query "$host_ip" "$peer_port"); do
+        tries=$((tries - 1))
+        [ "$tries" -gt 0 ] || exit 20
+        sleep 0.25
+    done
+    [ "$remote" = "$proof" ] || exit 21
+    if [ "$mode" = link ]; then
+        link_pair
+        link_ready() { [ "$(console-netplay-peer query "$host_ip" 55438)" = "$proof" ]; }
+        wait_until 80 link_ready || exit 20
+        launch_link --connect "$host_ip"
+    else
+        stop_child "$notice"; notice=
+        CLOVE_EASY_NETPLAY=1 /system/bin/console-startup-app netplay join "$host_ip" "$config" "$core" "$content" & ra=$!
+    fi
+fi
+status=0
+wait "$ra" || status=$?
+ra=
+if [ "$mode" = link ] && [ "$status" = 0 ]; then
+    "$bb" grep -Eq '\[Netplay\].*joined as player 2' "$session/link/retroarch.log" || exit 20
+    console-link-cable commit "$role" /mnt/SDCARD "$content" "$own_hash" "$session/link" || exit 25
+fi
+exit "$status"
