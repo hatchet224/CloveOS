@@ -1423,7 +1423,9 @@ enum cs_store_status cs_store_delete_states(struct cs_store *store, const char g
             int generation = openat(game_fd,entry->d_name,O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW);
             struct stat st;
             if (generation < 0 || fstat(generation,&st) != 0 || st.st_dev != store->device) {
-                if (generation >= 0) (void)close(generation); ok = false; break;
+                if (generation >= 0) (void)close(generation);
+                ok = false;
+                break;
             }
             const char *const remove[] = {"state.bin","screenshot.png"};
             for (size_t i = 0U; i < 2U; ++i)
