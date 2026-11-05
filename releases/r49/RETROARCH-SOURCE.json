@@ -1,0 +1,63 @@
+{
+  "upstream_pin": "0792144fe3a7b59908b0afdb2c01722e79040360",
+  "files": [
+    {
+      "path": "Makefile.common",
+      "normalized_source_sha256": "5e04c6e1a25b0ba97cb2ef58dd7bffd9d18652ce75249218e876db078b0f71ab"
+    },
+    {
+      "path": "retroarch.c",
+      "normalized_source_sha256": "d880f461c5009bf0980c9b02b449eab814d548be8d0c67218121bbc50df45b6a"
+    },
+    {
+      "path": "runloop.c",
+      "normalized_source_sha256": "7ef09f0ca3364a0bbba55d17eb6ea52758654dd5f8ae41ba808fa1f36f97819e"
+    },
+    {
+      "path": "input/input_driver.c",
+      "normalized_source_sha256": "d840703e032fcd6dc0f56551feeb219f8613983195327f9933f759c2764294a1"
+    },
+    {
+      "path": "tasks/task_save.c",
+      "normalized_source_sha256": "01b04699ba2820c7c5c21f7d3d0df01d38ae305a175102a6a2cd18af3622a958"
+    },
+    {
+      "path": "input/drivers_joypad/sdl_joypad.c",
+      "normalized_source_sha256": "0ac3b75610b2e4287afa417ced575e732c9a7ac1619e025d72515a69c96a335a"
+    },
+    {
+      "path": "menu/menu_driver.c",
+      "normalized_source_sha256": "cadb896b09b5fa87eaec5a08417754485892468e27f50ce292b1c453ad2e08a5"
+    },
+    {
+      "path": "menu/menu_displaylist.c",
+      "normalized_source_sha256": "b187d6d9d7fb9c50c2da7b02c8455ca5932df545591beeadd6dd2f9330667440"
+    },
+    {
+      "path": "gfx/drivers/gl2.c",
+      "normalized_source_sha256": "ccf5ca4a7fa2b350a2f355dcd91a93ebf873073f406d8a3cc4b12d8308910e6f"
+    },
+    {
+      "path": "gfx/drivers/sdl2_gfx.c",
+      "normalized_source_sha256": "540ea7ec59b20c33508b1a3236a0dc344021bfd5fb1aa44b9e274a33f7e690a2"
+    },
+    {
+      "path": "gfx/drivers_context/sdl_gl_ctx.c",
+      "normalized_source_sha256": "9c4239a6acc271704ac60c1e36e68d54d71151260f66f7d54f08a9ff8cc017cc"
+    },
+    {
+      "path": "audio/drivers/sdl_audio.c",
+      "normalized_source_sha256": "c93802066e99b31d43684866526316ecf3b56c9480f8107ee100d10a61a2cce8"
+    },
+    {
+      "path": "gfx/video_driver.c",
+      "normalized_source_sha256": "3304991bf2a3bd033be80ade2d59c62d85a15f67005ba4c4a2cf43a49802bdf6"
+    },
+    {
+      "path": "frontend/drivers/platform_unix.c",
+      "normalized_source_sha256": "788b8fefa4395ee8a7f0eb3833da03186336e66fc01ac316ad6cf0f5737a6aaf"
+    }
+  ],
+  "normalization": "CRLF normalized to LF; compiled C code preserved",
+  "vendor_components_included": false
+}

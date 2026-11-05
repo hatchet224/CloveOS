@@ -64,8 +64,14 @@ case "${1-}" in
         printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\n' "$saves" "$saves"
         printf 'history_list_enable = "false"\nnetplay_public_announce = "false"\nnetplay_use_mitm_server = "false"\n'
         printf 'libretro_info_path = "/system/share/console/core-info"\n'
-        printf 'libretro_directory = "/system/lib/libretro"\ncore_info_cache_enable = "false"\n'
+        printf 'libretro_directory = "%s"\ncore_info_cache_enable = "false"\n' "$(/bin/busybox dirname "$5")"
         printf 'input_menu_toggle_btn = "19"\n'
+        # The pinned legacy Neo Geo core is marked "serialized" upstream.
+        # Onion permits its rollback Netplay. Limit this session policy to the
+        # checksummed compatibility build; do not change ordinary core metadata.
+        case "$5" in /system/lib/libretro/onion-4.3.1-1/fbalpha2012_neogeo_libretro.so)
+            printf 'core_info_savestate_bypass = "true"\n' ;;
+        esac
         if [ "${CLOVE_EASY_NETPLAY:-0}" = 1 ]; then
             printf 'netplay_ip_port = "55435"\nnetplay_nat_traversal = "false"\n'
         fi

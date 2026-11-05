@@ -14,6 +14,7 @@ bool magicx_retroarch_meter(int width, int height, int clockwise,
                            struct magicx_meter_rect out[3]);
 bool magicx_retroarch_saturn(void);
 bool magicx_retroarch_psp_audio(void);
+bool magicx_retroarch_psx_audio(void);
 int magicx_retroarch_swap_interval(int requested);
 uint64_t magicx_retroarch_present_begin(void);
 void magicx_retroarch_present_complete(uint64_t began);

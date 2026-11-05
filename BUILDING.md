@@ -70,8 +70,12 @@ python3 src/retroarch-magicx-bridge/install.py --retroarch build/RetroArch
 The installer checks the upstream pin and applies the included integration
 patches to a clean checkout. Use the target compiler/sysroot and the SDL/Mali
 integration described in `src/retroarch-magicx-bridge/MOSS_MALI_SDL2.md`, with
-`HAVE_MAGICX_BRIDGE=1`. See that module's integration map and tests. Later R49
-patches are not implied by this r48 integration snapshot.
+`HAVE_MAGICX_BRIDGE=1`. The installer includes the additional R49 patch and required
+power/policy headers. Enable networking and LAN discovery in the target build
+(`HAVE_NETWORKING=1`, `HAVE_NETPLAY=1`, `HAVE_NETPLAYDISCOVERY=1` and
+`HAVE_NO_NETPLAYDISCOVERY=0`). See the module's integration map and
+[R49 source supplement](releases/r49/README.md) for matching compatibility cores,
+source pins, helper build and validation limits.
 
 ## LAN services
 

@@ -31,3 +31,6 @@ jobs:
           cmake -S src/console-sessiond -B build/library-tests -DBUILD_TESTING=ON
           cmake --build build/library-tests --target sessiond_library_linux_tests -j2
           ctest --test-dir build/library-tests -R '^library_linux$' --output-on-failure
+      - name: Check Onion-compatible room and file exchange
+        working-directory: src/console-onion-peer
+        run: GO111MODULE=off go test onion_peer.go onion_link.go onion_lan.go onion_peer_test.go

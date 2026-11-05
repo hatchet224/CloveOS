@@ -1,0 +1,128 @@
+--- a/Makefile.libretro
++++ b/Makefile.libretro
+@@ -49,7 +49,7 @@
+ endif
+ 
+ TARGET_NAME := fceumm
+-GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
++GIT_VERSION := " f52037a"
+ ifneq ($(GIT_VERSION)," unknown")
+ 	CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+ endif
+@@ -69,7 +69,7 @@
+ 	CC = gcc
+ 	SHARED := -shared -z defs
+ else
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ endif
+ 
+ else ifeq ($(platform), linux-portable)
+@@ -149,7 +149,7 @@
+ else ifeq ($(platform), qnx)
+ 	TARGET := $(TARGET_NAME)_libretro_qnx.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CC = qcc -Vgcc_ntoarmv7le
+ 	AR = qcc -Vgcc_ntoarmv7le
+ 	PLATFORM_DEFINES := -D__BLACKBERRY_QNX__ -marm -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp
+@@ -215,7 +215,7 @@
+ else ifeq ($(platform), rpi1)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CFLAGS += -DARM11
+ 	CFLAGS += -marm -march=armv6j -mfpu=vfp -mfloat-abi=hard -funsafe-math-optimizations
+ 	CFLAGS += -fomit-frame-pointer -fstrict-aliasing -ffast-math
+@@ -224,7 +224,7 @@
+ else ifeq ($(platform), rpi2)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CFLAGS += -DARM
+ 	CFLAGS += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations
+ 	CFLAGS += -fomit-frame-pointer -fstrict-aliasing -ffast-math
+@@ -233,7 +233,7 @@
+ else ifeq ($(platform), rpi3)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CFLAGS += -DARM
+ 	CFLAGS += -marm -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard -funsafe-math-optimizations
+ 	CFLAGS += -fomit-frame-pointer -fstrict-aliasing -ffast-math
+@@ -242,7 +242,7 @@
+ else ifeq ($(platform), rpi3_64)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CFLAGS += -mcpu=cortex-a53 -mtune=cortex-a53 -funsafe-math-optimizations
+ 	CFLAGS += -fomit-frame-pointer -fstrict-aliasing -ffast-math
+ 
+@@ -250,7 +250,7 @@
+ else ifeq ($(platform), rpi4)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CFLAGS += -mcpu=cortex-a72 -mtune=cortex-a72 -funsafe-math-optimizations
+ 	CFLAGS += -fomit-frame-pointer -fstrict-aliasing -ffast-math
+ 
+@@ -348,7 +348,7 @@
+ else ifeq ($(platform), classic_armv7_a7)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CFLAGS += -Ofast \
+ 	-flto=4 -fwhole-program -fuse-linker-plugin \
+ 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
+@@ -379,7 +379,7 @@
+ else ifeq ($(platform), classic_armv8_a35)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	CFLAGS += -Ofast \
+ 	-flto=4 -fwhole-program -fuse-linker-plugin \
+ 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
+@@ -402,7 +402,7 @@
+ # ARM
+ else ifneq (,$(findstring armv,$(platform)))
+ 	TARGET := $(TARGET_NAME)_libretro.so
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	fpic := -fPIC
+ 	ifneq (,$(findstring cortexa5,$(platform)))
+ 		PLATFORM_DEFINES += -marm -mcpu=cortex-a5
+@@ -435,7 +435,7 @@
+ 	CXX = /opt/gcw0-toolchain/usr/bin/mipsel-linux-g++
+ 	AR = /opt/gcw0-toolchain/usr/bin/mipsel-linux-ar
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	PLATFORM_DEFINES += -ffast-math -march=mips32 -mtune=mips32r2 -mhard-float -fomit-frame-pointer
+ 	EXTERNAL_ZLIB = 1
+ 
+@@ -446,7 +446,7 @@
+ 	CXX = /opt/retrofw-toolchain/usr/bin/mipsel-linux-g++
+ 	AR = /opt/retrofw-toolchain/usr/bin/mipsel-linux-ar
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	PLATFORM_DEFINES += -ffast-math -march=mips32 -mtune=mips32 -mhard-float -fomit-frame-pointer
+ 	EXTERNAL_ZLIB = 1
+ 
+@@ -457,7 +457,7 @@
+ 	CXX = /opt/miyoo/usr/bin/arm-linux-g++
+ 	AR = /opt/miyoo/usr/bin/arm-linux-ar
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,-no-undefined
++	SHARED := -shared -Wl,--version-script=src/drivers/libretro/link.T -Wl,--no-undefined
+ 	PLATFORM_DEFINES += -fomit-frame-pointer -ffast-math -mcpu=arm926ej-s
+ 	EXTERNAL_ZLIB = 1
+ 

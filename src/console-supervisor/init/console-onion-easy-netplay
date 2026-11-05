@@ -1,0 +1,241 @@
+#!/bin/sh
+# Onion 4.3.1-1 Easy Netplay transport; selected-game, pinned-core FTP only.
+set -eu
+umask 077
+PATH=/system/bin:/sbin:/bin
+export PATH
+unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY all_proxy ALL_PROXY
+bb=/bin/busybox
+root=/run/console
+session=$root/easy-netplay
+host_ip=192.168.100.100
+client_ip=192.168.100.101
+peer_port=55436
+radio=wlan0
+
+[ "$#" = 5 ] || { [ "$#" = 6 ] && [ "$6" = link ]; } || exit 2
+role=$1 proof=$2 config=$3 core=$4 content=$5
+mode=${6:-standard}
+registry=/system/share/console/onion-4.3.1-1/cores.json
+case "$role" in host|join) ;; *) exit 2 ;; esac
+if [ "$mode" = link ]; then core_name=tgbdual_libretro.so
+else case "$core" in
+ */fceumm_libretro.so) core_name=fceumm_libretro.so ;;
+ */gambatte_libretro.so|*/tgbdual_libretro.so) core_name=tgbdual_libretro.so ;;
+ */picodrive_libretro.so) core_name=picodrive_libretro.so ;;
+ */mednafen_pce_fast_libretro.so) core_name=mednafen_pce_fast_libretro.so ;;
+ */snes9x2005_plus_libretro.so|*/snes9x2005_libretro.so) core_name=snes9x2005_libretro.so ;;
+ */fbneo_libretro.so|*/fbalpha2012_neogeo_libretro.so) core_name=fbalpha2012_neogeo_libretro.so ;;
+ *) exit 26 ;;
+esac;fi
+mkdir "$session" || exit 22
+exec </dev/null >>"$root/easy-netplay.log" 2>&1
+ra= ap= peer= ready_peer= pairing= station= notice= recover= prior_ssid= prior_state= dhcp_server=
+
+system_wpa() { wpa_cli -p "$root/wpa" -i "$radio" "$@"; }
+temporary_wpa() { wpa_cli -p "$session/wpa" -i "$radio" "$@"; }
+wait_until() {
+    local attempts=$1
+    shift
+    until "$@"; do
+        attempts=$((attempts - 1))
+        [ "$attempts" -gt 0 ] || return 1
+        sleep 0.25
+    done
+}
+stop_child() {
+    [ -n "$1" ] || return 0
+    kill -TERM "$1" 2>/dev/null || :
+    wait_until 20 child_gone "$1" || kill -KILL "$1" 2>/dev/null || :
+    wait "$1" 2>/dev/null || :
+}
+child_gone() { ! kill -0 "$1" 2>/dev/null; }
+netplay_listening() {
+    kill -0 "$ra" 2>/dev/null && "$bb" netstat -lnt 2>/dev/null |
+        "$bb" awk '$4 ~ /:55435$/ && $6 == "LISTEN" { found=1 } END { exit !found }'
+}
+link_task() {
+    /system/bin/console-onion-peer "$@" & pairing=$!
+    local status=0;wait "$pairing" || status=$?;pairing=
+    [ "$status" = 0 ] || exit 26
+}
+launch_link() {
+    /system/bin/retroarch --verbose --config "$config" "$@" -L "$core" --subsystem gb_link_2p \
+        "$session/player1.gb" "$session/player2.gb" >"$session/retroarch.log" 2>&1 & ra=$!
+}
+wpa_available() { [ "$(system_wpa ping 2>/dev/null)" = PONG ]; }
+wpa_stopped() { [ ! -S "$root/wpa/$radio" ]; }
+prior_associated() {
+    local current
+    current=$(system_wpa status) || return 1
+    printf '%s\n' "$current" | "$bb" grep -qx wpa_state=COMPLETED &&
+        printf '%s\n' "$current" | "$bb" grep -Fqx "ssid=$prior_ssid"
+}
+restore_station() {
+    # The regular init script owns the regular station and its DHCP client.
+    # Keep that profile intact and avoid recording the temporary network.
+    wpa_available || {
+        /system/init/console-network-init.sh --restore &
+        wait_until 32 wpa_available || return 1
+    }
+    if [ "$prior_state" = DISCONNECTED ]; then
+        [ "$(system_wpa disconnect)" = OK ] || return 1
+    elif [ -n "$prior_ssid" ]; then
+        saved_ssid=$prior_ssid
+        export saved_ssid
+        id=$(system_wpa list_networks | "$bb" awk -F '\t' '$2 == ENVIRON["saved_ssid"] && $1 ~ /^[0-9]+$/ { print $1; exit }')
+        [ -n "$id" ] && [ "$(system_wpa select_network "$id")" = OK ] || return 1
+        if [ "$prior_state" = COMPLETED ]; then wait_until 40 prior_associated || return 1; fi
+    fi
+}
+cleanup() {
+    result=$?
+    trap - EXIT
+    trap '' INT TERM
+    stop_child "$notice"
+    stop_child "$dhcp_server"
+    stop_child "$peer"
+    stop_child "$ready_peer"
+    stop_child "$pairing"
+    stop_child "$ra"
+    stop_child "$station"
+    stop_child "$ap"
+    if [ -n "$recover" ]; then
+        "$bb" ifconfig "$radio" 0.0.0.0 || :
+        restore_station || result=23
+    fi
+    if [ "$mode" = link ]; then
+        if [ "$result" != 0 ]; then "$bb" tail -n 24 "$session/retroarch.log" 2>/dev/null || :; fi
+        rm -rf -- /run/console/easy-netplay/saves /run/console/easy-netplay/states /run/console/easy-netplay/inbox
+        rm -f "$session/player1.gb" "$session/player2.gb" "$session/own.srm" "$session/own.rtc" "$session/link-session.json" "$session/retroarch.log"
+        for temporary in "$session"/.link-*;do [ ! -f "$temporary" ] || rm -f "$temporary";done
+    fi
+    rm -f "$session/export.json" "$session/retroarch.cookie" "$session/remote.cookie" "$session/options.cfg" "$session/retroarch.cfg"
+    rm -f "$session/hostapd.conf" "$session/join.conf" "$session/wpa/$radio" "$session/ap/$radio"
+    rmdir "$session/wpa" "$session/ap" "$session" 2>/dev/null || :
+    exit "$result"
+}
+trap cleanup EXIT
+trap 'exit 0' INT TERM
+
+# Verify peer builds/content before changing the radio. Never execute a core
+# received from a Miyoo: the peer is ARM32 while this frontend is ARM64.
+[ -r "$registry" ] || exit 26
+if [ "$core_name" = tgbdual_libretro.so ]; then
+    player=1; [ "$role" != join ] || player=2
+    printf 'tgbdual_gblink_enable = "disabled"\ntgbdual_single_screen_mp = "player %s only"\ntgbdual_audio_output = "Game Boy #%s"\n' "$player" "$player" >"$session/options.cfg"
+    /bin/busybox awk '!/^core_options_path[[:space:]]*=/' "$config" >"$session/retroarch.cfg"
+    printf 'core_options_path = "%s/options.cfg"\n' "$session" >>"$session/retroarch.cfg"
+    config=$session/retroarch.cfg
+fi
+if [ "$mode" = link ]; then
+    expected_core=$(/system/bin/console-onion-peer link-init "$registry" "$content" "$session" "$role") || exit 27
+    printf 'tgbdual_gblink_enable = "enabled"\n' >>"$session/options.cfg"
+    for setting in savefiles_in_content_dir savestates_in_content_dir sort_savefiles_enable sort_savefiles_by_content_enable sort_savestates_enable sort_savestates_by_content_enable game_specific_options config_save_on_exit auto_overrides_enable history_list_enable savestate_auto_save savestate_auto_load netplay_public_announce netplay_use_mitm_server netplay_nat_traversal; do
+        printf '%s = "false"\n' "$setting" >>"$config"
+    done
+    printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\nautosave_interval = "0"\nnetplay_ip_port = "55435"\ninput_enable_hotkey_btn = "19"\ninput_menu_toggle_btn = "8"\n' "$session" "$session" >>"$config"
+else
+    expected_core=$(/system/bin/console-onion-peer prepare "$registry" "$core_name" "$content" "$session") || exit 26
+fi
+core=$expected_core
+if [ "$mode" = link ];then
+    printf 'libretro_directory = "%s"\ncore_info_cache_enable = "false"\n' "$(/bin/busybox dirname "$core")" >>"$config"
+fi
+# Check the backend binaries before touching the radio.
+for program in hostapd hostapd_cli wpa_cli wpa_supplicant console-onion-peer; do
+    [ -x "/system/bin/$program" ] || exit 22
+done
+[ -f "$root/wpa.conf" ] && [ ! -L "$root/wpa.conf" ] && wpa_available || exit 22
+original=$(system_wpa status) || exit 22
+prior_state=$(printf '%s\n' "$original" | "$bb" sed -n 's/^wpa_state=//p')
+prior_ssid=$(printf '%s\n' "$original" | "$bb" sed -n 's/^ssid=//p')
+if [ "$role" = host ]; then
+    if [ "$mode" = link ]; then message='Pokémon link: starting hotspot and waiting for player 2...';
+    else message='Easy Netplay: starting the local hotspot...'; fi
+else
+    message='Easy Netplay: looking for a compatible nearby host...'
+fi
+/system/bin/console-boot-status --progress --message "$message" & notice=$!
+
+# Identify the station DHCP process before changing either service.
+dhcp=
+if [ -f "$root/dhcp.pid" ]; then
+    read -r dhcp <"$root/dhcp.pid" || exit 22
+    case "$dhcp" in ''|*[!0-9]*) exit 22 ;; esac
+    [ "$dhcp" -gt 1 ] || exit 22
+    if kill -0 "$dhcp" 2>/dev/null; then
+        args=$("$bb" tr '\000' ' ' <"/proc/$dhcp/cmdline") || exit 22
+        case "$args" in *udhcpc\ *-i\ wlan0\ *-p\ /run/console/dhcp.pid\ *) ;; *) exit 22 ;; esac
+    else dhcp=; fi
+fi
+recover=1
+[ "$(system_wpa terminate)" = OK ] && wait_until 20 wpa_stopped || exit 22
+if [ -n "$dhcp" ]; then
+    kill -TERM "$dhcp" 2>/dev/null || :
+    wait_until 20 child_gone "$dhcp" || exit 22
+fi
+"$bb" route del default dev "$radio" 2>/dev/null || :
+"$bb" ifconfig "$radio" 0.0.0.0 up || exit 22
+
+if [ "$role" = host ]; then
+    mkdir "$session/ap"
+    printf '%s\n' "interface=$radio" 'driver=nl80211' "ctrl_interface=$session/ap" \
+        'ssid=MiyooMini+APOnionOS' 'hw_mode=g' 'channel=1' 'wpa=2' 'wpa_key_mgmt=WPA-PSK' \
+        'rsn_pairwise=CCMP' 'wpa_passphrase=onionos+' 'max_num_sta=1' >"$session/hostapd.conf"
+    hostapd "$session/hostapd.conf" & ap=$!
+    ap_ready() { hostapd_cli -p "$session/ap" -i "$radio" status 2>/dev/null | "$bb" grep -qx state=ENABLED; }
+    wait_until 48 ap_ready || exit 22
+    "$bb" ifconfig "$radio" "$host_ip" netmask 255.255.255.0 up || exit 22
+    /system/bin/console-onion-peer dhcp "$host_ip" "$radio" & dhcp_server=$!
+    /system/bin/console-onion-peer serve "$host_ip:21" "$session/export.json" & peer=$!
+    backends_ready() {
+        kill -0 "$dhcp_server" 2>/dev/null && kill -0 "$peer" 2>/dev/null &&
+        "$bb" netstat -lnt 2>/dev/null | "$bb" grep -q "$host_ip:21 "
+    }
+    wait_until 32 backends_ready || exit 22
+    stop_child "$notice"; notice=
+    if [ "$mode" = link ]; then
+        link_task link-pair "$client_ip:21" "$session"
+        launch_link --host
+        wait_until 80 netplay_listening || exit 22
+        link_task link-ready "$session"
+    else
+        CLOVE_EASY_NETPLAY=1 /system/bin/console-startup-app netplay host '' "$config" "$core" "$content" & ra=$!
+        wait_until 80 netplay_listening || exit 22
+    fi
+else
+    mkdir "$session/wpa"
+    printf 'ctrl_interface=%s/wpa\nupdate_config=0\n' "$session" >"$session/join.conf"
+    wpa_supplicant -D nl80211 -i "$radio" -c "$session/join.conf" & station=$!
+    temporary_available() { [ "$(temporary_wpa ping 2>/dev/null)" = PONG ]; }
+    wait_until 32 temporary_available || exit 22
+    id=$(temporary_wpa add_network) || exit 22
+    case "$id" in ''|*[!0-9]*) exit 22 ;; esac
+    set_network() { [ "$(temporary_wpa set_network "$id" "$@")" = OK ]; }
+    set_network ssid '"MiyooMini+APOnionOS"' && set_network psk '"onionos+"' && \
+        set_network key_mgmt WPA-PSK && set_network proto RSN && set_network pairwise CCMP && \
+        [ "$(temporary_wpa select_network "$id")" = OK ] || exit 22
+    associated() { temporary_wpa status | "$bb" grep -qx wpa_state=COMPLETED; }
+    wait_until 80 associated || exit 20
+    "$bb" ifconfig "$radio" "$client_ip" netmask 255.255.255.0 up || exit 22
+    stop_child "$notice"; notice=
+    if [ "$mode" = link ]; then
+        /system/bin/console-onion-peer serve "$client_ip:21" "$session/export.json" & peer=$!
+        link_task link-pair "$host_ip:21" "$session"
+        link_task link-ready "$session"
+        launch_link --connect "$host_ip"
+    else
+        core=$(/system/bin/console-onion-peer check "$host_ip:21" "$registry" "$content" "$session") || exit 26
+        [ "$core" = "$expected_core" ] || exit 26
+        CLOVE_EASY_NETPLAY=1 /system/bin/console-startup-app netplay join "$host_ip" "$config" "$core" "$content" & ra=$!
+    fi
+fi
+status=0
+wait "$ra" || status=$?
+ra=
+if [ "$mode" = link ] && [ "$status" = 0 ]; then
+    "$bb" grep -Eq '\[Netplay\].*joined as player 2|\[Netplay\].*joined with input devices' "$session/retroarch.log" || exit 20
+    link_task link-finish "$session"
+fi
+exit "$status"

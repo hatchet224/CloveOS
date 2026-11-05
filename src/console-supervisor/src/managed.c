@@ -541,6 +541,10 @@ static void result(struct managed *m, const struct cs_event *event, uint64_t now
         if ((m->fsm.state == CS_RECOVERY || m->fsm.state == CS_CHECKPOINT_ERROR) &&
             atomic_load(&m->worker.endpoint_reaped)) {
             m->fsm.active_game = false;
+            /* A partial load taints the live core, not the immutable save.
+             * Actual child reap removes that core; settlement still has to
+             * close worker/store ownership before returning to the menu. */
+            m->fsm.recovery_requires_reload = false;
         }
         if (completed_settlement &&
             atomic_load(&m->worker.endpoint_reaped) && !m->fsm.active_game &&

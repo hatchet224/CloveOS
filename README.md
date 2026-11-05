@@ -9,6 +9,10 @@ with the RetroArch integration patches, LAN service, capacity helper, tests,
 dependency pins, and image reconstruction records. Third-party components retain
 their existing licenses.
 
+R49's implementation, compatibility-core patches and source build instructions
+are in [the R49 source supplement](releases/r49/README.md). Its full-card binary
+release remains pending final qualification and vendor source/rights evidence.
+
 [RELEASE_POLICY.md](RELEASE_POLICY.md) requires matching source, build inputs,
 notices, privacy checks, and verified redistribution rights for every future
 update. The current image still has unresolved vendor/component source and

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "fba2012-2024",
+    "repository": "libretro/fbalpha2012",
+    "commit": "b7ac554c53561d41640372f23dab15cd6fc4f0c4",
+    "date": "2023-11-01T16:18:44Z",
+    "url": "https://codeload.github.com/libretro/fbalpha2012/tar.gz/b7ac554c53561d41640372f23dab15cd6fc4f0c4",
+    "sha256": "f75997a46d1b55d5bf8f3b612ea38bdca2293621e5ea03e24b33406238e86e3c",
+    "exact_stock_build_revision_confirmed": false
+  },
+  {
+    "name": "fba-neogeo-2024",
+    "repository": "libretro/fbalpha2012_neogeo",
+    "commit": "a00e930acc2785730b9b7b94cd2be8f432f9916b",
+    "date": "2023-03-04T02:59:04Z",
+    "url": "https://codeload.github.com/libretro/fbalpha2012_neogeo/tar.gz/a00e930acc2785730b9b7b94cd2be8f432f9916b",
+    "sha256": "e7871ca3f5589ce4050e01477257d3748284774edd62f48fef0219eb38d1db3a",
+    "exact_stock_build_revision_confirmed": false
+  }
+]

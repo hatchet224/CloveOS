@@ -1,0 +1,18 @@
+--- a/Makefile
++++ b/Makefile
+@@ -58,7 +58,7 @@
+ TARGET_NAME := mednafen_pce_fast
+ 
+ # GIT HASH
+-GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
++GIT_VERSION := " eb57e0c"
+ ifneq ($(GIT_VERSION)," unknown")
+    CXXFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+ endif
+@@ -734,3 +734,6 @@
+ 	rm $(DESTDIR)$(libdir)/$(LIBRETRO_INSTALL_DIR)/$(TARGET)
+ 
+ .PHONY: clean
++
++# CloveOS: keep C++ exit callback code mapped through process teardown.
++LDFLAGS += -Wl,-z,nodelete

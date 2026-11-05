@@ -18,6 +18,8 @@ their existing terms, including these exceptions:
 | RetroArch integration patches | Derived from RetroArch v1.19.1, which retains its upstream GPL terms; the pinned commit and local module license are included. |
 | Go dependencies | Their own licenses; exact module versions/checksums and collected license texts are included. They are fetched by the Go toolchain, not vendored here. |
 | Musl declaration used by the capacity helper | The original `MUSL-COPYRIGHT` notice is retained in `src/console-grow`. |
+| R49 emulator compatibility patches | Each patch retains the upstream core's terms; exact source pins and license texts are under `releases/r49/compatibility`. The CloveOS GPL grant does not replace Snes9x, FinalBurn or other core restrictions. |
+| Original Clove theme configuration | CC0-1.0 under its `LICENSE.txt`; the separately supplied Atkinson font retains the included SIL Open Font License. Font and bitmap binaries are separate build inputs. |
 
 The GPL grant does **not** cover third-party emulator binaries, vendor firmware,
 kernel binaries, BIOS files, game ROMs, Silky or other theme artwork, fonts, or
@@ -30,6 +32,9 @@ The older `ports/file-explorer` directory contains original CloveOS adapters onl
 The DinguxCommander input lacks a clear license grant; its implementation and
 patches containing its source are excluded. Other emulator sources and any
 component-specific restrictions remain documented separately.
+
+The original Go helper in `src/console-onion-peer` is GPL-3.0-or-later. Its source
+and generated test fixtures contain no stock ARM32 core binary or game content.
 
 Publishing this source does not establish that every byte of an existing SD-card
 image is open source or cleared for redistribution. See

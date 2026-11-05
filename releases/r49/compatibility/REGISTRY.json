@@ -1,0 +1,50 @@
+[
+  {
+    "Name": "fceumm_libretro.so",
+    "ARM32": "/system/share/console/onion-4.3.1-1/arm32/fceumm_libretro.so",
+    "ARM64": "/system/lib/libretro/onion-4.3.1-1/fceumm_libretro.so",
+    "SHA32": "0392a4123a4e1f23457f2bb324d78ae3674ee61d4e33978065ff0a005d00d7bb",
+    "SHA64": "0d4be055dfc59f7c9d8f4c64fa20f2971bf9553b0813e3a4db48133c31bcac50",
+    "Version": "(SVN) f52037a"
+  },
+  {
+    "Name": "tgbdual_libretro.so",
+    "ARM32": "/system/share/console/onion-4.3.1-1/arm32/tgbdual_libretro.so",
+    "ARM64": "/system/lib/libretro/onion-4.3.1-1/tgbdual_libretro.so",
+    "SHA32": "931b12d3fb48677169441440217cbdf17a1773153ae1a032449557a33ab25f5d",
+    "SHA64": "e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45",
+    "Version": "v0.8.3 a6f3018"
+  },
+  {
+    "Name": "picodrive_libretro.so",
+    "ARM32": "/system/share/console/onion-4.3.1-1/arm32/picodrive_libretro.so",
+    "ARM64": "/system/lib/libretro/onion-4.3.1-1/picodrive_libretro.so",
+    "SHA32": "2752ea5687aeb61b5fa058a29a0d3750b41c1b13d7e6ed6f18504a434bddddc4",
+    "SHA64": "a5f1708a1bd5326f765503faeb71aae693e4322d44c226448c2244b5b4520318",
+    "Version": "1.99-688c90d5"
+  },
+  {
+    "Name": "mednafen_pce_fast_libretro.so",
+    "ARM32": "/system/share/console/onion-4.3.1-1/arm32/mednafen_pce_fast_libretro.so",
+    "ARM64": "/system/lib/libretro/onion-4.3.1-1/mednafen_pce_fast_libretro.so",
+    "SHA32": "3fb9f11e26a267f79e74084ab666e206f7154bcef9c492ab5930053a61eda5ed",
+    "SHA64": "8131637fb38479fd6aac37477994c4f851e36e1e2754af1d660979a058481be1",
+    "Version": "v0.9.38.7 eb57e0c"
+  },
+  {
+    "Name": "snes9x2005_libretro.so",
+    "ARM32": "/system/share/console/onion-4.3.1-1/arm32/snes9x2005_libretro.so",
+    "ARM64": "/system/lib/libretro/onion-4.3.1-1/snes9x2005_libretro.so",
+    "SHA32": "3a9b2c88a5028eb544ef43c2f3a7b368ce5d65da82d0283c41b3c188e605e8f0",
+    "SHA64": "7b986c16dbeef8eb53357a74116a98e496b61dd445d1789e2a29644379735dab",
+    "Version": "v1.36 fd45b0e"
+  },
+  {
+    "Name": "fbalpha2012_neogeo_libretro.so",
+    "ARM32": "/system/share/console/onion-4.3.1-1/arm32/fbalpha2012_neogeo_libretro.so",
+    "ARM64": "/system/lib/libretro/onion-4.3.1-1/fbalpha2012_neogeo_libretro.so",
+    "SHA32": "41e69f350175f6aea167bc1159b61177daafed448745fafd87ba7a3f4adcd5ba",
+    "SHA64": "abe0a36e2689f574e921ce48db07da9e284e3af023c806d66485e3b8d7ed1669",
+    "Version": "v0.2.97.29"
+  }
+]

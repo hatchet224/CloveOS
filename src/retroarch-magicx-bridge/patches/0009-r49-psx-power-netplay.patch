@@ -1,0 +1,512 @@
+--- a/Makefile.common
++++ b/Makefile.common
+@@ -2526,5 +2526,5 @@
+    INCLUDE_DIRS += -I$(ROOT_DIR)/magicx/support
+    OBJ += magicx/magicx_bridge.o magicx/magicx_io.o magicx/magicx_retroarch.o magicx/magicx_controls.o \
+            magicx/magicx_screenshot.o magicx/magicx_png.o magicx/magicx_asset_cache.o \
+-           magicx/support/json.o magicx/support/sha256.o
+-endif
++           magicx/support/json.o magicx/support/sha256.o magicx/support/disc_playlist.o
++endif
+--- a/retroarch.c
++++ b/retroarch.c
+@@ -3644,8 +3644,12 @@
+              * ends and writes it to a file */
+             ram_state_to_file();
+ 
+-            /* Save last selected disk index, if required */
+-            if (sys_info)
++            /* The managed checkpoint owns the active playlist disc. */
++            if (sys_info
++#ifdef HAVE_MAGICX_BRIDGE
++                  && !magicx_retroarch_requested()
++#endif
++               )
+                disk_control_save_image_index(&sys_info->disk_control);
+ 
+             runloop_runtime_log_deinit(runloop_st,
+@@ -4195,8 +4199,12 @@
+              * ends and writes it to a file */
+             ram_state_to_file();
+ 
+-            /* Save last selected disk index, if required */
+-            if (sys_info)
++            /* The managed checkpoint owns the active playlist disc. */
++            if (sys_info
++#ifdef HAVE_MAGICX_BRIDGE
++                  && !magicx_retroarch_requested()
++#endif
++               )
+                disk_control_save_image_index(&sys_info->disk_control);
+ 
+             runloop_runtime_log_deinit(runloop_st,
+--- a/runloop.c
++++ b/runloop.c
+@@ -4710,6 +4710,10 @@
+    dir_input_remapping        = settings->paths.directory_input_remapping;
+ #endif
+    initial_disk_change_enable = settings->bools.initial_disk_change_enable;
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_requested())
++      initial_disk_change_enable = false;
++#endif
+    show_set_initial_disk_msg  = settings->bools.notification_show_set_initial_disk;
+    poll_type_behavior         = settings->uints.input_poll_type_behavior;
+    fastforward_ratio          = runloop_get_fastforward_ratio(
+@@ -6862,6 +6866,11 @@
+    /* EXIT releases the devices but keeps IPC alive until the supervisor reaps
+     * us. Honour SIGINT/SIGTERM here: the ordinary input quit path is skipped
+     * after those devices have been released. main_exit still drains tasks. */
++   /* A rejected START is still gated and has not received EXIT.
++    * Its native SIGTERM must bypass the user MENU/QUIT shortcut guard too.
++    * main_exit drains pending tasks; automatic SRAM saves remain forbidden. */
++   if (magicx_retroarch_requested() && frontend_driver_get_signal_handler_state())
++      return -1;
+    if (magicx_retroarch_poll())
+       return frontend_driver_get_signal_handler_state() ? -1 : 0;
+ #endif
+--- a/input/input_driver.c
++++ b/input/input_driver.c
+@@ -6505,6 +6505,23 @@
+ 
+    /* Read input state */
+    result = input_state_internal(input_st, settings, port, device, idx, id);
++#ifdef HAVE_MAGICX_BRIDGE
++   if (port==0 && device==RETRO_DEVICE_JOYPAD && id==RETRO_DEVICE_ID_JOYPAD_MASK &&
++       magicx_retroarch_saturn())
++   {
++      static unsigned polls, logs;
++      static uint16_t previous;
++      uint16_t mask=(uint16_t)result;
++      if ((((mask^previous)&0xf0U)!=0 && logs<128) || polls%600==0) {
++         RARCH_LOG("MagicX Saturn core input: poll=%u mask=0x%04x analog_requested=%u mode=%u\n",
++               polls,(unsigned)mask,(unsigned)input_st->analog_requested[port],
++               settings->uints.input_analog_dpad_mode[port]);
++         ++logs;
++      }
++      previous=mask;++polls;
++   }
++#endif
++
+ 
+    /* Register any analog stick input requests for
+     * this 'virtual' (core) port */
+--- a/input/drivers_joypad/sdl_joypad.c
++++ b/input/drivers_joypad/sdl_joypad.c
+@@ -28,6 +28,7 @@
+ #include "../../verbosity.h"
+ #ifdef HAVE_MAGICX_BRIDGE
+ #include "../../magicx/magicx_retroarch.h"
++#include "../../magicx/magicx_saturn_policy.h"
+ #endif
+ 
+ typedef struct _sdl_joypad
+@@ -37,6 +38,14 @@
+    SDL_GameController *controller;
+    SDL_Haptic *haptic;
+    int rumble_effect; /* -1 = not initialized, -2 = error/unsupported, -3 = use SDL_JoystickRumble instead of haptic */
++#endif
++#ifdef HAVE_MAGICX_BRIDGE
++   bool saturn_sticks;
++   struct magicx_saturn_sticks stick_gate;
++   uint32_t saturn_last_buttons;
++   unsigned saturn_input_polls;
++   unsigned saturn_input_logs;
++   int16_t saturn_last_axes[4];
+ #endif
+    unsigned num_axes;
+    unsigned num_buttons;
+@@ -92,7 +101,13 @@
+    if (pad->controller)
+       return SDL_GameControllerGetAxis(pad->controller, (SDL_GameControllerAxis)axis);
+ #endif
+-   return SDL_JoystickGetAxis(pad->joypad, axis);
++   {
++      int16_t value=SDL_JoystickGetAxis(pad->joypad, axis);
++#ifdef HAVE_MAGICX_BRIDGE
++      if (pad->saturn_sticks) value=magicx_saturn_stick_axis(&pad->stick_gate,axis,value);
++#endif
++      return value;
++   }
+ }
+ 
+ static void sdl_pad_connect(unsigned id)
+@@ -162,6 +177,10 @@
+ #endif
+ #endif
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   pad->saturn_sticks = magicx_retroarch_saturn();
++   memset(&pad->stick_gate,0,sizeof(pad->stick_gate));
++#endif
+    input_autoconfigure_connect(
+          sdl_joypad_name(id),
+          NULL,
+@@ -313,6 +332,12 @@
+ #endif
+ #endif
+ 
++#if defined(HAVE_SDL2) && defined(HAVE_MAGICX_BRIDGE)
++   /* A direct-display SDL window must keep controller state current during
++    * focus changes. The daemon's input gate still owns MENU/standby blocking. */
++   if (magicx_retroarch_saturn())
++      SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
++#endif
+    memset(sdl_pads, 0, sizeof(sdl_pads));
+ 
+    num_sticks = SDL_NumJoysticks();
+@@ -479,6 +504,43 @@
+       }
+    }
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   {
++      unsigned index;
++      for (index=0;index<MAX_USERS;index++) {
++         sdl_joypad_t *pad=&sdl_pads[index];
++         if (pad->joypad && pad->saturn_sticks && pad->num_axes>=4) {
++            int16_t raw[4];unsigned axis;
++            bool was_armed=pad->stick_gate.armed[0];
++            for (axis=0;axis<4;axis++) raw[axis]=SDL_JoystickGetAxis(pad->joypad,axis);
++            magicx_saturn_sticks_poll(&pad->stick_gate,raw);
++            {
++               uint32_t buttons=0; unsigned button;
++               bool changed=false;
++               for(button=0;button<4;button++)
++                  changed|=(raw[button]/8192)!=(pad->saturn_last_axes[button]/8192);
++               for(button=0;button<pad->num_buttons && button<32;button++)
++                  if(SDL_JoystickGetButton(pad->joypad,button)) buttons|=UINT32_C(1)<<button;
++               changed|=((buttons^pad->saturn_last_buttons)&UINT32_C(0x1e000))!=0;
++               if ((changed && pad->saturn_input_logs<128) || pad->saturn_input_polls%600==0) {
++                  RARCH_LOG("MagicX Saturn physical input: poll=%u raw=%d,%d,%d,%d buttons=0x%08x focus=%u\n",
++                        pad->saturn_input_polls,raw[0],raw[1],raw[2],raw[3],buttons,
++                        (unsigned)(SDL_GetKeyboardFocus()!=NULL));
++                  ++pad->saturn_input_logs;
++               }
++               ++pad->saturn_input_polls;pad->saturn_last_buttons=buttons;
++               memcpy(pad->saturn_last_axes,raw,sizeof(raw));
++            }
++
++            if (pad->stick_gate.diagnostics<4 || (!was_armed && pad->stick_gate.armed[0])) {
++               RARCH_LOG("MagicX Saturn sticks: raw=%d,%d,%d,%d left_armed=%u right_armed=%u\n",
++                     raw[0],raw[1],raw[2],raw[3],(unsigned)pad->stick_gate.armed[0],(unsigned)pad->stick_gate.armed[1]);
++               ++pad->stick_gate.diagnostics;
++            }
++         }
++      }
++   }
++#endif
+    SDL_FlushEvents(SDL_JOYAXISMOTION, SDL_CONTROLLERDEVICEREMAPPED);
+ #else
+    SDL_JoystickUpdate();
+--- a/menu/menu_displaylist.c
++++ b/menu/menu_displaylist.c
+@@ -7215,6 +7215,11 @@
+                      msg_hash_to_str(entries[i].label), entries[i].label,
+                      MENU_SETTING_ACTION, 0, 0, NULL))
+                   ++count;
++            const char *disc_label = magicx_retroarch_menu_label(5U);
++            if (disc_label[0] != '\0' && menu_entries_append(list, disc_label,
++                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX), MENU_ENUM_LABEL_DISK_INDEX,
++                  MENU_SETTING_ACTION, 0, 0, NULL))
++               ++count;
+             break;
+          }
+ #endif
+--- a/gfx/drivers/gl2.c
++++ b/gfx/drivers/gl2.c
+@@ -1,5 +1,7 @@
+ #ifdef HAVE_MAGICX_BRIDGE
+ #include "../../magicx/magicx_retroarch.h"
++#include "../../magicx/magicx_saturn_policy.h"
++#include <inttypes.h>
+ #endif
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+@@ -3441,6 +3443,11 @@
+    bool statistics_show                = video_info->statistics_show;
+    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
+    int bfi_light_frames;
++#ifdef HAVE_MAGICX_BRIDGE
++   static struct magicx_saturn_phases mx_phases;
++   uint64_t mx_marks[5]={0};
++   bool mx_profile_saturn=!video_info->runloop_is_paused && magicx_retroarch_saturn();
++#endif
+    unsigned n;
+    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state;
+    bool hard_sync                      = video_info->hard_sync;
+@@ -3458,7 +3465,9 @@
+ 
+    if (!gl)
+       return false;
+-
++#ifdef HAVE_MAGICX_BRIDGE
++   if (mx_profile_saturn) mx_marks[0]=magicx_retroarch_present_begin();
++#endif
+    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+ 
+@@ -3467,6 +3476,16 @@
+       glBindVertexArray(chain->vao);
+ #endif
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if (mx_profile_saturn)
++   {
++      /* Core scissor/color/texture-unit state must not clip the rotated
++       * frontend or make it sample the core's last auxiliary texture. */
++      glActiveTexture(GL_TEXTURE0);
++      glDisable(GL_SCISSOR_TEST);
++      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
++   }
++#endif
+    gl->shader->use(gl, gl->shader_data, 1, true);
+ 
+ #ifdef IOS
+@@ -3592,6 +3611,9 @@
+       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if (mx_profile_saturn) mx_marks[1]=magicx_retroarch_present_begin();
++#endif
+    gl->tex_info.tex           = gl->texture[gl->tex_index];
+    gl->tex_info.input_size[0] = frame_width;
+    gl->tex_info.input_size[1] = frame_height;
+@@ -3640,7 +3662,9 @@
+    gl->shader->set_mvp(gl->shader_data, &gl->mvp);
+ 
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+-
++#ifdef HAVE_MAGICX_BRIDGE
++   if (mx_profile_saturn) mx_marks[2]=magicx_retroarch_present_begin();
++#endif
+    if (gl->flags & GL2_FLAG_FBO_INITED)
+       gl2_renderchain_render(gl,
+             chain,
+@@ -3747,8 +3771,25 @@
+ #endif
+             gl2_pbo_async_readback(gl);
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if (mx_profile_saturn) mx_marks[3]=magicx_retroarch_present_begin();
++#endif
+     if (gl->ctx_driver->swap_buffers)
+         gl->ctx_driver->swap_buffers(gl->ctx_data);
++#ifdef HAVE_MAGICX_BRIDGE
++   if (mx_profile_saturn) {
++      mx_marks[4]=magicx_retroarch_present_begin();
++      if (magicx_saturn_phases_add(&mx_phases,mx_marks)) {
++         RARCH_LOG("MagicX Saturn presentation phases: samples=300 setup_mean_us=%" PRIu64
++               " draw_mean_us=%" PRIu64 " extra_mean_us=%" PRIu64 " swap_mean_us=%" PRIu64
++               " setup_max_us=%" PRIu64 " draw_max_us=%" PRIu64 " extra_max_us=%" PRIu64
++               " swap_max_us=%" PRIu64 " cpu_wall_time=1\n",
++               mx_phases.total[0]/300,mx_phases.total[1]/300,mx_phases.total[2]/300,mx_phases.total[3]/300,
++               mx_phases.maximum[0],mx_phases.maximum[1],mx_phases.maximum[2],mx_phases.maximum[3]);
++         memset(&mx_phases,0,sizeof(mx_phases));
++      }
++   }
++#endif
+ 
+  /* Emscripten has to do black frame insertion in its main loop */
+ #ifndef EMSCRIPTEN
+@@ -4579,6 +4620,21 @@
+          shader_info_num);
+ 
+    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
++#ifdef HAVE_MAGICX_BRIDGE
++   if ((gl->flags & GL2_FLAG_HW_RENDER_USE) && magicx_retroarch_saturn())
++   {
++      const struct retro_game_geometry *geometry = &video_state_get_ptr()->av_info.geometry;
++      unsigned old_width=gl->tex_w,old_height=gl->tex_h;
++      bool exact=gl->version_major>=3 || gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
++      bool sized=exact ? magicx_saturn_exact_target(geometry->max_width,geometry->max_height,
++                              &gl->tex_w,&gl->tex_h) :
++                        magicx_saturn_target(geometry->max_width,geometry->max_height,
++                              &gl->tex_w,&gl->tex_h);
++      if (sized)
++         RARCH_LOG("MagicX Saturn target: maximum=%ux%u allocation=%ux%u previous=%ux%u exact_npot=%u; resolution unchanged\n",
++               geometry->max_width,geometry->max_height,gl->tex_w,gl->tex_h,old_width,old_height,(unsigned)exact);
++   }
++#endif
+    if (video->force_aspect)
+       gl->flags       |=  GL2_FLAG_KEEP_ASPECT;
+    else
+--- a/gfx/drivers_context/sdl_gl_ctx.c
++++ b/gfx/drivers_context/sdl_gl_ctx.c
+@@ -45,6 +45,9 @@
+ #ifdef HAVE_SDL2
+    SDL_Window    *win;
+    SDL_GLContext  ctx;
++   SDL_GLContext  interval_context;
++   int            applied_interval;
++   bool           interval_valid;
+ #else
+    SDL_Surface *win;
+ #endif
+@@ -178,7 +181,30 @@
+ static void sdl_ctx_swap_interval(void *data, int interval)
+ {
+ #ifdef HAVE_SDL2
++#ifdef HAVE_MAGICX_BRIDGE
++   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
++   SDL_GLContext current = SDL_GL_GetCurrentContext();
++   int selected = magicx_retroarch_swap_interval(interval);
++   int result;
++   /* RA reasserts the interval during input/menu updates. With EGL that is
++    * a driver call each time. Cache only the selected PSP audio-paced policy,
++    * and invalidate it after any failed call or current-context change. */
++   if (magicx_retroarch_psp_audio() && selected != interval && current != NULL && sdl != NULL &&
++       sdl->interval_valid && sdl->interval_context == current &&
++       sdl->applied_interval == selected)
++      return;
++   result = SDL_GL_SetSwapInterval(selected);
++   if (sdl != NULL) {
++      sdl->interval_valid = result == 0 && current != NULL;
++      sdl->interval_context = current;
++      sdl->applied_interval = selected;
++   }
++   if (selected != interval)
++      RARCH_LOG("MagicX presentation policy: requested_interval=%d selected_interval=%d SDL_result=%d\n",
++            interval, selected, result);
++#else
+    SDL_GL_SetSwapInterval(interval);
++#endif
+ #else
+    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, interval);
+ #endif
+@@ -413,7 +439,15 @@
+ #ifdef HAVE_SDL2
+    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+    if (sdl)
++   {
++#ifdef HAVE_MAGICX_BRIDGE
++      uint64_t began = magicx_retroarch_present_begin();
++#endif
+       SDL_GL_SwapWindow(sdl->win);
++#ifdef HAVE_MAGICX_BRIDGE
++      magicx_retroarch_present_complete(began);
++#endif
++   }
+ #else
+    SDL_GL_SwapBuffers();
+ #endif
+--- a/audio/drivers/sdl_audio.c
++++ b/audio/drivers/sdl_audio.c
+@@ -15,6 +15,7 @@
+  */
+ 
+ #include <stdint.h>
++#include <inttypes.h>
+ #include <stddef.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -31,6 +32,9 @@
+ #include "../audio_driver.h"
+ #include "../../verbosity.h"
+ #include "retro_assert.h"
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../../magicx/magicx_retroarch.h"
++#endif
+ 
+ #ifndef HAVE_SDL2
+ typedef Uint32 SDL_AudioDeviceID;
+@@ -73,6 +77,10 @@
+     * the last stop before the driver plays it.
+     */
+    fifo_buffer_t *speaker_buffer;
++   bool psp_reserve;
++   bool saturn_wait;
++   bool psx_wait;
++   uint64_t underruns, silence_bytes, write_calls, timed_waits;
+    bool nonblock;
+    bool is_paused;
+    SDL_AudioDeviceID speaker_device;
+@@ -85,6 +93,10 @@
+    size_t write_size = (len > (int)avail) ? avail : (size_t)len;
+ 
+    fifo_read(sdl->speaker_buffer, stream, write_size);
++   if (write_size < (size_t)len) {
++      ++sdl->underruns;
++      sdl->silence_bytes += (size_t)len - write_size;
++   }
+ #ifdef HAVE_THREADS
+    scond_signal(sdl->cond);
+ #endif
+@@ -196,6 +208,18 @@
+    /* Create a buffer twice as big as needed and prefill the buffer. */
+    bufsize             = out.samples * 4 * sizeof(int16_t);
+    tmp                 = calloc(1, bufsize);
++#ifdef HAVE_MAGICX_BRIDGE
++   sdl->psp_reserve = magicx_retroarch_psp_audio();
++   sdl->saturn_wait = magicx_retroarch_saturn();
++   sdl->psx_wait = magicx_retroarch_psx_audio();
++   if (sdl->psp_reserve) {
++      bufsize *= 2U;
++      free(tmp);
++      tmp = calloc(1, bufsize);
++      RARCH_LOG("MagicX PSP audio queue: reserve_bytes=%u callback_bytes=%u\n",
++            (unsigned)bufsize, (unsigned)out.size);
++   }
++#endif
+    sdl->speaker_buffer = fifo_new(bufsize);
+    if (!tmp || !sdl->speaker_buffer)
+       goto error;
+@@ -261,7 +285,14 @@
+             slock_lock(sdl->lock);
+             /* Let *only* the SDL speaker thread touch the outgoing sample queue */
+ 
+-            scond_wait(sdl->cond, sdl->lock);
++            /* The SDL callback signals under its device lock, not this
++             * condition mutex. It can run between the full-queue check and
++             * wait registration. Bound the managed PSP/Saturn/PSX wait so a missed signal
++             * cannot add another whole hardware callback period. */
++            if (sdl->psp_reserve || sdl->saturn_wait || sdl->psx_wait) {
++               if (!scond_wait_timeout(sdl->cond, sdl->lock, 2000)) ++sdl->timed_waits;
++            } else
++               scond_wait(sdl->cond, sdl->lock);
+             /* Block until SDL tells us that it's made room for new samples */
+ 
+             slock_unlock(sdl->lock);
+@@ -280,6 +311,17 @@
+       ret = written;
+    }
+ 
++   if ((sdl->psp_reserve || sdl->saturn_wait || sdl->psx_wait) && ++sdl->write_calls % 1024U == 0U) {
++      uint64_t underruns, silence;
++      size_t queued;
++      SDL_LockAudioDevice(sdl->speaker_device);
++      underruns = sdl->underruns; silence = sdl->silence_bytes;
++      queued = FIFO_READ_AVAIL(sdl->speaker_buffer);
++      SDL_UnlockAudioDevice(sdl->speaker_device);
++      RARCH_LOG("MagicX %s audio queue: writes=%" PRIu64 " underruns=%" PRIu64
++            " silence_bytes=%" PRIu64 " queued_bytes=%u timed_waits=%" PRIu64 "\n",
++            sdl->saturn_wait ? "Saturn" : sdl->psx_wait ? "PSX" : "PSP", sdl->write_calls, underruns, silence, (unsigned)queued, sdl->timed_waits);
++   }
+    return ret;
+ }
+ 
+--- a/frontend/drivers/platform_unix.c
++++ b/frontend/drivers/platform_unix.c
+@@ -1,3 +1,4 @@
++#include "../../magicx/magicx_power.h"
+ /* RetroArch - A frontend for libretro.
+  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+  * Copyright (C) 2011-2017 - Daniel De Matteis
+@@ -1148,6 +1149,16 @@
+       int *seconds, int *percent)
+ {
+    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
++#ifdef HAVE_MAGICX_BRIDGE
++   if (access("/sys/class/power_supply/axp2202-battery", F_OK) == 0) {
++      struct magicx_power_sample sample = magicx_power_read("/sys/class/power_supply");
++      *seconds = -1; *percent = sample.percent;
++      if (sample.health_fault)
++         RARCH_WARN("MagicX battery: PMIC health fault reported; inspect power_supply health\n");
++      return sample.percent < 0 ? FRONTEND_POWERSTATE_NONE :
++         sample.charging ? FRONTEND_POWERSTATE_CHARGING : FRONTEND_POWERSTATE_ON_POWER_SOURCE;
++   }
++#endif
+ #if defined(ANDROID)
+    jint powerstate              = FRONTEND_POWERSTATE_NONE;
+    jint battery_level           = 0;

@@ -1,0 +1,3 @@
+Original Clove layout configuration and background artwork: CC0-1.0.
+Atkinson Hyperlegible font remains under the attached SIL Open Font License.
+No Onion copyrighted skin images, logos, or proprietary MainUI binary are included.

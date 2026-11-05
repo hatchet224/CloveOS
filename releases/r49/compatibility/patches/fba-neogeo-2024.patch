@@ -1,0 +1,54 @@
+--- a/makefile.libretro
++++ b/makefile.libretro
+@@ -80,7 +80,7 @@
+ ifneq (,$(findstring unix,$(platform)))
+    TARGET := $(TARGET_NAME)_libretro.so
+    fpic := -fPIC
+-   SHARED := -shared -Wl,-no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
++   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
+ 
+ # OS X
+ else ifeq ($(platform), osx)
+@@ -162,7 +162,7 @@
+ else ifeq ($(platform), qnx)
+    TARGET := $(TARGET_NAME)_libretro_$(platform).so
+    fpic := -fPIC
+-   SHARED := -lcpp -lm -shared -Wl,-no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
++   SHARED := -lcpp -lm -shared -Wl,--no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
+    CC = qcc -Vgcc_ntoarmv7le
+    CXX = QCC -Vgcc_ntoarmv7le_cpp
+    AR = qcc -Vgcc_ntoarmv7le
+@@ -218,7 +218,7 @@
+ else ifeq ($(platform), classic_armv7_a7)
+ 	TARGET := $(TARGET_NAME)_libretro.so
+ 	fpic := -fPIC
+-	SHARED := -shared -Wl,-no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
++	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
+ 	CFLAGS += -Ofast \
+ 	-flto=4 -fwhole-program -fuse-linker-plugin \
+ 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
+@@ -324,7 +324,7 @@
+    CXX = /opt/gcw0-toolchain/usr/bin/mipsel-linux-g++
+    AR = /opt/gcw0-toolchain/usr/bin/mipsel-linux-ar
+    fpic := -fPIC
+-   SHARED := -shared -Wl,--gc-sections -Wl,-no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
++   SHARED := -shared -Wl,--gc-sections -Wl,--no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
+    LDFLAGS += $(PTHREAD_FLAGS)
+    CFLAGS += $(PTHREAD_FLAGS) -DHAVE_MKDIR
+    CFLAGS += -ffast-math -march=mips32 -mtune=mips32r2 -mhard-float
+@@ -371,7 +371,7 @@
+    TARGET := $(TARGET_NAME)_libretro.dll
+    CC ?= gcc
+    CXX ?= g++
+-   SHARED := -shared -Wl,-no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
++   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=$(LIBRETRO_DIR)/link.T
+    LDFLAGS += -static-libgcc -static-libstdc++
+ 
+ endif
+@@ -624,3 +624,6 @@
+ 
+ 
+ endif
++
++# CloveOS: retain C++ exit callbacks until process teardown.
++LDFLAGS += -Wl,-z,nodelete

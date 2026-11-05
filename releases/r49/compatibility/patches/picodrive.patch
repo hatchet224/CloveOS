@@ -1,0 +1,13 @@
+--- a/platform/libretro/libretro.c
++++ b/platform/libretro/libretro.c
+@@ -1520,7 +1520,9 @@
+    };
+ 
+    /* Attempt to fetch extended game info */
+-   if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext))
++   if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
++       info_ext && info_ext->dir && info_ext->ext &&
++       (info_ext->file_in_archive ? info_ext->name != NULL : info_ext->full_path != NULL))
+    {
+ #if !defined(LOW_MEMORY)
+       content_data = (const unsigned char *)info_ext->data;

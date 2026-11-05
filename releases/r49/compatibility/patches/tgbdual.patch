@@ -1,0 +1,24 @@
+--- a/Makefile
++++ b/Makefile
+@@ -39,7 +39,7 @@
+ endif
+ 
+ TARGET_NAME := tgbdual
+-GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
++GIT_VERSION := " a6f3018"
+ ifneq ($(GIT_VERSION)," unknown")
+ 	CXXFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+ endif
+--- a/gb_core/gb_types.h
++++ b/gb_core/gb_types.h
+@@ -25,6 +25,9 @@
+ 
+ typedef unsigned char byte;
+ typedef unsigned short word;
+-typedef unsigned long dword;
++// This core's registers, palettes and serialized dwords are 32-bit on the
++// original ARM32 target. Keep that ABI on LP64 for Onion state interoperability.
++#include <stdint.h>
++typedef uint32_t dword;
+ 
+ #endif

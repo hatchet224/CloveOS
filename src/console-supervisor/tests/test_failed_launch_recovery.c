@@ -32,7 +32,10 @@ int main(void)
     reset(m, &e); e.reply_to.session_id--; result(m, &e, 1U);
     assert(m->fsm.state == CS_CHECKPOINT_ERROR && m->fsm.writer_unsettled);
     reset(m, &e); m->fsm.recovery_requires_reload = true; result(m, &e, 1U);
-    assert(m->fsm.state == CS_CHECKPOINT_ERROR);
+    assert(m->fsm.state == CS_MENU_READY && !m->fsm.recovery_requires_reload);
+    reset(m, &e); m->fsm.recovery_requires_reload = true;
+    atomic_store(&m->worker.endpoint_reaped, false); result(m, &e, 1U);
+    assert(m->fsm.state == CS_CHECKPOINT_ERROR && m->fsm.recovery_requires_reload);
     reset(m, &e); m->shutdown_requested = true; result(m, &e, 1U);
     assert(m->fsm.state == CS_CHECKPOINT_ERROR);
     reset(m, &e); m->fsm.power_pending = true; result(m, &e, 1U);

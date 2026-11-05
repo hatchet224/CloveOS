@@ -1,0 +1,51 @@
+[
+  {
+    "repository": "irixxxx/libpicofe",
+    "commit": "d57c9992201e065f8caf6ce68247195ff98e8420",
+    "path": "platform/libpicofe",
+    "url": "https://codeload.github.com/irixxxx/libpicofe/tar.gz/d57c9992201e065f8caf6ce68247195ff98e8420",
+    "sha256": "4e5172e2374aee49d65e7283fa88ee4ff17e145721e2dd98468d1b6db4a7851d"
+  },
+  {
+    "repository": "notaz/cyclone68000",
+    "commit": "425e3a4066ee1cc8a3bae28956fbbdc9a516001d",
+    "path": "cpu/cyclone",
+    "url": "https://codeload.github.com/notaz/cyclone68000/tar.gz/425e3a4066ee1cc8a3bae28956fbbdc9a516001d",
+    "sha256": "c9dc011696b8a01c48f1fbdee7f2d24fc60e95e3fade975921b4599a08b05edf"
+  },
+  {
+    "repository": "digital-sound-antiques/emu2413",
+    "commit": "9f1dcf848d0e33e775e49352f7bc83a9c0e87a81",
+    "path": "pico/sound/emu2413",
+    "url": "https://codeload.github.com/digital-sound-antiques/emu2413/tar.gz/9f1dcf848d0e33e775e49352f7bc83a9c0e87a81",
+    "sha256": "e8341a5dad1d9eb1f6c0acb9fbdc7d41e2739699e568a60da8a00d9e628ce351"
+  },
+  {
+    "repository": "rtissera/libchdr",
+    "commit": "00319cf31f034e4d468a49a60265c7c5b8305b70",
+    "path": "pico/cd/libchdr",
+    "url": "https://codeload.github.com/rtissera/libchdr/tar.gz/00319cf31f034e4d468a49a60265c7c5b8305b70",
+    "sha256": "da48a1c07da242755e2a4ba8488bd70fa12df280a7273f842991696dc9e42a02"
+  },
+  {
+    "repository": "lieff/minimp3",
+    "commit": "95864e8e0d3b34402a49ae9af6c66f7e98c13c35",
+    "path": "platform/common/minimp3",
+    "url": "https://codeload.github.com/lieff/minimp3/tar.gz/95864e8e0d3b34402a49ae9af6c66f7e98c13c35",
+    "sha256": "033fd7eab9ab2fbf70070e76c85d41cecaab6e1d59c52725f8b6bbcc453282ee"
+  },
+  {
+    "repository": "mackron/dr_libs",
+    "commit": "343aa923439e59e7a9f7726f70edc77a4500bdec",
+    "path": "platform/common/dr_libs",
+    "url": "https://codeload.github.com/mackron/dr_libs/tar.gz/343aa923439e59e7a9f7726f70edc77a4500bdec",
+    "sha256": "02066f139aa14c1aa986b103624e36493d6a895125a565e770709754196362f0"
+  },
+  {
+    "repository": "dr-soft/miniaudio",
+    "commit": "d1a166c83ab445b1c14bc83d37c84e18d172e5f5",
+    "path": "tests/external/miniaudio",
+    "url": "https://codeload.github.com/dr-soft/miniaudio/tar.gz/d1a166c83ab445b1c14bc83d37c84e18d172e5f5",
+    "sha256": "336576323b6f56d506ac5265344d522948e24e5e72031ff1dc6cc4537232bfb1"
+  }
+]

@@ -15,6 +15,8 @@ option(BUILD_TESTING "Build source regression fixtures" OFF)
 set(SESSIOND_BUILD_DAEMON ON CACHE BOOL "Provide daemon Linux adapters")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../console-launcher"
                  "${CMAKE_CURRENT_BINARY_DIR}/launcher" EXCLUDE_FROM_ALL)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../console-file-explorer"
+                 "${CMAKE_CURRENT_BINARY_DIR}/file-explorer" EXCLUDE_FROM_ALL)
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../console-activity"
                  "${CMAKE_CURRENT_BINARY_DIR}/activity" EXCLUDE_FROM_ALL)
@@ -102,6 +104,16 @@ install(FILES config/supervisor.json config/base-profile.json config/bridge-laun
         DESTINATION bootstrap/etc/console)
 if(BUILD_TESTING)
     enable_testing()
+    add_executable(r49_netplay_menu ../console-launcher/tests/test_netplay_menu.c)
+    target_compile_options(r49_netplay_menu PRIVATE -UNDEBUG)
+    target_link_libraries(r49_netplay_menu PRIVATE console_launcher)
+    foreach(name readiness_race failed_launch_recovery managed_control managed_selection)
+        add_executable(r49_${name} tests/test_${name}.c)
+        target_compile_options(r49_${name} PRIVATE -UNDEBUG -ffunction-sections -fdata-sections)
+        target_link_options(r49_${name} PRIVATE -Wl,--gc-sections)
+        target_link_libraries(r49_${name} PRIVATE console_control)
+    endforeach()
+    target_sources(r49_readiness_race PRIVATE src/config.c src/disk.c src/catalog_index.c src/diagnostics.c src/tools_backend.c src/file_service.c src/lan_services.c)
     add_executable(system_icon_tests tests/test_system_icons.c)
     target_link_libraries(system_icon_tests PRIVATE console_launcher)
     target_compile_options(system_icon_tests PRIVATE -UNDEBUG)

@@ -1,0 +1,55 @@
+#!/bin/sh
+# Stock Standard Netplay: use current Wi-Fi and discover a matching LAN room.
+set -eu
+umask 077
+PATH=/system/bin:/sbin:/bin
+export PATH
+[ "$#" = 4 ] || exit 2
+role=$1 config=$2 core=$3 content=$4
+case "$role" in host|join) ;; *) exit 2 ;; esac
+session=/run/console/netplay-lan
+mkdir "$session" || exit 22
+exec </dev/null >>/run/console/easy-netplay.log 2>&1
+notice= ra=
+cleanup() {
+ status=$?; trap - EXIT INT TERM
+ if [ -n "$notice" ]; then kill -TERM "$notice" 2>/dev/null || :; wait "$notice" 2>/dev/null || :; fi
+ if [ -n "$ra" ]; then kill -TERM "$ra" 2>/dev/null || :; wait "$ra" 2>/dev/null || :; fi
+ rm -f "$session/retroarch.cookie" "$session/export.json" "$session/options.cfg" "$session/retroarch.cfg"
+ rmdir "$session" 2>/dev/null || :
+ exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 0' INT TERM
+version=
+case "$core" in
+ */fceumm_libretro.so) leaf=fceumm_libretro.so; library=FCEUmm; version='(SVN) f52037a' ;;
+ */gambatte_libretro.so|*/tgbdual_libretro.so) leaf=tgbdual_libretro.so; library='TGB Dual'; version='v0.8.3 a6f3018' ;;
+ */picodrive_libretro.so) leaf=picodrive_libretro.so; library=PicoDrive; version='1.99-688c90d5' ;;
+ */mednafen_pce_fast_libretro.so) leaf=mednafen_pce_fast_libretro.so; library='Beetle PCE Fast'; version='v0.9.38.7 eb57e0c' ;;
+ */fbneo_libretro.so)
+  case "$content" in /mnt/SDCARD/Roms/NEOGEO/*) leaf=fbalpha2012_neogeo_libretro.so; library='FB Alpha 2012 Neo Geo'; version='v0.2.97.29' ;;
+   *) leaf=; library='FinalBurn Neo' ;;esac ;;
+ */fbalpha2012_neogeo_libretro.so) leaf=fbalpha2012_neogeo_libretro.so; library='FB Alpha 2012 Neo Geo'; version='v0.2.97.29' ;;
+ */snes9x2005_plus_libretro.so|*/snes9x2005_libretro.so) leaf=snes9x2005_libretro.so; library='Snes9x 2005'; version='v1.36 fd45b0e' ;;
+ *) exit 26 ;;
+esac
+if [ -n "$leaf" ]; then
+ core=$(/system/bin/console-onion-peer prepare /system/share/console/onion-4.3.1-1/cores.json "$leaf" "$content" "$session") || exit 26
+fi
+if [ "$leaf" = tgbdual_libretro.so ]; then
+ player=1; [ "$role" != join ] || player=2
+ printf 'tgbdual_gblink_enable = "disabled"\ntgbdual_single_screen_mp = "player %s only"\ntgbdual_audio_output = "Game Boy #%s"\n' "$player" "$player" >"$session/options.cfg"
+ /bin/busybox awk '!/^core_options_path[[:space:]]*=/' "$config" >"$session/retroarch.cfg"
+ printf 'core_options_path = "%s/options.cfg"\n' "$session" >>"$session/retroarch.cfg"
+ config=$session/retroarch.cfg
+fi
+address=
+if [ "$role" = join ]; then
+ /system/bin/console-boot-status --progress --message 'Looking for the same game on current Wi-Fi...' & notice=$!
+ address=$(/system/bin/console-onion-peer find-lan "$content" "$library" "$version") || exit 20
+ kill -TERM "$notice" 2>/dev/null || :; wait "$notice" 2>/dev/null || :; notice=
+fi
+CLOVE_EASY_NETPLAY=1 /system/bin/console-startup-app netplay "$role" "$address" "$config" "$core" "$content" & ra=$!
+status=0;wait "$ra" || status=$?;ra=
+exit "$status"

@@ -1,0 +1,67 @@
+[
+  {
+    "filename": "fceumm.tar.gz",
+    "url": "https://codeload.github.com/libretro/libretro-fceumm/tar.gz/f52037ad7a558d1e8765d448a34d85569e4ca822",
+    "sha256": "dbb34d805ef05af63ce4fafd04a120611e14a82e099cc757f5e37ecc1c85786a"
+  },
+  {
+    "filename": "tgbdual.tar.gz",
+    "url": "https://codeload.github.com/libretro/tgbdual-libretro/tar.gz/a6f3018e6a23030afc1873845ee54d4b2d8ec9d3",
+    "sha256": "5df48cf8a8091cb68b5f21e90671cf27afaf2d0fcf35431093cccff0e4e95c7f"
+  },
+  {
+    "filename": "picodrive.tar.gz",
+    "url": "https://codeload.github.com/libretro/picodrive/tar.gz/688c90d5bd017d21b9bcee99a4aa83c5224711a0",
+    "sha256": "7347085c7888c94bdcc4e57216e6086fb52c1b22bcc56c394adfa4fb10a53f61"
+  },
+  {
+    "filename": "pce.tar.gz",
+    "url": "https://codeload.github.com/libretro/beetle-pce-fast-libretro/tar.gz/eb57e0c21f082de9f0ba86f26b3c716a2ed18b14",
+    "sha256": "bfcc4a6d3cd4e3c7afb937abd4d0f63fbe98913c516da8ba4b60a4385bf5422e"
+  },
+  {
+    "filename": "snes2005.tar.gz",
+    "url": "https://codeload.github.com/libretro/snes9x2005/tar.gz/fd45b0e055bce6cff3acde77414558784e93e7d0",
+    "sha256": "a400aa12955b8aa6f877d2d0fb852d17b76121a4730858e349ed434ea56e8f05"
+  },
+  {
+    "filename": "fba-neogeo-2024.tar.gz",
+    "url": "https://codeload.github.com/libretro/fbalpha2012_neogeo/tar.gz/a00e930acc2785730b9b7b94cd2be8f432f9916b",
+    "sha256": "e7871ca3f5589ce4050e01477257d3748284774edd62f48fef0219eb38d1db3a"
+  },
+  {
+    "filename": "irixxxx-libpicofe-d57c9992201e065f8caf6ce68247195ff98e8420.tar.gz",
+    "url": "https://codeload.github.com/irixxxx/libpicofe/tar.gz/d57c9992201e065f8caf6ce68247195ff98e8420",
+    "sha256": "4e5172e2374aee49d65e7283fa88ee4ff17e145721e2dd98468d1b6db4a7851d"
+  },
+  {
+    "filename": "notaz-cyclone68000-425e3a4066ee1cc8a3bae28956fbbdc9a516001d.tar.gz",
+    "url": "https://codeload.github.com/notaz/cyclone68000/tar.gz/425e3a4066ee1cc8a3bae28956fbbdc9a516001d",
+    "sha256": "c9dc011696b8a01c48f1fbdee7f2d24fc60e95e3fade975921b4599a08b05edf"
+  },
+  {
+    "filename": "digital-sound-antiques-emu2413-9f1dcf848d0e33e775e49352f7bc83a9c0e87a81.tar.gz",
+    "url": "https://codeload.github.com/digital-sound-antiques/emu2413/tar.gz/9f1dcf848d0e33e775e49352f7bc83a9c0e87a81",
+    "sha256": "e8341a5dad1d9eb1f6c0acb9fbdc7d41e2739699e568a60da8a00d9e628ce351"
+  },
+  {
+    "filename": "rtissera-libchdr-00319cf31f034e4d468a49a60265c7c5b8305b70.tar.gz",
+    "url": "https://codeload.github.com/rtissera/libchdr/tar.gz/00319cf31f034e4d468a49a60265c7c5b8305b70",
+    "sha256": "da48a1c07da242755e2a4ba8488bd70fa12df280a7273f842991696dc9e42a02"
+  },
+  {
+    "filename": "lieff-minimp3-95864e8e0d3b34402a49ae9af6c66f7e98c13c35.tar.gz",
+    "url": "https://codeload.github.com/lieff/minimp3/tar.gz/95864e8e0d3b34402a49ae9af6c66f7e98c13c35",
+    "sha256": "033fd7eab9ab2fbf70070e76c85d41cecaab6e1d59c52725f8b6bbcc453282ee"
+  },
+  {
+    "filename": "mackron-dr_libs-343aa923439e59e7a9f7726f70edc77a4500bdec.tar.gz",
+    "url": "https://codeload.github.com/mackron/dr_libs/tar.gz/343aa923439e59e7a9f7726f70edc77a4500bdec",
+    "sha256": "02066f139aa14c1aa986b103624e36493d6a895125a565e770709754196362f0"
+  },
+  {
+    "filename": "dr-soft-miniaudio-d1a166c83ab445b1c14bc83d37c84e18d172e5f5.tar.gz",
+    "url": "https://codeload.github.com/dr-soft/miniaudio/tar.gz/d1a166c83ab445b1c14bc83d37c84e18d172e5f5",
+    "sha256": "336576323b6f56d506ac5265344d522948e24e5e72031ff1dc6cc4537232bfb1"
+  }
+]

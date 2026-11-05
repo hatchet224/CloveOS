@@ -1,0 +1,68 @@
+[
+  {
+    "core": "fceumm",
+    "path": "fceumm/Copying",
+    "upstream_file": "Copying",
+    "upstream_bytes_sha256": "a6996dcf0c334281f734560926e079b2dbbd5b78e81c0ca00a413ec01e1cd2fb"
+  },
+  {
+    "core": "fceumm",
+    "path": "fceumm/src/ntsc/license.txt",
+    "upstream_file": "src/ntsc/license.txt",
+    "upstream_bytes_sha256": "319daefe38ebeead3df178e5937898a52d67c0c795f54f1c0bb10ac3b9cffb63"
+  },
+  {
+    "core": "tgbdual",
+    "path": "tgbdual/docs/COPYING-2.0.txt",
+    "upstream_file": "docs/COPYING-2.0.txt",
+    "upstream_bytes_sha256": "67f82e045cf7acfef853ea0f426575a8359161a0a325e19f02b529a87c4b6c34"
+  },
+  {
+    "core": "picodrive",
+    "path": "picodrive/COPYING",
+    "upstream_file": "COPYING",
+    "upstream_bytes_sha256": "a36c54a119673c1b40233f55ff23c39042f35c3e798ce78aafba5d6bd9c19de4"
+  },
+  {
+    "core": "pce",
+    "path": "pce/COPYING",
+    "upstream_file": "COPYING",
+    "upstream_bytes_sha256": "a6996dcf0c334281f734560926e079b2dbbd5b78e81c0ca00a413ec01e1cd2fb"
+  },
+  {
+    "core": "pce",
+    "path": "pce/deps/libchdr/LICENSE.txt",
+    "upstream_file": "deps/libchdr/LICENSE.txt",
+    "upstream_bytes_sha256": "e3989a7aee74a91b8cdbdfe204a6b8d03288863ec7533a21c51f1a987ba73539"
+  },
+  {
+    "core": "pce",
+    "path": "pce/deps/lzma-19.00/LICENSE",
+    "upstream_file": "deps/lzma-19.00/LICENSE",
+    "upstream_bytes_sha256": "06721414a6decad6d6677feb470f01f47126e154d895d85bc1e17628697715e5"
+  },
+  {
+    "core": "pce",
+    "path": "pce/mednafen/tremor/COPYING",
+    "upstream_file": "mednafen/tremor/COPYING",
+    "upstream_bytes_sha256": "d2ab5758336489da61c12cc5bb757da5339c4ae9001f9bb0562b4370249af814"
+  },
+  {
+    "core": "snes2005",
+    "path": "snes2005/copyright",
+    "upstream_file": "copyright",
+    "upstream_bytes_sha256": "82f348cdc5728a9493619754acf337c3587a7bbd98327013a3d13d8065899f2d"
+  },
+  {
+    "core": "fba-neogeo-2024",
+    "path": "fba-neogeo-2024/src/dep/scripts/license2rtf.pl",
+    "upstream_file": "src/dep/scripts/license2rtf.pl",
+    "upstream_bytes_sha256": "8af4c200e8a26ebfe86d699872fa703b7c86c5bed34beb6497cd88cf8a3e96a2"
+  },
+  {
+    "core": "fba-neogeo-2024",
+    "path": "fba-neogeo-2024/src/license.txt",
+    "upstream_file": "src/license.txt",
+    "upstream_bytes_sha256": "d964fc5260c2ed8b3114b4cb451b48bbb2b6df3141e3b8122d2d222fea585eb0"
+  }
+]

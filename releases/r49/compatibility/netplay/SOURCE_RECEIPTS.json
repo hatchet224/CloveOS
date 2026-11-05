@@ -1,0 +1,42 @@
+[
+  {
+    "name": "fceumm",
+    "repository": "libretro/libretro-fceumm",
+    "commit": "f52037ad7a558d1e8765d448a34d85569e4ca822",
+    "url": "https://codeload.github.com/libretro/libretro-fceumm/tar.gz/f52037ad7a558d1e8765d448a34d85569e4ca822",
+    "sha256": "dbb34d805ef05af63ce4fafd04a120611e14a82e099cc757f5e37ecc1c85786a"
+  },
+  {
+    "name": "tgbdual",
+    "repository": "libretro/tgbdual-libretro",
+    "commit": "a6f3018e6a23030afc1873845ee54d4b2d8ec9d3",
+    "url": "https://codeload.github.com/libretro/tgbdual-libretro/tar.gz/a6f3018e6a23030afc1873845ee54d4b2d8ec9d3",
+    "sha256": "5df48cf8a8091cb68b5f21e90671cf27afaf2d0fcf35431093cccff0e4e95c7f"
+  },
+  {
+    "name": "x86_64_qemu-arm-static.tar.gz",
+    "url": "https://github.com/multiarch/qemu-user-static/releases/download/v7.2.0-1/x86_64_qemu-arm-static.tar.gz",
+    "sha256": "5c90e585443b6656fae712f4bc0aae317519fe12412fb97a9486b566766d8058"
+  },
+  {
+    "name": "picodrive",
+    "repository": "libretro/picodrive",
+    "commit": "688c90d5bd017d21b9bcee99a4aa83c5224711a0",
+    "url": "https://codeload.github.com/libretro/picodrive/tar.gz/688c90d5bd017d21b9bcee99a4aa83c5224711a0",
+    "sha256": "7347085c7888c94bdcc4e57216e6086fb52c1b22bcc56c394adfa4fb10a53f61"
+  },
+  {
+    "name": "pce",
+    "repository": "libretro/beetle-pce-fast-libretro",
+    "commit": "eb57e0c21f082de9f0ba86f26b3c716a2ed18b14",
+    "url": "https://codeload.github.com/libretro/beetle-pce-fast-libretro/tar.gz/eb57e0c21f082de9f0ba86f26b3c716a2ed18b14",
+    "sha256": "bfcc4a6d3cd4e3c7afb937abd4d0f63fbe98913c516da8ba4b60a4385bf5422e"
+  },
+  {
+    "name": "snes2005",
+    "repository": "libretro/snes9x2005",
+    "commit": "fd45b0e055bce6cff3acde77414558784e93e7d0",
+    "url": "https://codeload.github.com/libretro/snes9x2005/tar.gz/fd45b0e055bce6cff3acde77414558784e93e7d0",
+    "sha256": "a400aa12955b8aa6f877d2d0fb852d17b76121a4730858e349ed434ea56e8f05"
+  }
+]

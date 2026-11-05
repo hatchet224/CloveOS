@@ -1525,6 +1525,12 @@ bool magicx_retroarch_psp_audio(void)
     return magicx_retroarch_requested() && settings != NULL && settings->bools.audio_sync &&
            magicx_core_basename(path_get(RARCH_PATH_CORE), "ppsspp_libretro.so");
 }
+bool magicx_retroarch_psx_audio(void)
+{
+    settings_t *settings = config_get_ptr();
+    return magicx_retroarch_requested() && settings != NULL && settings->bools.audio_sync &&
+           magicx_core_basename(path_get(RARCH_PATH_CORE), "pcsx_rearmed_libretro.so");
+}
 bool magicx_retroarch_smooth_video(void)
 {
     return magicx_retroarch_requested() &&
@@ -1543,6 +1549,7 @@ int magicx_retroarch_swap_interval(int requested)
         !settings->bools.audio_sync)
         return requested;
     if (magicx_core_basename(core, "ppsspp_libretro.so") ||
+        magicx_core_basename(core, "pcsx_rearmed_libretro.so") ||
         magicx_core_basename(core, "mupen64plus_next_libretro.so") ||
         magicx_core_basename(core, "yabasanshiro_libretro.so"))
         return 0;

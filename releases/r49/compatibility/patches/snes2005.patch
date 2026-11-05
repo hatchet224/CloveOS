@@ -1,0 +1,815 @@
+--- a/Makefile
++++ b/Makefile
+@@ -56,7 +56,7 @@
+ else
+ 	TARGET_NAME := snes9x2005
+ endif
+-GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
++GIT_VERSION := " fd45b0e"
+ ifneq ($(GIT_VERSION)," unknown")
+ 	CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+ endif
+--- a/libretro.c
++++ b/libretro.c
+@@ -822,23 +822,25 @@
+    S9xSoftReset();
+ }
+ 
++#include "onion_state.h"
++
+ size_t retro_serialize_size(void)
+ {
+-   return sizeof(CPU) + sizeof(ICPU) + sizeof(PPU) + sizeof(DMA) +
++   return sizeof(OnionSCPUState) + sizeof(OnionSICPU) + sizeof(PPU) + sizeof(DMA) +
+           0x10000 + 0x20000 + 0x20000 + 0x8000 +
+ #ifndef USE_BLARGG_APU
+-          sizeof(APU) + sizeof(IAPU) + 0x10000 + sizeof(SoundData) +
++          sizeof(APU) + sizeof(OnionSIAPU) + 0x10000 + sizeof(OnionSSoundData) +
+ #else
+           SPC_SAVE_STATE_BLOCK_SIZE +
+ #endif
+-          sizeof(SA1) + sizeof(s7r) + sizeof(rtc_f9);
++          sizeof(OnionSSA1) + sizeof(s7r) + sizeof(OnionS7RTC);
+ }
+ 
+ bool retro_serialize(void* data, size_t size)
+ {
+    int32_t i;
+    uint8_t* buffer = data;
+-   (void) size;
++   if(size!=retro_serialize_size() || !data) return false;
+ #ifdef LAGFIX
+    S9xPackStatus();
+ #ifndef USE_BLARGG_APU
+@@ -847,10 +849,10 @@
+ #endif
+    S9xUpdateRTC();
+    S9xSRTCPreSaveState();
+-   memcpy(buffer, &CPU, sizeof(CPU));
+-   buffer += sizeof(CPU);
+-   memcpy(buffer, &ICPU, sizeof(ICPU));
+-   buffer += sizeof(ICPU);
++   onion_save_SCPUState(buffer, &CPU);
++   buffer += sizeof(OnionSCPUState);
++   onion_save_SICPU(buffer, &ICPU);
++   buffer += sizeof(OnionSICPU);
+    memcpy(buffer, &PPU, sizeof(PPU));
+    buffer += sizeof(PPU);
+    memcpy(buffer, &DMA, sizeof(DMA));
+@@ -866,12 +868,12 @@
+ #ifndef USE_BLARGG_APU
+    memcpy(buffer, &APU, sizeof(APU));
+    buffer += sizeof(APU);
+-   memcpy(buffer, &IAPU, sizeof(IAPU));
+-   buffer += sizeof(IAPU);
++   onion_save_SIAPU(buffer, &IAPU);
++   buffer += sizeof(OnionSIAPU);
+    memcpy(buffer, IAPU.RAM, 0x10000);
+    buffer += 0x10000;
+-   memcpy(buffer, &SoundData, sizeof(SoundData));
+-   buffer += sizeof(SoundData);
++   onion_save_SSoundData(buffer, &SoundData);
++   buffer += sizeof(OnionSSoundData);
+ #else
+    S9xAPUSaveState(buffer);
+    buffer += SPC_SAVE_STATE_BLOCK_SIZE;
+@@ -880,11 +882,11 @@
+    SA1.Registers.PC = SA1.PC - SA1.PCBase;
+    S9xSA1PackStatus();
+ 
+-   memcpy(buffer, &SA1, sizeof(SA1));
+-   buffer += sizeof(SA1);
++   onion_save_SSA1(buffer, &SA1);
++   buffer += sizeof(OnionSSA1);
+    memcpy(buffer, &s7r, sizeof(s7r));
+    buffer += sizeof(s7r);
+-   memcpy(buffer, &rtc_f9, sizeof(rtc_f9));
++   onion_save_S7RTC(buffer, &rtc_f9);
+ 
+    return true;
+ }
+@@ -899,14 +901,14 @@
+    uint32_t sa1_old_flags = SA1.Flags;
+    SSA1 sa1_state;
+ 
+-   if (size != retro_serialize_size())
++   if (!data || size != retro_serialize_size())
+       return false;
+ 
+    S9xReset();
+-   memcpy(&CPU, buffer, sizeof(CPU));
+-   buffer += sizeof(CPU);
+-   memcpy(&ICPU, buffer, sizeof(ICPU));
+-   buffer += sizeof(ICPU);
++   onion_load_SCPUState(&CPU, buffer);
++   buffer += sizeof(OnionSCPUState);
++   onion_load_SICPU(&ICPU, buffer);
++   buffer += sizeof(OnionSICPU);
+    memcpy(&PPU, buffer, sizeof(PPU));
+    buffer += sizeof(PPU);
+    memcpy(&DMA, buffer, sizeof(DMA));
+@@ -922,25 +924,25 @@
+ #ifndef USE_BLARGG_APU
+    memcpy(&APU, buffer, sizeof(APU));
+    buffer += sizeof(APU);
+-   memcpy(&IAPU, buffer, sizeof(IAPU));
+-   buffer += sizeof(IAPU);
+-   IAPU_RAM_offset = IAPU_RAM_current - IAPU.RAM;
+-   IAPU.PC += IAPU_RAM_offset;
+-   IAPU.DirectPage += IAPU_RAM_offset;
+-   IAPU.WaitAddress1 += IAPU_RAM_offset;
+-   IAPU.WaitAddress2 += IAPU_RAM_offset;
++   onion_load_SIAPU(&IAPU, buffer);
++   buffer += sizeof(OnionSIAPU);
++   IAPU_RAM_offset = (uintptr_t)IAPU_RAM_current - (uintptr_t)IAPU.RAM;
++   IAPU.PC = (uint8_t*)((uintptr_t)IAPU.PC + IAPU_RAM_offset);
++   IAPU.DirectPage = (uint8_t*)((uintptr_t)IAPU.DirectPage + IAPU_RAM_offset);
++   IAPU.WaitAddress1 = (uint8_t*)((uintptr_t)IAPU.WaitAddress1 + IAPU_RAM_offset);
++   IAPU.WaitAddress2 = (uint8_t*)((uintptr_t)IAPU.WaitAddress2 + IAPU_RAM_offset);
+    IAPU.RAM = IAPU_RAM_current;
+    memcpy(IAPU.RAM, buffer, 0x10000);
+    buffer += 0x10000;
+-   memcpy(&SoundData, buffer, sizeof(SoundData));
+-   buffer += sizeof(SoundData);
++   onion_load_SSoundData(&SoundData, buffer);
++   buffer += sizeof(OnionSSoundData);
+ #else
+    S9xAPULoadState(buffer);
+    buffer += SPC_SAVE_STATE_BLOCK_SIZE;
+ #endif
+ 
+-   memcpy(&sa1_state, buffer, sizeof(sa1_state));
+-   buffer += sizeof(sa1_state);
++   onion_load_SSA1(&sa1_state, buffer);
++   buffer += sizeof(OnionSSA1);
+ 
+    /* SA1 state must be restored 'by hand' */
+    SA1.Flags               = sa1_state.Flags;
+@@ -956,7 +958,7 @@
+ 
+    memcpy(&s7r, buffer, sizeof(s7r));
+    buffer += sizeof(s7r);
+-   memcpy(&rtc_f9, buffer, sizeof(rtc_f9));
++   onion_load_S7RTC(&rtc_f9, buffer);
+ 
+    S9xFixSA1AfterSnapshotLoad();
+    SA1.Flags |= sa1_old_flags & (TRACE_FLAG);
+--- /dev/null
++++ b/onion_state.h
+@@ -0,0 +1,656 @@
++/* Generated from the pinned snes9x2005 declarations by prepare_snes_wire.py.
++ * The compatibility variant uses the stock little-endian ARM EABI wire layout.
++ * Native execution structs and the ordinary Clove SNES core are unchanged.
++ * Upstream declarations retain their existing copyright/license terms. */
++#ifndef CLOVE_ONION_SNES_WIRE_H
++#define CLOVE_ONION_SNES_WIRE_H
++#include <stdint.h>
++#include <stddef.h>
++#include <string.h>
++typedef struct {
++   uint32_t Flags;
++   bool BranchSkip;
++   bool NMIActive;
++   uint8_t IRQActive;
++   bool WaitingForInterrupt;
++   bool InDMA;
++   uint8_t WhichEvent;
++   uint32_t PC;
++   uint32_t PCBase;
++   uint32_t PCAtOpcodeStart;
++   uint32_t WaitAddress;
++   uint32_t WaitCounter;
++   int32_t Cycles;
++   int32_t NextEvent;
++   int32_t V_Counter;
++   int32_t MemSpeed;
++   int32_t MemSpeedx2;
++   int32_t FastROMSpeed;
++   uint32_t SaveStateVersion;
++   bool SRAMModified;
++   uint32_t NMITriggerPoint;
++   bool UNUSED2;
++   bool TriedInterleavedMode2;
++   uint32_t NMICycleCount;
++   uint32_t IRQCycleCount;
++} OnionSCPUState;
++#if UINTPTR_MAX==UINT32_MAX
++_Static_assert(sizeof(SCPUState)==sizeof(OnionSCPUState),"ARM32 SCPUState size differs");
++_Static_assert(offsetof(SCPUState,Flags)==offsetof(OnionSCPUState,Flags),"ARM32 SCPUState.Flags offset differs");
++_Static_assert(offsetof(SCPUState,BranchSkip)==offsetof(OnionSCPUState,BranchSkip),"ARM32 SCPUState.BranchSkip offset differs");
++_Static_assert(offsetof(SCPUState,NMIActive)==offsetof(OnionSCPUState,NMIActive),"ARM32 SCPUState.NMIActive offset differs");
++_Static_assert(offsetof(SCPUState,IRQActive)==offsetof(OnionSCPUState,IRQActive),"ARM32 SCPUState.IRQActive offset differs");
++_Static_assert(offsetof(SCPUState,WaitingForInterrupt)==offsetof(OnionSCPUState,WaitingForInterrupt),"ARM32 SCPUState.WaitingForInterrupt offset differs");
++_Static_assert(offsetof(SCPUState,InDMA)==offsetof(OnionSCPUState,InDMA),"ARM32 SCPUState.InDMA offset differs");
++_Static_assert(offsetof(SCPUState,WhichEvent)==offsetof(OnionSCPUState,WhichEvent),"ARM32 SCPUState.WhichEvent offset differs");
++_Static_assert(offsetof(SCPUState,PC)==offsetof(OnionSCPUState,PC),"ARM32 SCPUState.PC offset differs");
++_Static_assert(offsetof(SCPUState,PCBase)==offsetof(OnionSCPUState,PCBase),"ARM32 SCPUState.PCBase offset differs");
++_Static_assert(offsetof(SCPUState,PCAtOpcodeStart)==offsetof(OnionSCPUState,PCAtOpcodeStart),"ARM32 SCPUState.PCAtOpcodeStart offset differs");
++_Static_assert(offsetof(SCPUState,WaitAddress)==offsetof(OnionSCPUState,WaitAddress),"ARM32 SCPUState.WaitAddress offset differs");
++_Static_assert(offsetof(SCPUState,WaitCounter)==offsetof(OnionSCPUState,WaitCounter),"ARM32 SCPUState.WaitCounter offset differs");
++_Static_assert(offsetof(SCPUState,Cycles)==offsetof(OnionSCPUState,Cycles),"ARM32 SCPUState.Cycles offset differs");
++_Static_assert(offsetof(SCPUState,NextEvent)==offsetof(OnionSCPUState,NextEvent),"ARM32 SCPUState.NextEvent offset differs");
++_Static_assert(offsetof(SCPUState,V_Counter)==offsetof(OnionSCPUState,V_Counter),"ARM32 SCPUState.V_Counter offset differs");
++_Static_assert(offsetof(SCPUState,MemSpeed)==offsetof(OnionSCPUState,MemSpeed),"ARM32 SCPUState.MemSpeed offset differs");
++_Static_assert(offsetof(SCPUState,MemSpeedx2)==offsetof(OnionSCPUState,MemSpeedx2),"ARM32 SCPUState.MemSpeedx2 offset differs");
++_Static_assert(offsetof(SCPUState,FastROMSpeed)==offsetof(OnionSCPUState,FastROMSpeed),"ARM32 SCPUState.FastROMSpeed offset differs");
++_Static_assert(offsetof(SCPUState,SaveStateVersion)==offsetof(OnionSCPUState,SaveStateVersion),"ARM32 SCPUState.SaveStateVersion offset differs");
++_Static_assert(offsetof(SCPUState,SRAMModified)==offsetof(OnionSCPUState,SRAMModified),"ARM32 SCPUState.SRAMModified offset differs");
++_Static_assert(offsetof(SCPUState,NMITriggerPoint)==offsetof(OnionSCPUState,NMITriggerPoint),"ARM32 SCPUState.NMITriggerPoint offset differs");
++_Static_assert(offsetof(SCPUState,UNUSED2)==offsetof(OnionSCPUState,UNUSED2),"ARM32 SCPUState.UNUSED2 offset differs");
++_Static_assert(offsetof(SCPUState,TriedInterleavedMode2)==offsetof(OnionSCPUState,TriedInterleavedMode2),"ARM32 SCPUState.TriedInterleavedMode2 offset differs");
++_Static_assert(offsetof(SCPUState,NMICycleCount)==offsetof(OnionSCPUState,NMICycleCount),"ARM32 SCPUState.NMICycleCount offset differs");
++_Static_assert(offsetof(SCPUState,IRQCycleCount)==offsetof(OnionSCPUState,IRQCycleCount),"ARM32 SCPUState.IRQCycleCount offset differs");
++#endif
++static void onion_pack_SCPUState(OnionSCPUState *out,const SCPUState *in) {
++   memset(out,0,sizeof(*out));
++   out->Flags=in->Flags;
++   out->BranchSkip=in->BranchSkip;
++   out->NMIActive=in->NMIActive;
++   out->IRQActive=in->IRQActive;
++   out->WaitingForInterrupt=in->WaitingForInterrupt;
++   out->InDMA=in->InDMA;
++   out->WhichEvent=in->WhichEvent;
++   out->PC=(uint32_t)(uintptr_t)in->PC;
++   out->PCBase=(uint32_t)(uintptr_t)in->PCBase;
++   out->PCAtOpcodeStart=(uint32_t)(uintptr_t)in->PCAtOpcodeStart;
++   out->WaitAddress=(uint32_t)(uintptr_t)in->WaitAddress;
++   out->WaitCounter=in->WaitCounter;
++   out->Cycles=in->Cycles;
++   out->NextEvent=in->NextEvent;
++   out->V_Counter=in->V_Counter;
++   out->MemSpeed=in->MemSpeed;
++   out->MemSpeedx2=in->MemSpeedx2;
++   out->FastROMSpeed=in->FastROMSpeed;
++   out->SaveStateVersion=in->SaveStateVersion;
++   out->SRAMModified=in->SRAMModified;
++   out->NMITriggerPoint=in->NMITriggerPoint;
++   out->UNUSED2=in->UNUSED2;
++   out->TriedInterleavedMode2=in->TriedInterleavedMode2;
++   out->NMICycleCount=in->NMICycleCount;
++   out->IRQCycleCount=in->IRQCycleCount;
++}
++static void onion_unpack_SCPUState(SCPUState *out,const OnionSCPUState *in) {
++   out->Flags=in->Flags;
++   out->BranchSkip=in->BranchSkip;
++   out->NMIActive=in->NMIActive;
++   out->IRQActive=in->IRQActive;
++   out->WaitingForInterrupt=in->WaitingForInterrupt;
++   out->InDMA=in->InDMA;
++   out->WhichEvent=in->WhichEvent;
++   out->PC=(uint8_t*)(uintptr_t)in->PC;
++   out->PCBase=(uint8_t*)(uintptr_t)in->PCBase;
++   out->PCAtOpcodeStart=(uint8_t*)(uintptr_t)in->PCAtOpcodeStart;
++   out->WaitAddress=(uint8_t*)(uintptr_t)in->WaitAddress;
++   out->WaitCounter=in->WaitCounter;
++   out->Cycles=in->Cycles;
++   out->NextEvent=in->NextEvent;
++   out->V_Counter=in->V_Counter;
++   out->MemSpeed=in->MemSpeed;
++   out->MemSpeedx2=in->MemSpeedx2;
++   out->FastROMSpeed=in->FastROMSpeed;
++   out->SaveStateVersion=in->SaveStateVersion;
++   out->SRAMModified=in->SRAMModified;
++   out->NMITriggerPoint=in->NMITriggerPoint;
++   out->UNUSED2=in->UNUSED2;
++   out->TriedInterleavedMode2=in->TriedInterleavedMode2;
++   out->NMICycleCount=in->NMICycleCount;
++   out->IRQCycleCount=in->IRQCycleCount;
++}
++static void onion_save_SCPUState(void *buffer,const SCPUState *native) { OnionSCPUState wire; onion_pack_SCPUState(&wire,native);memcpy(buffer,&wire,sizeof(wire)); }
++static void onion_load_SCPUState(SCPUState *native,const void *buffer) { OnionSCPUState wire;memcpy(&wire,buffer,sizeof(wire));onion_unpack_SCPUState(native,&wire); }
++typedef struct {
++   uint32_t UNUSED1;
++   uint32_t S9xOpcodes;
++   SRegisters Registers;
++   uint8_t _Carry;
++   uint8_t _Zero;
++   uint8_t _Negative;
++   uint8_t _Overflow;
++   bool CPUExecuting;
++   uint32_t ShiftedPB;
++   uint32_t ShiftedDB;
++   uint32_t Frame;
++   uint32_t UNUSED2;
++   uint32_t UNUSED3;
++} OnionSICPU;
++#if UINTPTR_MAX==UINT32_MAX
++_Static_assert(sizeof(SICPU)==sizeof(OnionSICPU),"ARM32 SICPU size differs");
++_Static_assert(offsetof(SICPU,UNUSED1)==offsetof(OnionSICPU,UNUSED1),"ARM32 SICPU.UNUSED1 offset differs");
++_Static_assert(offsetof(SICPU,S9xOpcodes)==offsetof(OnionSICPU,S9xOpcodes),"ARM32 SICPU.S9xOpcodes offset differs");
++_Static_assert(offsetof(SICPU,Registers)==offsetof(OnionSICPU,Registers),"ARM32 SICPU.Registers offset differs");
++_Static_assert(offsetof(SICPU,_Carry)==offsetof(OnionSICPU,_Carry),"ARM32 SICPU._Carry offset differs");
++_Static_assert(offsetof(SICPU,_Zero)==offsetof(OnionSICPU,_Zero),"ARM32 SICPU._Zero offset differs");
++_Static_assert(offsetof(SICPU,_Negative)==offsetof(OnionSICPU,_Negative),"ARM32 SICPU._Negative offset differs");
++_Static_assert(offsetof(SICPU,_Overflow)==offsetof(OnionSICPU,_Overflow),"ARM32 SICPU._Overflow offset differs");
++_Static_assert(offsetof(SICPU,CPUExecuting)==offsetof(OnionSICPU,CPUExecuting),"ARM32 SICPU.CPUExecuting offset differs");
++_Static_assert(offsetof(SICPU,ShiftedPB)==offsetof(OnionSICPU,ShiftedPB),"ARM32 SICPU.ShiftedPB offset differs");
++_Static_assert(offsetof(SICPU,ShiftedDB)==offsetof(OnionSICPU,ShiftedDB),"ARM32 SICPU.ShiftedDB offset differs");
++_Static_assert(offsetof(SICPU,Frame)==offsetof(OnionSICPU,Frame),"ARM32 SICPU.Frame offset differs");
++_Static_assert(offsetof(SICPU,UNUSED2)==offsetof(OnionSICPU,UNUSED2),"ARM32 SICPU.UNUSED2 offset differs");
++_Static_assert(offsetof(SICPU,UNUSED3)==offsetof(OnionSICPU,UNUSED3),"ARM32 SICPU.UNUSED3 offset differs");
++#endif
++static void onion_pack_SICPU(OnionSICPU *out,const SICPU *in) {
++   memset(out,0,sizeof(*out));
++   out->UNUSED1=(uint32_t)(uintptr_t)in->UNUSED1;
++   out->S9xOpcodes=(uint32_t)(uintptr_t)in->S9xOpcodes;
++   out->Registers=in->Registers;
++   out->_Carry=in->_Carry;
++   out->_Zero=in->_Zero;
++   out->_Negative=in->_Negative;
++   out->_Overflow=in->_Overflow;
++   out->CPUExecuting=in->CPUExecuting;
++   out->ShiftedPB=in->ShiftedPB;
++   out->ShiftedDB=in->ShiftedDB;
++   out->Frame=in->Frame;
++   out->UNUSED2=in->UNUSED2;
++   out->UNUSED3=in->UNUSED3;
++}
++static void onion_unpack_SICPU(SICPU *out,const OnionSICPU *in) {
++   out->UNUSED1=(uint8_t*)(uintptr_t)in->UNUSED1;
++   out->S9xOpcodes=(SOpcodes*)(uintptr_t)in->S9xOpcodes;
++   out->Registers=in->Registers;
++   out->_Carry=in->_Carry;
++   out->_Zero=in->_Zero;
++   out->_Negative=in->_Negative;
++   out->_Overflow=in->_Overflow;
++   out->CPUExecuting=in->CPUExecuting;
++   out->ShiftedPB=in->ShiftedPB;
++   out->ShiftedDB=in->ShiftedDB;
++   out->Frame=in->Frame;
++   out->UNUSED2=in->UNUSED2;
++   out->UNUSED3=in->UNUSED3;
++}
++static void onion_save_SICPU(void *buffer,const SICPU *native) { OnionSICPU wire; onion_pack_SICPU(&wire,native);memcpy(buffer,&wire,sizeof(wire)); }
++static void onion_load_SICPU(SICPU *native,const void *buffer) { OnionSICPU wire;memcpy(&wire,buffer,sizeof(wire));onion_unpack_SICPU(native,&wire); }
++typedef struct {
++   uint32_t PC;
++   SAPURegisters Registers;
++   uint32_t RAM;
++   uint32_t DirectPage;
++   bool APUExecuting;
++   uint8_t Bit;
++   uint32_t Address;
++   uint32_t WaitAddress1;
++   uint32_t WaitAddress2;
++   uint32_t WaitCounter;
++   uint8_t _Carry;
++   uint8_t _Zero;
++   uint8_t _Overflow;
++   uint32_t UNUSED1;
++   uint32_t UNUSED2;
++   int32_t OneCycle;
++   int32_t TwoCycles;
++} OnionSIAPU;
++#if UINTPTR_MAX==UINT32_MAX
++_Static_assert(sizeof(SIAPU)==sizeof(OnionSIAPU),"ARM32 SIAPU size differs");
++_Static_assert(offsetof(SIAPU,PC)==offsetof(OnionSIAPU,PC),"ARM32 SIAPU.PC offset differs");
++_Static_assert(offsetof(SIAPU,Registers)==offsetof(OnionSIAPU,Registers),"ARM32 SIAPU.Registers offset differs");
++_Static_assert(offsetof(SIAPU,RAM)==offsetof(OnionSIAPU,RAM),"ARM32 SIAPU.RAM offset differs");
++_Static_assert(offsetof(SIAPU,DirectPage)==offsetof(OnionSIAPU,DirectPage),"ARM32 SIAPU.DirectPage offset differs");
++_Static_assert(offsetof(SIAPU,APUExecuting)==offsetof(OnionSIAPU,APUExecuting),"ARM32 SIAPU.APUExecuting offset differs");
++_Static_assert(offsetof(SIAPU,Bit)==offsetof(OnionSIAPU,Bit),"ARM32 SIAPU.Bit offset differs");
++_Static_assert(offsetof(SIAPU,Address)==offsetof(OnionSIAPU,Address),"ARM32 SIAPU.Address offset differs");
++_Static_assert(offsetof(SIAPU,WaitAddress1)==offsetof(OnionSIAPU,WaitAddress1),"ARM32 SIAPU.WaitAddress1 offset differs");
++_Static_assert(offsetof(SIAPU,WaitAddress2)==offsetof(OnionSIAPU,WaitAddress2),"ARM32 SIAPU.WaitAddress2 offset differs");
++_Static_assert(offsetof(SIAPU,WaitCounter)==offsetof(OnionSIAPU,WaitCounter),"ARM32 SIAPU.WaitCounter offset differs");
++_Static_assert(offsetof(SIAPU,_Carry)==offsetof(OnionSIAPU,_Carry),"ARM32 SIAPU._Carry offset differs");
++_Static_assert(offsetof(SIAPU,_Zero)==offsetof(OnionSIAPU,_Zero),"ARM32 SIAPU._Zero offset differs");
++_Static_assert(offsetof(SIAPU,_Overflow)==offsetof(OnionSIAPU,_Overflow),"ARM32 SIAPU._Overflow offset differs");
++_Static_assert(offsetof(SIAPU,UNUSED1)==offsetof(OnionSIAPU,UNUSED1),"ARM32 SIAPU.UNUSED1 offset differs");
++_Static_assert(offsetof(SIAPU,UNUSED2)==offsetof(OnionSIAPU,UNUSED2),"ARM32 SIAPU.UNUSED2 offset differs");
++_Static_assert(offsetof(SIAPU,OneCycle)==offsetof(OnionSIAPU,OneCycle),"ARM32 SIAPU.OneCycle offset differs");
++_Static_assert(offsetof(SIAPU,TwoCycles)==offsetof(OnionSIAPU,TwoCycles),"ARM32 SIAPU.TwoCycles offset differs");
++#endif
++static void onion_pack_SIAPU(OnionSIAPU *out,const SIAPU *in) {
++   memset(out,0,sizeof(*out));
++   out->PC=(uint32_t)(uintptr_t)in->PC;
++   out->Registers=in->Registers;
++   out->RAM=(uint32_t)(uintptr_t)in->RAM;
++   out->DirectPage=(uint32_t)(uintptr_t)in->DirectPage;
++   out->APUExecuting=in->APUExecuting;
++   out->Bit=in->Bit;
++   out->Address=in->Address;
++   out->WaitAddress1=(uint32_t)(uintptr_t)in->WaitAddress1;
++   out->WaitAddress2=(uint32_t)(uintptr_t)in->WaitAddress2;
++   out->WaitCounter=in->WaitCounter;
++   out->_Carry=in->_Carry;
++   out->_Zero=in->_Zero;
++   out->_Overflow=in->_Overflow;
++   out->UNUSED1=in->UNUSED1;
++   out->UNUSED2=in->UNUSED2;
++   out->OneCycle=in->OneCycle;
++   out->TwoCycles=in->TwoCycles;
++}
++static void onion_unpack_SIAPU(SIAPU *out,const OnionSIAPU *in) {
++   out->PC=(uint8_t*)(uintptr_t)in->PC;
++   out->Registers=in->Registers;
++   out->RAM=(uint8_t*)(uintptr_t)in->RAM;
++   out->DirectPage=(uint8_t*)(uintptr_t)in->DirectPage;
++   out->APUExecuting=in->APUExecuting;
++   out->Bit=in->Bit;
++   out->Address=in->Address;
++   out->WaitAddress1=(uint8_t*)(uintptr_t)in->WaitAddress1;
++   out->WaitAddress2=(uint8_t*)(uintptr_t)in->WaitAddress2;
++   out->WaitCounter=in->WaitCounter;
++   out->_Carry=in->_Carry;
++   out->_Zero=in->_Zero;
++   out->_Overflow=in->_Overflow;
++   out->UNUSED1=in->UNUSED1;
++   out->UNUSED2=in->UNUSED2;
++   out->OneCycle=in->OneCycle;
++   out->TwoCycles=in->TwoCycles;
++}
++static void onion_save_SIAPU(void *buffer,const SIAPU *native) { OnionSIAPU wire; onion_pack_SIAPU(&wire,native);memcpy(buffer,&wire,sizeof(wire)); }
++static void onion_load_SIAPU(SIAPU *native,const void *buffer) { OnionSIAPU wire;memcpy(&wire,buffer,sizeof(wire));onion_unpack_SIAPU(native,&wire); }
++typedef struct {
++   int32_t state;
++   int32_t type;
++   int16_t volume_left;
++   int16_t volume_right;
++   uint32_t hertz;
++   uint32_t frequency;
++   uint32_t count;
++   bool loop;
++   int32_t envx;
++   int16_t left_vol_level;
++   int16_t right_vol_level;
++   int16_t envx_target;
++   uint32_t env_error;
++   uint32_t erate;
++   int32_t direction;
++   uint32_t attack_rate;
++   uint32_t decay_rate;
++   uint32_t sustain_rate;
++   uint32_t release_rate;
++   uint32_t sustain_level;
++   int16_t sample;
++   int16_t decoded[16];
++   uint32_t block;
++   uint16_t sample_number;
++   bool last_block;
++   bool needs_decode;
++   uint32_t block_pointer;
++   uint32_t sample_pointer;
++   uint32_t echo_buf_ptr;
++   int32_t mode;
++   int32_t envxx;
++   int16_t next_sample;
++   int32_t interpolate;
++   int32_t previous[2];
++   uint8_t env_ind_attack;
++   uint8_t env_ind_decay;
++   uint8_t env_ind_sustain;
++} OnionChannel;
++#if UINTPTR_MAX==UINT32_MAX
++_Static_assert(sizeof(Channel)==sizeof(OnionChannel),"ARM32 Channel size differs");
++_Static_assert(offsetof(Channel,state)==offsetof(OnionChannel,state),"ARM32 Channel.state offset differs");
++_Static_assert(offsetof(Channel,type)==offsetof(OnionChannel,type),"ARM32 Channel.type offset differs");
++_Static_assert(offsetof(Channel,volume_left)==offsetof(OnionChannel,volume_left),"ARM32 Channel.volume_left offset differs");
++_Static_assert(offsetof(Channel,volume_right)==offsetof(OnionChannel,volume_right),"ARM32 Channel.volume_right offset differs");
++_Static_assert(offsetof(Channel,hertz)==offsetof(OnionChannel,hertz),"ARM32 Channel.hertz offset differs");
++_Static_assert(offsetof(Channel,frequency)==offsetof(OnionChannel,frequency),"ARM32 Channel.frequency offset differs");
++_Static_assert(offsetof(Channel,count)==offsetof(OnionChannel,count),"ARM32 Channel.count offset differs");
++_Static_assert(offsetof(Channel,loop)==offsetof(OnionChannel,loop),"ARM32 Channel.loop offset differs");
++_Static_assert(offsetof(Channel,envx)==offsetof(OnionChannel,envx),"ARM32 Channel.envx offset differs");
++_Static_assert(offsetof(Channel,left_vol_level)==offsetof(OnionChannel,left_vol_level),"ARM32 Channel.left_vol_level offset differs");
++_Static_assert(offsetof(Channel,right_vol_level)==offsetof(OnionChannel,right_vol_level),"ARM32 Channel.right_vol_level offset differs");
++_Static_assert(offsetof(Channel,envx_target)==offsetof(OnionChannel,envx_target),"ARM32 Channel.envx_target offset differs");
++_Static_assert(offsetof(Channel,env_error)==offsetof(OnionChannel,env_error),"ARM32 Channel.env_error offset differs");
++_Static_assert(offsetof(Channel,erate)==offsetof(OnionChannel,erate),"ARM32 Channel.erate offset differs");
++_Static_assert(offsetof(Channel,direction)==offsetof(OnionChannel,direction),"ARM32 Channel.direction offset differs");
++_Static_assert(offsetof(Channel,attack_rate)==offsetof(OnionChannel,attack_rate),"ARM32 Channel.attack_rate offset differs");
++_Static_assert(offsetof(Channel,decay_rate)==offsetof(OnionChannel,decay_rate),"ARM32 Channel.decay_rate offset differs");
++_Static_assert(offsetof(Channel,sustain_rate)==offsetof(OnionChannel,sustain_rate),"ARM32 Channel.sustain_rate offset differs");
++_Static_assert(offsetof(Channel,release_rate)==offsetof(OnionChannel,release_rate),"ARM32 Channel.release_rate offset differs");
++_Static_assert(offsetof(Channel,sustain_level)==offsetof(OnionChannel,sustain_level),"ARM32 Channel.sustain_level offset differs");
++_Static_assert(offsetof(Channel,sample)==offsetof(OnionChannel,sample),"ARM32 Channel.sample offset differs");
++_Static_assert(offsetof(Channel,decoded)==offsetof(OnionChannel,decoded),"ARM32 Channel.decoded offset differs");
++_Static_assert(offsetof(Channel,block)==offsetof(OnionChannel,block),"ARM32 Channel.block offset differs");
++_Static_assert(offsetof(Channel,sample_number)==offsetof(OnionChannel,sample_number),"ARM32 Channel.sample_number offset differs");
++_Static_assert(offsetof(Channel,last_block)==offsetof(OnionChannel,last_block),"ARM32 Channel.last_block offset differs");
++_Static_assert(offsetof(Channel,needs_decode)==offsetof(OnionChannel,needs_decode),"ARM32 Channel.needs_decode offset differs");
++_Static_assert(offsetof(Channel,block_pointer)==offsetof(OnionChannel,block_pointer),"ARM32 Channel.block_pointer offset differs");
++_Static_assert(offsetof(Channel,sample_pointer)==offsetof(OnionChannel,sample_pointer),"ARM32 Channel.sample_pointer offset differs");
++_Static_assert(offsetof(Channel,echo_buf_ptr)==offsetof(OnionChannel,echo_buf_ptr),"ARM32 Channel.echo_buf_ptr offset differs");
++_Static_assert(offsetof(Channel,mode)==offsetof(OnionChannel,mode),"ARM32 Channel.mode offset differs");
++_Static_assert(offsetof(Channel,envxx)==offsetof(OnionChannel,envxx),"ARM32 Channel.envxx offset differs");
++_Static_assert(offsetof(Channel,next_sample)==offsetof(OnionChannel,next_sample),"ARM32 Channel.next_sample offset differs");
++_Static_assert(offsetof(Channel,interpolate)==offsetof(OnionChannel,interpolate),"ARM32 Channel.interpolate offset differs");
++_Static_assert(offsetof(Channel,previous)==offsetof(OnionChannel,previous),"ARM32 Channel.previous offset differs");
++_Static_assert(offsetof(Channel,env_ind_attack)==offsetof(OnionChannel,env_ind_attack),"ARM32 Channel.env_ind_attack offset differs");
++_Static_assert(offsetof(Channel,env_ind_decay)==offsetof(OnionChannel,env_ind_decay),"ARM32 Channel.env_ind_decay offset differs");
++_Static_assert(offsetof(Channel,env_ind_sustain)==offsetof(OnionChannel,env_ind_sustain),"ARM32 Channel.env_ind_sustain offset differs");
++#endif
++static void onion_pack_Channel(OnionChannel *out,const Channel *in) {
++   memset(out,0,sizeof(*out));
++   out->state=in->state;
++   out->type=in->type;
++   out->volume_left=in->volume_left;
++   out->volume_right=in->volume_right;
++   out->hertz=in->hertz;
++   out->frequency=in->frequency;
++   out->count=in->count;
++   out->loop=in->loop;
++   out->envx=in->envx;
++   out->left_vol_level=in->left_vol_level;
++   out->right_vol_level=in->right_vol_level;
++   out->envx_target=in->envx_target;
++   out->env_error=in->env_error;
++   out->erate=in->erate;
++   out->direction=in->direction;
++   out->attack_rate=in->attack_rate;
++   out->decay_rate=in->decay_rate;
++   out->sustain_rate=in->sustain_rate;
++   out->release_rate=in->release_rate;
++   out->sustain_level=in->sustain_level;
++   out->sample=in->sample;
++   memcpy(out->decoded,in->decoded,sizeof(out->decoded));
++   out->block=(uint32_t)(uintptr_t)in->block;
++   out->sample_number=in->sample_number;
++   out->last_block=in->last_block;
++   out->needs_decode=in->needs_decode;
++   out->block_pointer=in->block_pointer;
++   out->sample_pointer=in->sample_pointer;
++   out->echo_buf_ptr=(uint32_t)(uintptr_t)in->echo_buf_ptr;
++   out->mode=in->mode;
++   out->envxx=in->envxx;
++   out->next_sample=in->next_sample;
++   out->interpolate=in->interpolate;
++   memcpy(out->previous,in->previous,sizeof(out->previous));
++   out->env_ind_attack=in->env_ind_attack;
++   out->env_ind_decay=in->env_ind_decay;
++   out->env_ind_sustain=in->env_ind_sustain;
++}
++static void onion_unpack_Channel(Channel *out,const OnionChannel *in) {
++   out->state=in->state;
++   out->type=in->type;
++   out->volume_left=in->volume_left;
++   out->volume_right=in->volume_right;
++   out->hertz=in->hertz;
++   out->frequency=in->frequency;
++   out->count=in->count;
++   out->loop=in->loop;
++   out->envx=in->envx;
++   out->left_vol_level=in->left_vol_level;
++   out->right_vol_level=in->right_vol_level;
++   out->envx_target=in->envx_target;
++   out->env_error=in->env_error;
++   out->erate=in->erate;
++   out->direction=in->direction;
++   out->attack_rate=in->attack_rate;
++   out->decay_rate=in->decay_rate;
++   out->sustain_rate=in->sustain_rate;
++   out->release_rate=in->release_rate;
++   out->sustain_level=in->sustain_level;
++   out->sample=in->sample;
++   memcpy(out->decoded,in->decoded,sizeof(out->decoded));
++   out->block=(int16_t*)(uintptr_t)in->block;
++   out->sample_number=in->sample_number;
++   out->last_block=in->last_block;
++   out->needs_decode=in->needs_decode;
++   out->block_pointer=in->block_pointer;
++   out->sample_pointer=in->sample_pointer;
++   out->echo_buf_ptr=(int32_t*)(uintptr_t)in->echo_buf_ptr;
++   out->mode=in->mode;
++   out->envxx=in->envxx;
++   out->next_sample=in->next_sample;
++   out->interpolate=in->interpolate;
++   memcpy(out->previous,in->previous,sizeof(out->previous));
++   out->env_ind_attack=in->env_ind_attack;
++   out->env_ind_decay=in->env_ind_decay;
++   out->env_ind_sustain=in->env_ind_sustain;
++}
++static void onion_save_Channel(void *buffer,const Channel *native) { OnionChannel wire; onion_pack_Channel(&wire,native);memcpy(buffer,&wire,sizeof(wire)); }
++static void onion_load_Channel(Channel *native,const void *buffer) { OnionChannel wire;memcpy(&wire,buffer,sizeof(wire));onion_unpack_Channel(native,&wire); }
++typedef struct {
++   int32_t echo_enable;
++   int32_t echo_feedback;
++   int32_t echo_ptr;
++   int32_t echo_buffer_size;
++   int32_t echo_write_enabled;
++   int32_t pitch_mod;
++   OnionChannel channels[NUM_CHANNELS];
++   int16_t master_volume[2];
++   int16_t echo_volume[2];
++   int32_t noise_hertz;
++} OnionSSoundData;
++#if UINTPTR_MAX==UINT32_MAX
++_Static_assert(sizeof(SSoundData)==sizeof(OnionSSoundData),"ARM32 SSoundData size differs");
++_Static_assert(offsetof(SSoundData,echo_enable)==offsetof(OnionSSoundData,echo_enable),"ARM32 SSoundData.echo_enable offset differs");
++_Static_assert(offsetof(SSoundData,echo_feedback)==offsetof(OnionSSoundData,echo_feedback),"ARM32 SSoundData.echo_feedback offset differs");
++_Static_assert(offsetof(SSoundData,echo_ptr)==offsetof(OnionSSoundData,echo_ptr),"ARM32 SSoundData.echo_ptr offset differs");
++_Static_assert(offsetof(SSoundData,echo_buffer_size)==offsetof(OnionSSoundData,echo_buffer_size),"ARM32 SSoundData.echo_buffer_size offset differs");
++_Static_assert(offsetof(SSoundData,echo_write_enabled)==offsetof(OnionSSoundData,echo_write_enabled),"ARM32 SSoundData.echo_write_enabled offset differs");
++_Static_assert(offsetof(SSoundData,pitch_mod)==offsetof(OnionSSoundData,pitch_mod),"ARM32 SSoundData.pitch_mod offset differs");
++_Static_assert(offsetof(SSoundData,channels)==offsetof(OnionSSoundData,channels),"ARM32 SSoundData.channels offset differs");
++_Static_assert(offsetof(SSoundData,master_volume)==offsetof(OnionSSoundData,master_volume),"ARM32 SSoundData.master_volume offset differs");
++_Static_assert(offsetof(SSoundData,echo_volume)==offsetof(OnionSSoundData,echo_volume),"ARM32 SSoundData.echo_volume offset differs");
++_Static_assert(offsetof(SSoundData,noise_hertz)==offsetof(OnionSSoundData,noise_hertz),"ARM32 SSoundData.noise_hertz offset differs");
++#endif
++static void onion_pack_SSoundData(OnionSSoundData *out,const SSoundData *in) {
++   memset(out,0,sizeof(*out));
++   out->echo_enable=in->echo_enable;
++   out->echo_feedback=in->echo_feedback;
++   out->echo_ptr=in->echo_ptr;
++   out->echo_buffer_size=in->echo_buffer_size;
++   out->echo_write_enabled=in->echo_write_enabled;
++   out->pitch_mod=in->pitch_mod;
++   for(unsigned i=0;i<NUM_CHANNELS;i++) onion_pack_Channel(&out->channels[i],&in->channels[i]);
++   memcpy(out->master_volume,in->master_volume,sizeof(out->master_volume));
++   memcpy(out->echo_volume,in->echo_volume,sizeof(out->echo_volume));
++   out->noise_hertz=in->noise_hertz;
++}
++static void onion_unpack_SSoundData(SSoundData *out,const OnionSSoundData *in) {
++   out->echo_enable=in->echo_enable;
++   out->echo_feedback=in->echo_feedback;
++   out->echo_ptr=in->echo_ptr;
++   out->echo_buffer_size=in->echo_buffer_size;
++   out->echo_write_enabled=in->echo_write_enabled;
++   out->pitch_mod=in->pitch_mod;
++   for(unsigned i=0;i<NUM_CHANNELS;i++) onion_unpack_Channel(&out->channels[i],&in->channels[i]);
++   memcpy(out->master_volume,in->master_volume,sizeof(out->master_volume));
++   memcpy(out->echo_volume,in->echo_volume,sizeof(out->echo_volume));
++   out->noise_hertz=in->noise_hertz;
++}
++static void onion_save_SSoundData(void *buffer,const SSoundData *native) { OnionSSoundData wire; onion_pack_SSoundData(&wire,native);memcpy(buffer,&wire,sizeof(wire)); }
++static void onion_load_SSoundData(SSoundData *native,const void *buffer) { OnionSSoundData wire;memcpy(&wire,buffer,sizeof(wire));onion_unpack_SSoundData(native,&wire); }
++typedef struct {
++   uint32_t S9xOpcodes;
++   uint8_t _Carry;
++   uint8_t _Zero;
++   uint8_t _Negative;
++   uint8_t _Overflow;
++   bool CPUExecuting;
++   uint32_t ShiftedPB;
++   uint32_t ShiftedDB;
++   uint32_t Flags;
++   bool Executing;
++   bool NMIActive;
++   uint8_t IRQActive;
++   bool WaitingForInterrupt;
++   bool Waiting;
++   uint32_t PC;
++   uint32_t PCBase;
++   uint32_t BWRAM;
++   uint32_t PCAtOpcodeStart;
++   uint32_t WaitAddress;
++   uint32_t WaitCounter;
++   uint32_t WaitByteAddress1;
++   uint32_t WaitByteAddress2;
++   uint32_t Map[MEMMAP_NUM_BLOCKS];
++   uint32_t WriteMap[MEMMAP_NUM_BLOCKS];
++   int16_t op1;
++   int16_t op2;
++   int arithmetic_op;
++   int64_t sum;
++   bool overflow;
++   uint8_t VirtualBitmapFormat;
++   uint8_t in_char_dma;
++   uint8_t variable_bit_pos;
++   SSA1Registers Registers;
++} OnionSSA1;
++#if UINTPTR_MAX==UINT32_MAX
++_Static_assert(sizeof(SSA1)==sizeof(OnionSSA1),"ARM32 SSA1 size differs");
++_Static_assert(offsetof(SSA1,S9xOpcodes)==offsetof(OnionSSA1,S9xOpcodes),"ARM32 SSA1.S9xOpcodes offset differs");
++_Static_assert(offsetof(SSA1,_Carry)==offsetof(OnionSSA1,_Carry),"ARM32 SSA1._Carry offset differs");
++_Static_assert(offsetof(SSA1,_Zero)==offsetof(OnionSSA1,_Zero),"ARM32 SSA1._Zero offset differs");
++_Static_assert(offsetof(SSA1,_Negative)==offsetof(OnionSSA1,_Negative),"ARM32 SSA1._Negative offset differs");
++_Static_assert(offsetof(SSA1,_Overflow)==offsetof(OnionSSA1,_Overflow),"ARM32 SSA1._Overflow offset differs");
++_Static_assert(offsetof(SSA1,CPUExecuting)==offsetof(OnionSSA1,CPUExecuting),"ARM32 SSA1.CPUExecuting offset differs");
++_Static_assert(offsetof(SSA1,ShiftedPB)==offsetof(OnionSSA1,ShiftedPB),"ARM32 SSA1.ShiftedPB offset differs");
++_Static_assert(offsetof(SSA1,ShiftedDB)==offsetof(OnionSSA1,ShiftedDB),"ARM32 SSA1.ShiftedDB offset differs");
++_Static_assert(offsetof(SSA1,Flags)==offsetof(OnionSSA1,Flags),"ARM32 SSA1.Flags offset differs");
++_Static_assert(offsetof(SSA1,Executing)==offsetof(OnionSSA1,Executing),"ARM32 SSA1.Executing offset differs");
++_Static_assert(offsetof(SSA1,NMIActive)==offsetof(OnionSSA1,NMIActive),"ARM32 SSA1.NMIActive offset differs");
++_Static_assert(offsetof(SSA1,IRQActive)==offsetof(OnionSSA1,IRQActive),"ARM32 SSA1.IRQActive offset differs");
++_Static_assert(offsetof(SSA1,WaitingForInterrupt)==offsetof(OnionSSA1,WaitingForInterrupt),"ARM32 SSA1.WaitingForInterrupt offset differs");
++_Static_assert(offsetof(SSA1,Waiting)==offsetof(OnionSSA1,Waiting),"ARM32 SSA1.Waiting offset differs");
++_Static_assert(offsetof(SSA1,PC)==offsetof(OnionSSA1,PC),"ARM32 SSA1.PC offset differs");
++_Static_assert(offsetof(SSA1,PCBase)==offsetof(OnionSSA1,PCBase),"ARM32 SSA1.PCBase offset differs");
++_Static_assert(offsetof(SSA1,BWRAM)==offsetof(OnionSSA1,BWRAM),"ARM32 SSA1.BWRAM offset differs");
++_Static_assert(offsetof(SSA1,PCAtOpcodeStart)==offsetof(OnionSSA1,PCAtOpcodeStart),"ARM32 SSA1.PCAtOpcodeStart offset differs");
++_Static_assert(offsetof(SSA1,WaitAddress)==offsetof(OnionSSA1,WaitAddress),"ARM32 SSA1.WaitAddress offset differs");
++_Static_assert(offsetof(SSA1,WaitCounter)==offsetof(OnionSSA1,WaitCounter),"ARM32 SSA1.WaitCounter offset differs");
++_Static_assert(offsetof(SSA1,WaitByteAddress1)==offsetof(OnionSSA1,WaitByteAddress1),"ARM32 SSA1.WaitByteAddress1 offset differs");
++_Static_assert(offsetof(SSA1,WaitByteAddress2)==offsetof(OnionSSA1,WaitByteAddress2),"ARM32 SSA1.WaitByteAddress2 offset differs");
++_Static_assert(offsetof(SSA1,Map)==offsetof(OnionSSA1,Map),"ARM32 SSA1.Map offset differs");
++_Static_assert(offsetof(SSA1,WriteMap)==offsetof(OnionSSA1,WriteMap),"ARM32 SSA1.WriteMap offset differs");
++_Static_assert(offsetof(SSA1,op1)==offsetof(OnionSSA1,op1),"ARM32 SSA1.op1 offset differs");
++_Static_assert(offsetof(SSA1,op2)==offsetof(OnionSSA1,op2),"ARM32 SSA1.op2 offset differs");
++_Static_assert(offsetof(SSA1,arithmetic_op)==offsetof(OnionSSA1,arithmetic_op),"ARM32 SSA1.arithmetic_op offset differs");
++_Static_assert(offsetof(SSA1,sum)==offsetof(OnionSSA1,sum),"ARM32 SSA1.sum offset differs");
++_Static_assert(offsetof(SSA1,overflow)==offsetof(OnionSSA1,overflow),"ARM32 SSA1.overflow offset differs");
++_Static_assert(offsetof(SSA1,VirtualBitmapFormat)==offsetof(OnionSSA1,VirtualBitmapFormat),"ARM32 SSA1.VirtualBitmapFormat offset differs");
++_Static_assert(offsetof(SSA1,in_char_dma)==offsetof(OnionSSA1,in_char_dma),"ARM32 SSA1.in_char_dma offset differs");
++_Static_assert(offsetof(SSA1,variable_bit_pos)==offsetof(OnionSSA1,variable_bit_pos),"ARM32 SSA1.variable_bit_pos offset differs");
++_Static_assert(offsetof(SSA1,Registers)==offsetof(OnionSSA1,Registers),"ARM32 SSA1.Registers offset differs");
++#endif
++static void onion_pack_SSA1(OnionSSA1 *out,const SSA1 *in) {
++   memset(out,0,sizeof(*out));
++   out->S9xOpcodes=(uint32_t)(uintptr_t)in->S9xOpcodes;
++   out->_Carry=in->_Carry;
++   out->_Zero=in->_Zero;
++   out->_Negative=in->_Negative;
++   out->_Overflow=in->_Overflow;
++   out->CPUExecuting=in->CPUExecuting;
++   out->ShiftedPB=in->ShiftedPB;
++   out->ShiftedDB=in->ShiftedDB;
++   out->Flags=in->Flags;
++   out->Executing=in->Executing;
++   out->NMIActive=in->NMIActive;
++   out->IRQActive=in->IRQActive;
++   out->WaitingForInterrupt=in->WaitingForInterrupt;
++   out->Waiting=in->Waiting;
++   out->PC=(uint32_t)(uintptr_t)in->PC;
++   out->PCBase=(uint32_t)(uintptr_t)in->PCBase;
++   out->BWRAM=(uint32_t)(uintptr_t)in->BWRAM;
++   out->PCAtOpcodeStart=(uint32_t)(uintptr_t)in->PCAtOpcodeStart;
++   out->WaitAddress=(uint32_t)(uintptr_t)in->WaitAddress;
++   out->WaitCounter=in->WaitCounter;
++   out->WaitByteAddress1=(uint32_t)(uintptr_t)in->WaitByteAddress1;
++   out->WaitByteAddress2=(uint32_t)(uintptr_t)in->WaitByteAddress2;
++   for(unsigned i=0;i<sizeof(out->Map)/sizeof(out->Map[0]);i++) out->Map[i]=(uint32_t)(uintptr_t)in->Map[i];
++   for(unsigned i=0;i<sizeof(out->WriteMap)/sizeof(out->WriteMap[0]);i++) out->WriteMap[i]=(uint32_t)(uintptr_t)in->WriteMap[i];
++   out->op1=in->op1;
++   out->op2=in->op2;
++   out->arithmetic_op=in->arithmetic_op;
++   out->sum=in->sum;
++   out->overflow=in->overflow;
++   out->VirtualBitmapFormat=in->VirtualBitmapFormat;
++   out->in_char_dma=in->in_char_dma;
++   out->variable_bit_pos=in->variable_bit_pos;
++   out->Registers=in->Registers;
++}
++static void onion_unpack_SSA1(SSA1 *out,const OnionSSA1 *in) {
++   out->S9xOpcodes=(SOpcodes*)(uintptr_t)in->S9xOpcodes;
++   out->_Carry=in->_Carry;
++   out->_Zero=in->_Zero;
++   out->_Negative=in->_Negative;
++   out->_Overflow=in->_Overflow;
++   out->CPUExecuting=in->CPUExecuting;
++   out->ShiftedPB=in->ShiftedPB;
++   out->ShiftedDB=in->ShiftedDB;
++   out->Flags=in->Flags;
++   out->Executing=in->Executing;
++   out->NMIActive=in->NMIActive;
++   out->IRQActive=in->IRQActive;
++   out->WaitingForInterrupt=in->WaitingForInterrupt;
++   out->Waiting=in->Waiting;
++   out->PC=(uint8_t*)(uintptr_t)in->PC;
++   out->PCBase=(uint8_t*)(uintptr_t)in->PCBase;
++   out->BWRAM=(uint8_t*)(uintptr_t)in->BWRAM;
++   out->PCAtOpcodeStart=(uint8_t*)(uintptr_t)in->PCAtOpcodeStart;
++   out->WaitAddress=(uint8_t*)(uintptr_t)in->WaitAddress;
++   out->WaitCounter=in->WaitCounter;
++   out->WaitByteAddress1=(uint8_t*)(uintptr_t)in->WaitByteAddress1;
++   out->WaitByteAddress2=(uint8_t*)(uintptr_t)in->WaitByteAddress2;
++   for(unsigned i=0;i<sizeof(out->Map)/sizeof(out->Map[0]);i++) out->Map[i]=(uint8_t*)(uintptr_t)in->Map[i];
++   for(unsigned i=0;i<sizeof(out->WriteMap)/sizeof(out->WriteMap[0]);i++) out->WriteMap[i]=(uint8_t*)(uintptr_t)in->WriteMap[i];
++   out->op1=in->op1;
++   out->op2=in->op2;
++   out->arithmetic_op=in->arithmetic_op;
++   out->sum=in->sum;
++   out->overflow=in->overflow;
++   out->VirtualBitmapFormat=in->VirtualBitmapFormat;
++   out->in_char_dma=in->in_char_dma;
++   out->variable_bit_pos=in->variable_bit_pos;
++   out->Registers=in->Registers;
++}
++static void onion_save_SSA1(void *buffer,const SSA1 *native) { OnionSSA1 wire; onion_pack_SSA1(&wire,native);memcpy(buffer,&wire,sizeof(wire)); }
++static void onion_load_SSA1(SSA1 *native,const void *buffer) { OnionSSA1 wire;memcpy(&wire,buffer,sizeof(wire));onion_unpack_SSA1(native,&wire); }
++typedef struct {
++   uint8_t reg[16];
++   int16_t index;
++   uint8_t control;
++   bool init;
++   int32_t last_used;
++} OnionS7RTC;
++#if UINTPTR_MAX==UINT32_MAX
++_Static_assert(sizeof(S7RTC)==sizeof(OnionS7RTC),"ARM32 S7RTC size differs");
++_Static_assert(offsetof(S7RTC,reg)==offsetof(OnionS7RTC,reg),"ARM32 S7RTC.reg offset differs");
++_Static_assert(offsetof(S7RTC,index)==offsetof(OnionS7RTC,index),"ARM32 S7RTC.index offset differs");
++_Static_assert(offsetof(S7RTC,control)==offsetof(OnionS7RTC,control),"ARM32 S7RTC.control offset differs");
++_Static_assert(offsetof(S7RTC,init)==offsetof(OnionS7RTC,init),"ARM32 S7RTC.init offset differs");
++_Static_assert(offsetof(S7RTC,last_used)==offsetof(OnionS7RTC,last_used),"ARM32 S7RTC.last_used offset differs");
++#endif
++static void onion_pack_S7RTC(OnionS7RTC *out,const S7RTC *in) {
++   memset(out,0,sizeof(*out));
++   memcpy(out->reg,in->reg,sizeof(out->reg));
++   out->index=in->index;
++   out->control=in->control;
++   out->init=in->init;
++   out->last_used=in->last_used;
++}
++static void onion_unpack_S7RTC(S7RTC *out,const OnionS7RTC *in) {
++   memcpy(out->reg,in->reg,sizeof(out->reg));
++   out->index=in->index;
++   out->control=in->control;
++   out->init=in->init;
++   out->last_used=in->last_used;
++}
++static void onion_save_S7RTC(void *buffer,const S7RTC *native) { OnionS7RTC wire; onion_pack_S7RTC(&wire,native);memcpy(buffer,&wire,sizeof(wire)); }
++static void onion_load_S7RTC(S7RTC *native,const void *buffer) { OnionS7RTC wire;memcpy(&wire,buffer,sizeof(wire));onion_unpack_S7RTC(native,&wire); }
++#define ONION_SNES_STATE_SIZE (sizeof(OnionSCPUState)+sizeof(OnionSICPU)+sizeof(PPU)+sizeof(DMA)+0x58000+sizeof(APU)+sizeof(OnionSIAPU)+0x10000+sizeof(OnionSSoundData)+sizeof(OnionSSA1)+sizeof(s7r)+sizeof(OnionS7RTC))
++_Static_assert(ONION_SNES_STATE_SIZE==529132,"pinned Onion ARM32 state layout changed");
++#endif

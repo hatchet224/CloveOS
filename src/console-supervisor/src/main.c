@@ -444,8 +444,11 @@ static void service_hook(struct supervisor *s, uint64_t now) {
         char path[256];
         struct stat identity;
         (void)snprintf(path, sizeof(path), "%s.identity.json", s->config.base.bridge);
+        /* Publication is atomic. Observe existence before validation: a file
+         * published between a failed read and a later lstat is not a mismatch. */
+        bool published = lstat(path, &identity) == 0;
         if (!s->preflight_pending && s->ra_pid > 0 && s->selected != NULL &&
-            sc_identity_file(path, &s->selected->profile.identity)) {
+            published && sc_identity_file(path, &s->selected->profile.identity)) {
             /* SDL/ALSA may initialize hardware defaults when the emulator opens
              * its devices. Reapply the stored levels after readiness and before
              * LOAD/RELEASE. The existing child barrier tracks this short helper. */
@@ -461,7 +464,7 @@ static void service_hook(struct supervisor *s, uint64_t now) {
                 hook_reply(s, CS_RESULT_COMPLETED);
             }
         } else if ((!s->preflight_pending && s->ra_pid <= 0) || now >= s->hook_deadline ||
-                   (!s->preflight_pending && s->ra_pid > 0 && lstat(path, &identity) == 0)) {
+                   (!s->preflight_pending && s->ra_pid > 0 && published)) {
             s->preflight_pending = false;
             /* No core has been released. Drain the rejected child so a
              * startup recovery screen cannot take ownership of the display. */
@@ -960,6 +963,8 @@ static void reap(struct supervisor *s) {
                         result == 23 ? "Easy Netplay ended. Wi-Fi could not restart automatically." :
                         result == 24 ? "Both handhelds need matching copies of both link cartridges in Roms/GB or Roms/GBC." :
                         result == 25 ? "Link save could not be verified or kept. Check the SD card and exit RetroArch normally." :
+                        result == 26 ? "Onion 4.3.1-1 requires a supported matching core and the same game revision. See the netplay log for details." :
+                        result == 27 ? "Pokemon link needs a normal in-game battery save before first use. Check the netplay log for details." :
                                        "Easy Netplay ended unexpectedly.";
                     remember_error(s, text);
                 } else if (!s->easy_netplay && !s->level_term && result != 0)
@@ -1606,7 +1611,7 @@ static void advance_game_request(struct supervisor *s)
 static bool netplay_core(const char *path)
 {
     static const char *const cores[] = {"fceumm", "picodrive", "mednafen_pce_fast",
-                                       "fbneo", "snes9x2005_plus"};
+                                       "fbneo", "snes9x2005_plus", "snes9x2005", "fbalpha2012_neogeo"};
     const char *name = strrchr(path, '/');
     if (name == NULL) return false;
     for (size_t i = 0; i < sizeof(cores) / sizeof(*cores); ++i) {
@@ -1629,6 +1634,8 @@ static bool launch_glo_app(struct supervisor *s)
     bool started;
     bool link = intent->kind == CL_LAUNCH_LINK_HOST || intent->kind == CL_LAUNCH_LINK_JOIN;
     bool easy = link || intent->kind == CL_LAUNCH_EASY_HOST || intent->kind == CL_LAUNCH_EASY_JOIN;
+    bool gb = strcmp(game.entry.system, "GB") == 0 || strcmp(game.entry.system, "GBC") == 0;
+    bool automatic_lan = !easy && strcmp(intent->auxiliary, "auto") == 0;
     if (intent->kind == CL_LAUNCH_SCRIPT) {
         int script = sc_glo_open_script(&s->config, &game, intent->glo_scope, intent->auxiliary);
         if (script < 0) return false;
@@ -1654,17 +1661,28 @@ static bool launch_glo_app(struct supervisor *s)
                 return false;
             }
         }
-        if ((!link && !netplay_core(game.core)) || strnlen(intent->auxiliary, sizeof(intent->auxiliary)) ==
-            sizeof(intent->auxiliary) || (!easy && !host && inet_pton(AF_INET, intent->auxiliary, &address) != 1) ||
+        if ((!link && !gb && !netplay_core(game.core)) || strnlen(intent->auxiliary, sizeof(intent->auxiliary)) ==
+            sizeof(intent->auxiliary) || (!easy && !host && !automatic_lan && inet_pton(AF_INET, intent->auxiliary, &address) != 1) ||
             !sc_game_files_check(&game, s->config.retroarch, true)) return false;
         if (easy) {
+            bool onion = strcmp(intent->auxiliary, "onion4") == 0;
+            bool onion_supported = gb || strcmp(game.entry.system, "FC") == 0 ||
+                strcmp(game.entry.system, "MD") == 0 || strcmp(game.entry.system, "MS") == 0 ||
+                strcmp(game.entry.system, "PCE") == 0 || strcmp(game.entry.system, "SFC") == 0 ||
+                strcmp(game.entry.system, "NEOGEO") == 0;
+            if ((intent->auxiliary[0] != '\0' && !onion) ||
+                (onion && !onion_supported)) return false;
             char profile[195], proof[65];
             (void)snprintf(profile, sizeof(profile), "%s\n%s\n%s",
                            game.profile.identity.content, game.profile.identity.core, game.profile.identity.retroarch);
             cs_sha256_hex(profile, strlen(profile), proof);
-            char *args[] = {"/system/bin/console-easy-netplay", host ? "host" : "join",
+            char *args[] = {onion ? "/system/bin/console-onion-easy-netplay" : "/system/bin/console-easy-netplay", host ? "host" : "join",
                             link ? game.profile.identity.content : proof, game.config, game.core, game.content,
                             link ? "link" : NULL, NULL};
+            started = sc_spawn(args[0], args, -1, -1, NULL, &s->level_pid);
+        } else if (automatic_lan) {
+            char *args[] = {"/system/bin/console-standard-netplay", host ? "host" : "join",
+                            game.config, game.core, game.content, NULL};
             started = sc_spawn(args[0], args, -1, -1, NULL, &s->level_pid);
         } else {
             char *args[] = {"/system/bin/console-startup-app", "netplay", host ? "host" : "join",

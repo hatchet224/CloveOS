@@ -1,0 +1,16 @@
+[
+  {
+    "path": "snes9x2005_libretro.info",
+    "repository": "libretro/libretro-core-info",
+    "commit": "eac3a2784d428444aa2bd472039b5c5540141af1",
+    "url": "https://raw.githubusercontent.com/libretro/libretro-core-info/eac3a2784d428444aa2bd472039b5c5540141af1/snes9x2005_libretro.info",
+    "sha256": "b77d8b7338e11ac85d7e60106ff56579862ec3fc64c2c58c01912537e2e2620c"
+  },
+  {
+    "path": "fbalpha2012_neogeo_libretro.info",
+    "repository": "libretro/libretro-core-info",
+    "commit": "eac3a2784d428444aa2bd472039b5c5540141af1",
+    "url": "https://raw.githubusercontent.com/libretro/libretro-core-info/eac3a2784d428444aa2bd472039b5c5540141af1/fbalpha2012_neogeo_libretro.info",
+    "sha256": "11d9b05816da54e9f9b42093a873c311710972c21a516a96c40a077ac3f2398e"
+  }
+]

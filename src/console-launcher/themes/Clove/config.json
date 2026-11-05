@@ -1,0 +1,55 @@
+{
+  "name": "Clove",
+  "list": {
+    "font": "fonts/AtkinsonHyperlegible-Regular.ttf",
+    "size": 24,
+    "color": "202124"
+  },
+  "title": {
+    "font": "fonts/AtkinsonHyperlegible-Regular.ttf",
+    "size": 32,
+    "color": "202124"
+  },
+  "hint": {
+    "font": "fonts/AtkinsonHyperlegible-Regular.ttf",
+    "size": 16,
+    "color": "68646e"
+  },
+  "frame": {
+    "border-left": 16,
+    "border-right": 16
+  },
+  "grid": {
+    "grid1x4": 24,
+    "grid3x4": 18,
+    "selectedcolor": "ffffff",
+    "font": "fonts/AtkinsonHyperlegible-Regular.ttf",
+    "color": "202124"
+  },
+  "batteryPercentage": {
+    "visible": true
+  },
+  "hideLabels": {
+    "hints": false
+  },
+  "palette": {
+    "background": "f4f2ee",
+    "panel": "e9e5df",
+    "selected": "69548f",
+    "selectedText": "ffffff",
+    "accent": "69548f",
+    "muted": "68646e",
+    "ready": "277751",
+    "warning": "9d5218"
+  },
+  "layout": {
+    "mode": "list",
+    "listTop": 80,
+    "rowHeight": 52,
+    "rowGap": 4,
+    "radius": 12,
+    "gridColumns": 3,
+    "gridRows": 2,
+    "gridGap": 12
+  }
+}

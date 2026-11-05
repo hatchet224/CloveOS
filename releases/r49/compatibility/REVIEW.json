@@ -1,0 +1,132 @@
+{
+  "cores": [
+    {
+      "name": "fceumm",
+      "source": {
+        "name": "fceumm",
+        "repository": "libretro/libretro-fceumm",
+        "commit": "f52037ad7a558d1e8765d448a34d85569e4ca822",
+        "url": "https://codeload.github.com/libretro/libretro-fceumm/tar.gz/f52037ad7a558d1e8765d448a34d85569e4ca822",
+        "sha256": "dbb34d805ef05af63ce4fafd04a120611e14a82e099cc757f5e37ecc1c85786a"
+      },
+      "changes": [
+        {
+          "path": "Makefile.libretro",
+          "before": "9dca054b5aa437f1527cb68800f59cd46f8026d115582ae2d8290f4b124a8364",
+          "after": "f9d06f26ed79a20f244204abf513c025557bc9b7544cc6e13bb7872bebf0cd1f"
+        }
+      ],
+      "patch_sha256": "d8cae23e9a7bd55ea80aa70e73cc7565a31b5eeafb5e9e11fb94031e64328f27"
+    },
+    {
+      "name": "tgbdual",
+      "source": {
+        "name": "tgbdual",
+        "repository": "libretro/tgbdual-libretro",
+        "commit": "a6f3018e6a23030afc1873845ee54d4b2d8ec9d3",
+        "url": "https://codeload.github.com/libretro/tgbdual-libretro/tar.gz/a6f3018e6a23030afc1873845ee54d4b2d8ec9d3",
+        "sha256": "5df48cf8a8091cb68b5f21e90671cf27afaf2d0fcf35431093cccff0e4e95c7f"
+      },
+      "changes": [
+        {
+          "path": "Makefile",
+          "before": "8aef6f9ee32162540f269bf97b9b8def7cf9a62e3e0ed0b67a0f43b0d23fe617",
+          "after": "28ad9a4089c7eea3e2e04a0ef7d412bfc4419fb8f1a765671ef72de2d42fbfff"
+        },
+        {
+          "path": "gb_core/gb_types.h",
+          "before": "4cd5a5a50ecda802870a9d8dd58befd0c3d1559dc104aba77d4ecf7d3a2a2f58",
+          "after": "3ab96f5ffaa4d85d86100c98c34f0f20e859f7941a14ba1d113a0682ba122bf7"
+        }
+      ],
+      "patch_sha256": "0d87ba88010ed886ed9797174e762545744982c2ff06533963ebdf2ee77764d4"
+    },
+    {
+      "name": "picodrive",
+      "source": {
+        "name": "picodrive",
+        "repository": "libretro/picodrive",
+        "commit": "688c90d5bd017d21b9bcee99a4aa83c5224711a0",
+        "url": "https://codeload.github.com/libretro/picodrive/tar.gz/688c90d5bd017d21b9bcee99a4aa83c5224711a0",
+        "sha256": "7347085c7888c94bdcc4e57216e6086fb52c1b22bcc56c394adfa4fb10a53f61"
+      },
+      "changes": [
+        {
+          "path": "platform/libretro/libretro.c",
+          "before": "6c1aa82feb34827f002a327ae2a00e12cd9d8864f3caac9bd2f793b132ed899d",
+          "after": "fca7525a91b98044a3f378ba2a250806ad8dc708cf52a4c291bc546d22ffc0d2"
+        }
+      ],
+      "patch_sha256": "5be79e70b8d8885ce3585b5e7a165bd8f8ec8df19677b2f2bf750420a4086aff"
+    },
+    {
+      "name": "pce",
+      "source": {
+        "name": "pce",
+        "repository": "libretro/beetle-pce-fast-libretro",
+        "commit": "eb57e0c21f082de9f0ba86f26b3c716a2ed18b14",
+        "url": "https://codeload.github.com/libretro/beetle-pce-fast-libretro/tar.gz/eb57e0c21f082de9f0ba86f26b3c716a2ed18b14",
+        "sha256": "bfcc4a6d3cd4e3c7afb937abd4d0f63fbe98913c516da8ba4b60a4385bf5422e"
+      },
+      "changes": [
+        {
+          "path": "Makefile",
+          "before": "59cb2a68e1ad43591b4111b4378e5588b716fa0efbe0a8a6fb78065654514e01",
+          "after": "489616564de13726d3bf3cdd893f47b1ad458a5a47b21222d5b80b2d73228489"
+        }
+      ],
+      "patch_sha256": "83dd34ec86c05477b86cc59e472b76e39dc1933bcf1d4aa5647ba1636a7f26cd"
+    },
+    {
+      "name": "snes2005",
+      "source": {
+        "name": "snes2005",
+        "repository": "libretro/snes9x2005",
+        "commit": "fd45b0e055bce6cff3acde77414558784e93e7d0",
+        "url": "https://codeload.github.com/libretro/snes9x2005/tar.gz/fd45b0e055bce6cff3acde77414558784e93e7d0",
+        "sha256": "a400aa12955b8aa6f877d2d0fb852d17b76121a4730858e349ed434ea56e8f05"
+      },
+      "changes": [
+        {
+          "path": "Makefile",
+          "before": "29261315e6d0e8716406db3e9ed453ae9e6b9b4a59fcadf50f80e094592974af",
+          "after": "b30746b537602222f2bac02329961388f93e3867a97e39c6e9357881c470fc12"
+        },
+        {
+          "path": "libretro.c",
+          "before": "f29cdaf9c0b1eabbdfae831786e9f61d60d47b8c4c2cd7497476d75ce664b9d9",
+          "after": "0628f10ba63c5e88812e5b29629901bc7d1f0c28c48c9abfc46bebcd91c573f6"
+        },
+        {
+          "path": "onion_state.h",
+          "before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "after": "fbe85045f60691f2fbeffca993d50a0419421b68285471018ce752fc857516be"
+        }
+      ],
+      "patch_sha256": "0192f3a2aeb78516d21eedb2f379b949b3f0f14ac313101a4b4f4a2c8d429d61"
+    },
+    {
+      "name": "fba-neogeo-2024",
+      "source": {
+        "name": "fba-neogeo-2024",
+        "repository": "libretro/fbalpha2012_neogeo",
+        "commit": "a00e930acc2785730b9b7b94cd2be8f432f9916b",
+        "date": "2023-03-04T02:59:04Z",
+        "url": "https://codeload.github.com/libretro/fbalpha2012_neogeo/tar.gz/a00e930acc2785730b9b7b94cd2be8f432f9916b",
+        "sha256": "e7871ca3f5589ce4050e01477257d3748284774edd62f48fef0219eb38d1db3a",
+        "exact_stock_build_revision_confirmed": false
+      },
+      "changes": [
+        {
+          "path": "makefile.libretro",
+          "before": "38b09bff0306077b7472a59cc56f3c205d9859469c3f2b050ff32ae0b4bc9c3f",
+          "after": "192e01c9820dd15e4604ed1124030ad6b64aded52a62d0c57b3ef8cd1bc1a6cd"
+        }
+      ],
+      "patch_sha256": "2e81f9d649c302f6516a3922dd4bfb3e619da0ef9cbd367e780f1a1806905d03"
+    }
+  ],
+  "source_only": true,
+  "vendor_source_included": false,
+  "note": "Core patches retain upstream terms; exact binary provenance limits remain in release qualification."
+}

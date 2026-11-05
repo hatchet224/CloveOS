@@ -1,0 +1,1 @@
+{ global: abort; stdout; stderr; stdin; optarg; optind; environ; __environ; __progname; __progname_full; local: *; };

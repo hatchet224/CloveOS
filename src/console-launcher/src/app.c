@@ -1362,17 +1362,17 @@ static void draw(struct app *a)
     }
     else if (a->screen == NETPLAY_MODE)
     {
-        static const char *const options[] = {"Easy Netplay (local hotspot)", "Standard Netplay (direct IP)"};
-        static const char *const link[] = {"Pokémon Trade/Battle (GB/GBC)"};
+        static const char *const options[] = {"Standard Netplay (Use current Wifi)",
+            "Easy Netplay (play anywhere, local only)", "Easy Netplay - Pokemon Trade/Battle"};
         const struct cl_entry *entry = selected(a);
         bool link_game = entry != NULL && link_system(entry->system);
         cl_options_draw(surface, &view, a->netplay_host ? "Host a session" : "Join a session",
-                        link_game ? link : options, link_game ? 1U : 2U, a->choice);
+                        options, link_game ? 3U : 2U, a->choice);
     }
     else if (a->screen == NETPLAY_LINK_CONFIRM)
     {
         cl_view_dialog(surface, &view, "Pokémon Trade/Battle",
-                       "Both devices need both ROMs. Link saves are separate and shared for this session. Use MENU+SELECT, then Quit RetroArch to keep progress.",
+                       "Your in-game save starts a separate link save. Game data and link saves are exchanged for this session. Use MENU+SELECT, then Quit RetroArch to keep progress.",
                        "Cancel", a->netplay_host ? "Host" : "Join", a->choice);
     }
     else if (a->screen == NETPLAY_ADDRESS)
@@ -1834,20 +1834,30 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
     }
     if (a->screen == NETPLAY_MODE) {
         const struct cl_entry *entry = selected(a);
-        if (entry != NULL && link_system(entry->system)) {
+        if (entry == NULL || a->choice >= (link_system(entry->system) ? 3U : 2U)) return false;
+        if (a->choice == 2U && entry != NULL && link_system(entry->system)) {
             set_screen(a, NETPLAY_LINK_CONFIRM);
             return false;
         }
-        if (a->choice == 0U)
-            return launch(a, intent, a->netplay_host ? CL_LAUNCH_EASY_HOST : CL_LAUNCH_EASY_JOIN, NULL, 0U);
-        if (a->netplay_host) return launch(a, intent, CL_LAUNCH_NETPLAY_HOST, NULL, 0U);
-        a->netplay_address[0] = '\0';
-        set_screen(a, NETPLAY_ADDRESS);
-        return false;
+        if (a->choice == 1U) {
+            if (!launch(a, intent, a->netplay_host ? CL_LAUNCH_EASY_HOST : CL_LAUNCH_EASY_JOIN, NULL, 0U))
+                return false;
+            if (entry != NULL && (strcmp(entry->system, "FC") == 0 || strcmp(entry->system, "MD") == 0 ||
+                strcmp(entry->system, "MS") == 0 || strcmp(entry->system, "PCE") == 0 ||
+                strcmp(entry->system, "SFC") == 0 || strcmp(entry->system, "NEOGEO") == 0 || link_system(entry->system)))
+                strcpy(intent->auxiliary, "onion4");
+            return true;
+        }
+        if (!launch(a, intent, a->netplay_host ? CL_LAUNCH_NETPLAY_HOST : CL_LAUNCH_NETPLAY_JOIN, NULL, 0U))
+            return false;
+        strcpy(intent->auxiliary, "auto");
+        return true;
     }
     if (a->screen == NETPLAY_LINK_CONFIRM) {
         if (a->choice == 0U) { set_screen(a, NETPLAY_MODE); return false; }
-        return launch(a, intent, a->netplay_host ? CL_LAUNCH_LINK_HOST : CL_LAUNCH_LINK_JOIN, NULL, 0U);
+        if (!launch(a, intent, a->netplay_host ? CL_LAUNCH_LINK_HOST : CL_LAUNCH_LINK_JOIN, NULL, 0U)) return false;
+        strcpy(intent->auxiliary, "onion4");
+        return true;
     }
     if (a->screen == CONFIRM_GLO_SCRIPT) {
         if (a->choice == 0U) {
@@ -2794,7 +2804,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         else if (a->screen == NETPLAY_MODE)
         {
             const struct cl_entry *entry = selected(a);
-            choose_move(a, delta, entry != NULL && link_system(entry->system) ? 1U : 2U);
+            choose_move(a, delta, entry != NULL && link_system(entry->system) ? 3U : 2U);
         }
         return false;
     }
@@ -3399,10 +3409,11 @@ enum cl_run_result cl_launcher_run(const struct cl_app_config *config,
             if (!cl_assets_open(&a->assets, &a->theme, root))
             {
                 cl_assets_close(&a->assets);
-                if (!apply_theme(a, "/system/share/console/themes/Silky"))
+                if (!apply_theme(a, "/system/share/console/themes/Clove") &&
+                    !apply_theme(a, "/system/share/console/themes/Silky"))
                     goto done;
                 a->theme_fallback = true;
-                fprintf(stderr, "Selected theme assets failed; protected Silky loaded. Stored "
+                fprintf(stderr, "Selected theme assets failed; protected theme loaded. Stored "
                                 "selection retained.\n");
             } else {
                 cl_assets_apply_icon_pack(&a->assets, a->icon_theme[0] != '\0' ? a->icon_theme : root,
@@ -3434,7 +3445,7 @@ enum cl_run_result cl_launcher_run(const struct cl_app_config *config,
     }
     if (a->theme_fallback && (return_error == NULL || return_error[0] == '\0'))
         message(a,
-                "Selected theme could not load. Protected Silky is active; choose a working theme.",
+                "Selected theme could not load. Protected theme is active; choose a working theme.",
                 MAIN);
     if (config->card_path[0] != '\0' && config->card_uuid[0] != '\0' && a->preferences == NULL)
     {
