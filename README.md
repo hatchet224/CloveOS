@@ -1,2 +1,25 @@
 # CloveOS
-OS for the magic X mini Zero 28 cloned from OnionOS
+
+CloveOS is a controller-first Linux firmware project for the **MagicX Mini Zero 28**, inspired by the OnionOS experience.
+
+The current r48 build is a development test candidate. It includes a game launcher, GameSwitcher, save and resume integration, an optional app catalog, and networking tools. Virtual-machine checks have passed. Fresh-card boot, controls, display, live battery readings, and two-handheld multiplayer still need device testing.
+
+The first downloadable release is being prepared in [Releases](https://github.com/hatchet224/CloveOS/releases). The r48 image remains in a draft release while the corresponding-source and redistribution review is completed.
+
+The clean image includes:
+
+- The custom CloveOS house-and-hatchets splash and Silky interface theme.
+- File Explorer, Gallery, Search, Expert access, list filtering and refresh, and Battery Monitor.
+- Cores for GB, GBC, GBA, NES, SNES, N64, Master System, Genesis, Game Gear, PlayStation, PSP, Dreamcast, Atari 2600, TurboGrafx-16, PICO-8, Neo Geo arcade, FBNeo, and MAME 2003-Plus. Compatibility and performance vary by game.
+- PlayStation playlist disc switching and checkpoint restore.
+- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and Pokémon trade/battle verification is pending.
+
+The download contains no ROMs, emulator BIOS files, game saves, downloaded box art, Wi-Fi profiles, or personal account credentials. Users supply their own game content and configure their own accounts on the handheld.
+
+The compressed download is `CloveOS-r48.zip`. Extract it to obtain `CloveOS-r48.img`. The image is 4 GiB and fits cards sold as 8 GB. First boot expands the data volume to use the available card capacity after system and filesystem overhead. Virtual tests covered nominal 8 GB through 1 TB cards, with additional recovery and repeat-boot tests. The data volume is named `CLOVE_DATA`.
+
+Follow [INSTALL.md](INSTALL.md) for installation and [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for current limitations. Flashing an image erases the selected card, so verify the target and back up anything you need first.
+
+Report reproducible problems in [Issues](https://github.com/hatchet224/CloveOS/issues). Include the device model, build, core, file format, steps, expected result, and observed result. Review logs before sharing them and remove passwords or other personal details. Provide the game title when relevant, and keep ROMs and BIOS files out of issue attachments.
+
+Project credits are in [CREDITS.md](CREDITS.md). The outstanding binary, source, firmware, and asset review is recorded in [REDISTRIBUTION.md](REDISTRIBUTION.md). Component licenses and notices need to be preserved with the matching source release.

@@ -1,0 +1,35 @@
+# Generated build outputs and downloadable images
+/work/
+/outputs/
+/build/
+/dist/
+*.img
+*.sqfs
+*.zip
+*.7z
+
+# Personal libraries and runtime data
+**/Roms/
+**/roms/
+**/BIOS/
+**/Bios/
+**/bios/
+**/Saves/
+**/saves/
+**/Screenshots/
+**/Imgs/
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+wpa_supplicant.conf
+*credentials*.json
+
+# Local caches
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

@@ -1,0 +1,23 @@
+# Redistribution review for the r48 test image
+
+The review applies to the exact ZIP and image listed in `SHA256SUMS.txt`.
+
+| Included component | Provenance | Open requirement |
+| --- | --- | --- |
+| Boot0/U-Boot and early boot files | Clean Moss Zero 28 factory base. The bootloader FAT contains its original `bootlogo.bmp` and `magic.bin`. | Verify redistribution terms and exact corresponding source for the shipped bootloader. |
+| Kernel, matched modules, Wi-Fi and GPU components | oakMOSS v0.6.0-beta.1 boot image and Moss/oakMOSS runtime components. The rootfs carries the pinned kernel provenance and module hashes. | Establish the corresponding source and build inputs for this binary kernel and modules. Confirm separate rights for vendor GPU, radio and other binary firmware. |
+| RetroArch and cores | Includes the patched RetroArch build, native cores from pinned MinUI and CrossMix packages, and additional cores in the r48 inventory. | Assemble the exact corresponding-source bundle, patches, build inputs and notices. MAME 2003-Plus, FBNeo and Snes9x 2005 Plus have noncommercial license terms. Verify each core's distribution conditions. |
+| Silky and interface assets | Silky by DiMo from OnionUI/Themes, with Onion-derived fonts, icons and assets. Its provenance files are retained. The supplied CloveOS house-and-hatchets artwork is retained by explicit request. | Confirm each asset's reuse terms and required attribution, separately from the program's code license. |
+| ScreenScraper integration | Derived from Onion 4.3.1-1. The test supervisor accepts tester-supplied API credentials. The port carries its GPL notice and provenance. | Provide the exact modified source and build inputs as part of a complete corresponding-source release. |
+| SMB, SFTP and USB file transfer | r48 LAN server and uMTP-Responder. The image carries the LAN service notices and uMTP-Responder source archive. | Confirm complete notices and matching source obligations for all statically linked components and the surrounding system. |
+
+References
+
+- [Moss Zero 28 upstream](https://github.com/shauninman/Moss-zero28)
+- [oakMOSS v0.6.0-beta.1](https://github.com/spruceUI/oakMOSS/releases/tag/v0.6.0-beta.1)
+- [Onion project](https://github.com/OnionUI/Onion)
+- [Onion theme collection](https://github.com/OnionUI/Themes)
+- [Libretro license inventory](https://docs.libretro.com/development/licenses/)
+- [MAME 2003-Plus license](https://github.com/libretro/mame2003-plus-libretro/blob/master/LICENSE.md)
+- [FBNeo license](https://github.com/libretro/FBNeo/blob/master/src/license.txt)
+- [GNU GPL distribution FAQ](https://www.gnu.org/licenses/gpl-faq.en.html)
