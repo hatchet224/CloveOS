@@ -504,15 +504,15 @@ bool cs_library_scan(const struct cs_library_card *cards, size_t count, struct c
                     previous_inode = rom_dir.st_ino;
                     have_previous = true;
                 }
-                (void)snprintf(spec.img, sizeof(spec.img), "%s/Imgs", spec.rom);
-                (void)snprintf(spec.gamelist, sizeof(spec.gamelist), "%s/miyoogamelist.xml",
-                               spec.rom);
-                if (!existing_file(&s, spec.gamelist))
-                    (void)snprintf(spec.gamelist, sizeof(spec.gamelist), "%s/gamelist.xml",
-                                   spec.rom);
-                if (!existing_file(&s, spec.gamelist))
-                    (void)snprintf(spec.gamelist, sizeof(spec.gamelist), "%s/gamelist.json",
-                                   spec.rom);
+                if (!absolute_path(spec.rom, "Imgs", spec.img) ||
+                    !absolute_path(spec.rom, "miyoogamelist.xml", spec.gamelist))
+                    continue;
+                if (!existing_file(&s, spec.gamelist) &&
+                    !absolute_path(spec.rom, "gamelist.xml", spec.gamelist))
+                    continue;
+                if (!existing_file(&s, spec.gamelist) &&
+                    !absolute_path(spec.rom, "gamelist.json", spec.gamelist))
+                    continue;
                 scan_system(&s, &spec);
             }
         }

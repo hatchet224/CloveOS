@@ -26,3 +26,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends libsdl2-dev pkg-config
           cmake -S src/console-file-explorer -B build/file-app -DBUILD_TESTING=OFF
           cmake --build build/file-app --target console-file-explorer -j2
+      - name: Check Linux library scanning
+        run: |
+          cmake -S src/console-sessiond -B build/library-tests -DBUILD_TESTING=ON
+          cmake --build build/library-tests --target sessiond_library_linux_tests -j2
+          ctest --test-dir build/library-tests -R '^library_linux$' --output-on-failure
