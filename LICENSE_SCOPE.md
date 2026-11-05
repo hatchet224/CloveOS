@@ -25,10 +25,11 @@ CloveOS branding/artwork. Those payloads are not included in this source import.
 The names, hashes, and upstream links in provenance records do not grant rights
 to the referenced payloads.
 
-The File Explorer directory contains original CloveOS adapters only. The local
-DinguxCommander input lacks a clear license grant; its implementation and patches
-containing its source are excluded pending verification. Other emulator sources
-and any component-specific restrictions remain documented separately.
+`src/console-file-explorer` contains an original GPL-3.0-or-later implementation.
+The older `ports/file-explorer` directory contains original CloveOS adapters only.
+The DinguxCommander input lacks a clear license grant; its implementation and
+patches containing its source are excluded. Other emulator sources and any
+component-specific restrictions remain documented separately.
 
 Publishing this source does not establish that every byte of an existing SD-card
 image is open source or cleared for redistribution. See
