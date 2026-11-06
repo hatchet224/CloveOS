@@ -162,12 +162,14 @@ static inline void cl_brightness_trace(const char *stage,int display)
     (void)clock_gettime(CLOCK_MONOTONIC,&now);
     int cached=display>=0?ioctl(display,0x103UL,args):-1;
     int desired=cl_brightness_target_read(&target)==0?(int)target:-1;
-    fprintf(stderr,"brightness-probe: stage=%s monotonic=%lld.%09ld pid=%ld desired_raw=%d cached_raw=%d\n",
-            stage,(long long)now.tv_sec,now.tv_nsec,(long)getpid(),desired,cached);
+    fprintf(stderr,"brightness-probe: stage=%s monotonic=%lld.%09ld pid=%ld desired_raw=%d cached_raw=%d logical_level=%u\n",
+            stage,(long long)now.tv_sec,now.tv_nsec,(long)getpid(),desired,cached,desired>=0?cl_brightness_level((unsigned int)desired):0U);
     cl_brightness_trace_pwm();
     cl_brightness_trace_text("/run/console/brightness-level");
     cl_brightness_trace_text("/sys/class/graphics/fb0/blank");
-    cl_brightness_trace_text("/sys/class/disp/disp/attr/sys");
+    /* Full display dump only at lifecycle boundaries; retain the first wake in bounded logs. */
+    if(strcmp(stage,"restore-before")==0 || strcmp(stage,"standby-before-off")==0 || strcmp(stage,"standby-restored")==0)
+        cl_brightness_trace_text("/sys/class/disp/disp/attr/sys");
     cl_brightness_trace_text("/sys/kernel/debug/pwm");
     if(strcmp(stage,"standby-before-off")==0 || strcmp(stage,"restore-before")==0 || strcmp(stage,"standby-restored")==0)
         cl_brightness_trace_owners();

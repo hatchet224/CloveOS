@@ -59,28 +59,37 @@ static int mock_execv(const char *path, char *const args[])
   }
   _exit(0);
 }
-static int mock_brightness=128, enabled=1, alias, fail_set, fail_gate, invalid_get, writes, enables;
-static int reset_on_enable, wrong_motion;
-static int model_inverse=1, model_was_disabled;
-static char target_path[256];
+/* Stateful model of the captured vendor-kernel lifecycle: cached GET is
+ * separate from applied duty; compound disable sets opposite configured
+ * polarity and frees PWM; reopen requests normal polarity. No real panel. */
+static int mock_brightness=128,enabled=1,pwm_requested=1,model_inverse=1,applied=128;
+static int disable_count,enable_count,fail_disable,fail_enable;
+static char target_path[256],mode_path[256];
 static int mock_open(const char *path,int flags,...)
-{return open(strcmp(path,"/dev/disp")==0?"/dev/null":path,flags);}
+{
+ mode_t mode=0;va_list va;
+ if(flags&O_CREAT){va_start(va,flags);mode=(mode_t)va_arg(va,int);va_end(va);}
+ return open(strcmp(path,"/dev/disp")==0?"/dev/null":path,flags,mode);
+}
 static int mock_ioctl(int fd,unsigned long command,...)
 {
-  va_list va;unsigned long *args;(void)fd;
-  va_start(va,command);args=va_arg(va,unsigned long *);va_end(va);
-  assert(args[0]==0UL&&args[2]==0UL&&args[3]==0UL);
-  if(command==0x103UL)return invalid_get?300:mock_brightness;
-  if(command==0x105UL){model_was_disabled=1;enabled=0;return 0;}
-  if(command==0x0cUL){if(args[1]==0UL && model_was_disabled)model_inverse=0;return 0;}
-  if(command==0x104UL){if(fail_gate){errno=EIO;return -1;}enabled=1;++enables;
-    if(reset_on_enable)mock_brightness=8;return 0;}
-  assert(command==0x102UL&&args[1]<=255UL);++writes;
-  if(fail_set){errno=EIO;return -1;}
-  if(wrong_motion)mock_brightness=(int)args[1]<mock_brightness?mock_brightness+1:mock_brightness-1;
-  else mock_brightness=alias&&args[1]==32UL?24:(int)args[1];
-  if(mock_brightness<8)enabled=0; /* Increasing PWM alone cannot repair a disabled gate. */
-  return 0;
+ va_list va;unsigned long *args;(void)fd;
+ va_start(va,command);args=va_arg(va,unsigned long *);va_end(va);
+ assert(args[0]==0UL&&args[2]==0UL&&args[3]==0UL);
+ if(command==0x103UL)return mock_brightness;
+ if(command==0x105UL){
+  ++disable_count;if(fail_disable){errno=EIO;return -1;}
+  model_inverse=0;pwm_requested=0;enabled=0;return 0;
+ }
+ if(command==0x104UL){
+  ++enable_count;if(fail_enable){errno=EIO;return -1;}
+  if(!pwm_requested){pwm_requested=1;model_inverse=0;applied=mock_brightness;}
+  enabled=1;return 0;
+ }
+ if(command==0x0cUL)return 0;
+ assert(command==0x102UL&&args[1]<=255UL);
+ if(mock_brightness!=(int)args[1]&&pwm_requested)applied=(int)args[1];
+ mock_brightness=(int)args[1];return 0;
 }
 int console_level_program_main(int argc,char **argv);
 #define main console_level_program_main
@@ -88,6 +97,7 @@ int console_level_program_main(int argc,char **argv);
 #define ioctl mock_ioctl
 #define execv mock_execv
 #define CL_BRIGHTNESS_TARGET_PATH target_path
+#define CL_BRIGHTNESS_MODE_PATH mode_path
 #include "../image/console-level.c"
 #undef main
 #undef open
@@ -102,35 +112,65 @@ int diagnostic_standby_main(int argc,char **argv);
 #undef main
 #undef open
 #undef ioctl
-static int modeled_light(void){return model_inverse?255-mock_brightness:mock_brightness;}
+static int modeled_light(void){return enabled?(model_inverse?255-applied:applied):0;}
+static void select_step(int direction)
+{
+ assert(brightness(direction)==0);
+ assert(cl_brightness_target_write(adjusted_target)==0);
+}
 int main(void)
 {
  char directory[]="/tmp/clove-transition-XXXXXX";assert(mkdtemp(directory));
  assert(snprintf(target_path,sizeof(target_path),"%s/target",directory)>0);
- unsigned int failures=0U;
- static const unsigned int targets[]={48U,96U,160U};
- for(size_t level=0U;level<3U;++level){
-  model_inverse=1;model_was_disabled=0;enabled=1;mock_brightness=(int)targets[level];
+ assert(snprintf(mode_path,sizeof(mode_path),"%s/mode",directory)>0);
+ audio=mmap(NULL,sizeof(*audio),PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0);
+ assert(audio!=MAP_FAILED);audio->left=audio->right=121;audio->soft=255;
+ /* A failed release still attempts reopen, never records normalization. */
+ fail_disable=1;assert(cl_brightness_mode_ensure(1)!=0&&enable_count==1);
+ assert(access(mode_path,F_OK)!=0);fail_disable=0;
+ fail_enable=1;assert(cl_brightness_mode_ensure(1)!=0);
+ assert(access(mode_path,F_OK)!=0);fail_enable=0;
+ unsigned int cycles=0U;
+ static const unsigned int levels[]={0U,3U,5U,8U};
+ for(size_t level=0U;level<4U;++level){
+  assert(unlink(mode_path)==0 || errno==ENOENT);
   assert(unlink(target_path)==0 || errno==ENOENT);
-  int initial_light=modeled_light();unsigned int initial_bar=brightness_menu_level((unsigned int)mock_brightness);
-  assert(brightness(1)==0);
-  assert(modeled_light()>initial_light && brightness_menu_level((unsigned int)mock_brightness)>initial_bar);
-  unsigned int desired=(unsigned int)mock_brightness;assert(cl_brightness_target_write(desired)==0);
-  int selected_light=modeled_light();unsigned int selected_bar=brightness_menu_level(desired);
+  /* Fresh boot starts in the captured inverse mode, even without a setting. */
+  model_inverse=1;pwm_requested=1;enabled=1;mock_brightness=8;applied=128;
+  struct console_levels saved={1U,levels[level],40U};
+  unsigned int expected=levels[level]?levels[level]:5U;
+  int before_disable=disable_count;
+  assert(restore_levels(&saved)==0);
+  assert(disable_count==before_disable+1 && !model_inverse && enabled);
+  assert(mock_brightness==(int)cl_brightness_raw(expected));
+  assert(modeled_light()==mock_brightness && brightness_menu_level((unsigned int)mock_brightness)==expected);
+  int initial_light=modeled_light();unsigned int initial_bar=expected;
+  select_step(1);
+  assert(modeled_light()>initial_light && brightness_menu_level(adjusted_target)>initial_bar);
+  select_step(-1);assert(modeled_light()==initial_light);
+  unsigned int desired=cl_brightness_raw(expected);
   for(unsigned int cycle=0U;cycle<3U;++cycle){
-   assert(enter(1)==0 && leave(1)==0);
-   unsigned int retained;assert(cl_brightness_target_read(&retained)==0 && retained==desired && mock_brightness==(int)desired);
-   assert(brightness_menu_level(desired)==selected_bar);
-   if(modeled_light()!=selected_light)++failures;
-   int light_before=modeled_light();unsigned int bar_before=brightness_menu_level((unsigned int)mock_brightness);
-   assert(brightness(1)==0);
-   assert(brightness_menu_level((unsigned int)mock_brightness)>bar_before && modeled_light()<light_before);
-   /* Both a reopened menu and a resumed game's late display owner replay the
-    * retained native target. Neither cached equality nor replay fixes this model. */
-   assert(cl_brightness_reapply(1,desired)==0 && mock_brightness==(int)desired);
+   int selected_light=modeled_light();
+   assert(enter(1)==0 && modeled_light()==0);
+   /* Authoritative logical record survives zero/cache/priming values. */
+   unsigned int retained;assert(cl_brightness_target_read(&retained)==0 && retained==desired);
+   assert(leave(1)==0 && !model_inverse && enabled);
+   assert(mock_brightness==(int)desired && modeled_light()==selected_light);
+   assert(brightness_menu_level(retained)==expected);
+   int light_before=modeled_light();select_step(1);
+   assert(modeled_light()>light_before && brightness_menu_level(adjusted_target)==expected+1U);
+   select_step(-1);assert(modeled_light()==selected_light);
+   /* Both MainUI and a resumed game's later display owner can reset raw duty.
+    * Reopening must replay the retained logical level, not capture that raw. */
+   mock_brightness=8;applied=8;assert(restore_levels(&saved)==0);
+   assert(modeled_light()==selected_light && brightness_menu_level((unsigned int)mock_brightness)==expected);
+   ++cycles;
   }
+  assert(saved.brightness==levels[level] && saved.volume==40U);
  }
- assert(failures==9U);assert(unlink(target_path)==0 && rmdir(directory)==0);
- puts("R52_STATEFUL_TRANSFER_MODEL_COUNTEREXAMPLE cold_up_light_and_bar_pass=1 repeated_wake_light_bar_failures=9 cached_and_desired_raw_retained=1 hardware_state_model_hypothetical=1 physical_cause_proven=0");
+ assert(cycles==12U);
+ assert(unlink(target_path)==0 && unlink(mode_path)==0 && rmdir(directory)==0);
+ assert(munmap(audio,sizeof(*audio))==0);
+ puts("R54_STATEFUL_LIFECYCLE_PASS captured_kernel_behavior_model=1 cold_and_default_normalized=1 logical_light_bar_jointly_preserved=1 repeated_cycles=12 mainui_and_game_owner_reopen=1 physical_panel_tested=0");
  return 0;
 }

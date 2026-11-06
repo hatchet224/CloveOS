@@ -61,7 +61,7 @@ static int mock_execv(const char *path, char *const args[])
 }
 static int mock_brightness=128, enabled=1, alias, fail_set, fail_gate, invalid_get, writes, enables;
 static int reset_on_enable, wrong_motion;
-static char target_path[256];
+static char target_path[256],mode_path[256];
 static int mock_open(const char *path,int flags,...)
 {return open(strcmp(path,"/dev/disp")==0?"/dev/null":path,flags);}
 static int mock_ioctl(int fd,unsigned long command,...)
@@ -69,6 +69,7 @@ static int mock_ioctl(int fd,unsigned long command,...)
   va_list va;unsigned long *args;(void)fd;
   va_start(va,command);args=va_arg(va,unsigned long *);va_end(va);
   assert(args[0]==0UL&&args[2]==0UL&&args[3]==0UL);
+  if(command==0x105UL){enabled=0;return 0;}
   if(command==0x103UL)return invalid_get?300:mock_brightness;
   if(command==0x104UL){if(fail_gate){errno=EIO;return -1;}enabled=1;++enables;
     if(reset_on_enable)mock_brightness=8;return 0;}
@@ -85,6 +86,7 @@ int console_level_program_main(int argc,char **argv);
 #define ioctl mock_ioctl
 #define execv mock_execv
 #define CL_BRIGHTNESS_TARGET_PATH target_path
+#define CL_BRIGHTNESS_MODE_PATH mode_path
 #include "../image/console-level.c"
 #undef main
 #undef open
@@ -94,6 +96,7 @@ int main(void) {
   char directory[]="/tmp/clove-level-XXXXXX";
   assert(mkdtemp(directory)!=NULL);
   assert(snprintf(target_path,sizeof(target_path),"%s/target",directory)>0);
+  assert(snprintf(mode_path,sizeof(mode_path),"%s/mode",directory)>0);
   unsigned int level;
   for (level = 0U; level <= 255U; ++level) {
     unsigned int up_step = next_brightness(level, 1);
@@ -105,9 +108,9 @@ int main(void) {
   }
   assert(next_brightness(16U, 1) == 32U);
   assert(next_brightness(16U, -1) == 8U);
-  assert(brightness_menu_level(8U)==10U && brightness_menu_level(255U)==1U);
+  assert(brightness_menu_level(8U)==1U && brightness_menu_level(255U)==10U);
   for (level=1U;level<sizeof(brightness_steps)/sizeof(brightness_steps[0]);++level)
-    assert(brightness_menu_level(brightness_steps[level-1U])==brightness_menu_level(brightness_steps[level])+1U);
+    assert(brightness_menu_level(brightness_steps[level-1U])+1U==brightness_menu_level(brightness_steps[level]));
   for(unsigned int i=0U;i<12U;++i)assert(brightness_raw(-1)==0);
   assert(mock_brightness==8&&enabled==1);
   for(unsigned int i=0U;i<12U;++i)assert(brightness_raw(1)==0);
@@ -124,36 +127,31 @@ int main(void) {
   fail_gate=1;assert(brightness_raw(1)==1);fail_gate=0;
   int before=writes;invalid_get=1;
   assert(brightness_raw(1)==1&&writes==before);invalid_get=0;
-  /* Model the inverse register/light ordering reported on physical R51.
-   * This fixture does not measure a real panel. Verify logical direction,
-   * displayed meter, endpoints and unchanged native save/restore semantics. */
+  /* Positive logical mapping after supported cold normalization. */
   mock_brightness=128;enabled=1;
-  assert(brightness(1)==0&&mock_brightness==96);
+  assert(brightness(1)==0&&mock_brightness==160);
   assert(brightness(-1)==0&&mock_brightness==128);
-  mock_brightness=8;assert(brightness(1)==0&&mock_brightness==8);
-  assert(brightness(-1)==0&&mock_brightness==16);
-  mock_brightness=255;assert(brightness(-1)==0&&mock_brightness==255);
-  assert(brightness(1)==0&&mock_brightness==192);
+  mock_brightness=8;assert(brightness(-1)==0&&mock_brightness==8);
+  assert(brightness(1)==0&&mock_brightness==16);
+  mock_brightness=255;assert(brightness(1)==0&&mock_brightness==255);
+  assert(brightness(-1)==0&&mock_brightness==192);
   mock_brightness=0;enabled=0;
   assert(brightness(1)==0&&mock_brightness==8&&enabled==1);
-  mock_brightness=1;enabled=0;
-  assert(brightness(1)==0&&mock_brightness==8&&enabled==1);
   mock_brightness=128;enabled=0;reset_on_enable=1;
-  assert(brightness(1)==0&&mock_brightness==96&&enabled==1);reset_on_enable=0;
+  assert(brightness(1)==0&&mock_brightness==160&&enabled==1);reset_on_enable=0;
   mock_brightness=128;fail_gate=1;assert(brightness(1)==1);fail_gate=0;
   mock_brightness=128;wrong_motion=1;assert(brightness(1)==1);
   mock_brightness=128;assert(brightness(-1)==1);wrong_motion=0;
-  puts("R52_LOGICAL_UP_ENABLE_LEGACY_ZERO_RECOVERY_AND_WRONG_MOTION_REJECTION_PASS panel_mocked=1");
   for(unsigned int raw=8U;raw<=255U;++raw){
     mock_brightness=(int)raw;
     unsigned int meter=brightness_menu_level(raw);
-    assert(brightness(1)==0 && (unsigned int)mock_brightness<=raw);
+    assert(brightness(1)==0 && (unsigned int)mock_brightness>=raw);
     assert(brightness_menu_level((unsigned int)mock_brightness)>=meter);
     mock_brightness=(int)raw;
-    assert(brightness(-1)==0 && (unsigned int)mock_brightness>=raw);
+    assert(brightness(-1)==0 && (unsigned int)mock_brightness<=raw);
     assert(brightness_menu_level((unsigned int)mock_brightness)<=meter);
   }
-  puts("R52_INVERSE_LIGHT_MODEL_LOGICAL_BRIGHTNESS_METER_ALL248_NATIVE_VALUES_PASS panel_mocked=1");
+  puts("R54_POSITIVE_BRIGHTNESS_METER_ALL248_NATIVE_VALUES_PASS panel_mocked=1");
   audio=mmap(NULL,sizeof(*audio),PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0);
   assert(audio!=MAP_FAILED);
   audio->left=audio->right=255U;audio->headphone=3U;audio->digital=12U;audio->soft=32U;
@@ -198,31 +196,31 @@ int main(void) {
   audio->failure=1;assert(volume(1,&percent)==1);audio->failure=0;
   audio->mono_dac=1;assert(volume_apply(50U)==1);audio->mono_dac=0;
   audio->disagree=1;assert(volume_apply(50U)==1);audio->disagree=0;
-  struct console_levels saved={0U,48U,35U};
+  struct console_levels saved={0U,4U,35U};
   assert(restore_levels(&saved)==0 && mock_brightness==48 && enabled==1);
   assert(audio->left==118U && audio->right==118U);
   /* Model a new display/audio owner resetting hardware after the boot restore.
    * Reapplying the same saved values must repair both without changing them. */
   mock_brightness=255;audio->left=audio->right=153U;
   assert(restore_levels(&saved)==0 && mock_brightness==48 && enabled==1);
-  assert(audio->left==118U && audio->right==118U && saved.volume==35U && saved.brightness==48U);
+  assert(audio->left==118U && audio->right==118U && saved.volume==35U && saved.brightness==4U);
   puts("POST_DEVICE_INITIALIZATION_LEVEL_REAPPLY_PASS");
   struct console_levels unrecorded={0U,0U,35U};
   mock_brightness=8;
   assert(restore_levels(&unrecorded)==0&&mock_brightness==48);
   assert(unrecorded.brightness==0U&&unrecorded.revision==0U);
   assert(cl_brightness_target_write(96U)==0);mock_brightness=8;
-  assert(restore_levels(&saved)==0&&mock_brightness==96&&saved.brightness==48U);
+  assert(restore_levels(&saved)==0&&mock_brightness==96&&saved.brightness==4U);
   mock_brightness=8;assert(brightness_raw(1)==0&&mock_brightness==128);
   assert(cl_brightness_target_write(128U)==0);
   assert(unlink(target_path)==0);mock_brightness=128;
-  assert(restore_levels(&unrecorded)==0&&mock_brightness==128);
-  mock_brightness=8;assert(restore_levels(&unrecorded)==0&&mock_brightness==128);
+  assert(restore_levels(&unrecorded)==0&&mock_brightness==72);
+  mock_brightness=8;assert(restore_levels(&unrecorded)==0&&mock_brightness==72);
   puts("WAKE_OWNER_REPLAY_PASS no_durable_brightness=1 saved_session_target_over_stale_minimum=1 durable_record_unchanged=1");
   saved.volume=101U;assert(restore_levels(&saved)==0 && audio->left==121U);
   assert(audio->maximum_written==160U);
   assert(munmap(audio,sizeof(*audio))==0);
-  assert(unlink(target_path)==0&&rmdir(directory)==0);
+  assert(unlink(target_path)==0&&unlink(mode_path)==0&&rmdir(directory)==0);
   puts("AUDIO_RANGE_PASS bounded0or96to160 stereo_readback=1 neutral_reference_gain=1 logical_steps=20 missing_softvol=nonfatal malformed_output=reject migration_default40=1 physical_audio_tested=0");
   puts("LEVEL_TEST_PASS all256 bounded steps; full down-up sweep; dark legacy-level recovery; explicit gate enable; quantized aliases progress; write/gate/readback failures rejected; display mocked");
   puts("ALSA_COMMON_VOLUME_PASS bare_and_playback stereo_and_mono reject_capture_duplicate_mixed_formats");

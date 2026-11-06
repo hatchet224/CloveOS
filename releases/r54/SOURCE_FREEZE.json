@@ -1,0 +1,49 @@
+{
+  "files": [
+    {
+      "path": "src/console-packaging/image/backlight-runtime.h",
+      "sha256": "e7aa9a46f2f4107f1ba9b3cf6352a1848acf35b7f40b7c88a7e44a27ac28c356"
+    },
+    {
+      "path": "src/console-packaging/image/brightness-scale.h",
+      "sha256": "7f136ea932429550d36ac51a79be298a2d55355240fd1200836b6591ed9af834"
+    },
+    {
+      "path": "src/console-packaging/image/brightness-trace.h",
+      "sha256": "018c1fec9872b32398b46bea4d9353f2c25454923563b5c9daab39bad436f9fc"
+    },
+    {
+      "path": "src/console-packaging/image/console-level.c",
+      "sha256": "35ec5e71bdf968f9de2dd8c1f396af4b76d5607a4d564da2fc1d5a5cf37bb567"
+    },
+    {
+      "path": "src/console-packaging/image/level-state.c",
+      "sha256": "60508b492a57e14d5470689478bd279306d7fa782a635be29dffbcff4417ea7b"
+    },
+    {
+      "path": "src/console-packaging/image/level-state.h",
+      "sha256": "1c88bbe0373379192d712f5d4e4130f00d6295dc8d7267bd0a54f9cba5b740ef"
+    },
+    {
+      "path": "src/console-packaging/tests/test_brightness_migration.c",
+      "sha256": "9eae95f347b70765e3303c7c69e7fb3c8beb974fa4fe3ef74f943aab4b6e0e08"
+    },
+    {
+      "path": "src/console-packaging/tests/test_brightness_transition.c",
+      "sha256": "d598c6d4d05621f7c529977697558478efd02f087fb02459a68fd8857d9d9d96"
+    },
+    {
+      "path": "src/console-packaging/tests/test_levels.c",
+      "sha256": "28838bd0d2929c74757822604b9a3ac3e12340ae5c1271f167364344023224ca"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "0ca31952c9ba77483bea078e49cbc15341715cae8525ee8de57f79a938157b28"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/build.h",
+      "sha256": "1be68e59c3abdebe93108ac6c9d3329213f13bb6f34da50867dee191ff843375"
+    }
+  ],
+  "physical_acceptance_passed": false
+}

@@ -1,4 +1,5 @@
 #include "level-state.h"
+#include "brightness-scale.h"
 #include "sessiond/durability.h"
 #include "sessiond/json.h"
 #include <errno.h>
@@ -51,10 +52,10 @@ static enum cs_store_status read_record(struct cs_store *store, const char *name
         used += (size_t)n;
     }
     if (!cs_json_parse(&json, bytes, used) || !cs_json_keys(&json, keys, 6U) ||
-        !cs_json_u64(&json, "schema", &schema) || (schema != 1U && schema != 2U) ||
+        !cs_json_u64(&json, "schema", &schema) || (schema != 1U && schema != 2U && schema != 3U) ||
         !cs_json_u64(&json, "revision", &parsed.revision) ||
         !cs_json_u64(&json, "brightness", &brightness) ||
-        (brightness != 0U && (brightness < 8U || brightness > 255U)) ||
+        (schema==3U?brightness>10U:(brightness != 0U && (brightness < 8U || brightness > 255U))) ||
         !cs_json_u64(&json, "volume", &volume) || volume > 101U) goto done;
     uuid = cs_json_string(&json, "uuid");
     stored = cs_json_string(&json, "digest");
@@ -66,6 +67,7 @@ static enum cs_store_status read_record(struct cs_store *store, const char *name
      * as percentages of the new bounded board range. Keep brightness and
      * revision, discard that volume, and use the board's initial level. */
     if (schema == 1U) parsed.volume = 101U;
+    if(schema<3U)parsed.brightness=cl_brightness_legacy_level(parsed.brightness);
     *levels = parsed;
     result = CS_STORE_OK;
 done:
@@ -95,8 +97,8 @@ static bool replace(struct cs_store *store, const char *name, const struct conso
     size_t used = 0U;
     int fd = -1, n;
     bool ok = false, renamed = false;
-    if (!digest(store, levels, 2U, hash) || clock_gettime(CLOCK_MONOTONIC, &now) != 0) return false;
-    n = snprintf(text, sizeof(text), "{\"schema\":2,\"uuid\":\"%s\",\"revision\":%" PRIu64
+    if (!digest(store, levels, 3U, hash) || clock_gettime(CLOCK_MONOTONIC, &now) != 0) return false;
+    n = snprintf(text, sizeof(text), "{\"schema\":3,\"uuid\":\"%s\",\"revision\":%" PRIu64
                  ",\"brightness\":%u,\"volume\":%u,\"digest\":\"%s\"}\n", store->uuid,
                  levels->revision, levels->brightness, levels->volume, hash);
     if (n < 0 || (size_t)n >= sizeof(text)) return false;
@@ -136,7 +138,7 @@ bool console_levels_save(struct cs_store *store, int brightness, int volume)
     enum cs_store_status status;
     int lock;
     bool ok = false;
-    if ((brightness != -1 && (brightness < 8 || brightness > 255)) ||
+    if ((brightness != -1 && (brightness < 1 || brightness > 10)) ||
         volume < -1 || volume > 100 || cs_store_check_media(store) != CS_STORE_OK) return false;
     lock = openat(store->data_fd, ".levels.lock",
                   O_RDWR | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0600);

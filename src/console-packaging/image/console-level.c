@@ -24,8 +24,8 @@
 #define LCD_SET_BRIGHTNESS 0x102UL
 #define LCD_GET_BRIGHTNESS 0x103UL
 #define LCD_BACKLIGHT_ENABLE 0x104UL
-static const unsigned int brightness_steps[] = {8U, 16U, 32U, 48U, 72U,
-                                                96U, 128U, 160U, 192U, 255U};
+#define brightness_steps cl_brightness_steps
+static unsigned int adjusted_target;
 static unsigned int next_brightness(unsigned int current, int direction) {
   size_t i;
   if (direction > 0) {
@@ -40,15 +40,7 @@ static unsigned int next_brightness(unsigned int current, int direction) {
   return 8U; /* Zero28's known restart/priming level; reserve darkness for standby. */
 }
 static unsigned int brightness_menu_level(unsigned int raw) {
-  unsigned int best = 0U, distance = UINT_MAX;
-  for (unsigned int i = 0U; i < sizeof(brightness_steps) / sizeof(brightness_steps[0]); ++i) {
-    unsigned int step = brightness_steps[i];
-    unsigned int delta = step > raw ? step - raw : raw - step;
-    if (delta < distance) { best = i; distance = delta; }
-  }
-  /* R51 physical acceptance: increasing this panel's native register dims it.
-   * Stored values stay native; only the displayed logical level is reversed. */
-  return (unsigned int)(sizeof(brightness_steps) / sizeof(brightness_steps[0])) - best;
+  return cl_brightness_level(raw);
 }
 static void publish_level(const char *path, unsigned int level) {
   char temporary[] = "/run/console/.level-XXXXXX";
@@ -71,6 +63,7 @@ static int brightness_raw(int direction) {
     goto done;
   if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode))
     goto done;
+  if(cl_brightness_mode_ensure(fd)!=0)goto done;
   cl_brightness_trace("adjust-before",fd);
   current = ioctl(fd, LCD_GET_BRIGHTNESS, args);
   if (current < 0 || current > 255) {
@@ -118,6 +111,7 @@ static int brightness_raw(int direction) {
     errno = EIO;
     goto done;
   }
+  adjusted_target=requested;
   cl_brightness_trace("adjust-after",fd);
   fprintf(stderr, "console-level: LCD brightness direction=%d before=%d requested=%u observed=%d\n",
           direction, previous, requested, current);
@@ -128,16 +122,11 @@ done:
     result = 1;
   return result;
 }
-/* Physical R51 acceptance on this Zero28: Settings Right and MENU+Volume Up
- * dimmed the screen while ordinary sound direction remained correct. The old
- * MinUI-source polarity assumption does not describe this panel. Translate
- * logical brightness at this one board boundary, shared by every UI route.
- * Persisted and standby/wake targets remain untouched native register values. */
+/* Normalized PWM is positive at cold boot and after every wake. Logical input
+ * and the slider now share one positive scale; saved/RAM targets are logical. */
 static int brightness(int direction) {
-  int register_direction = -direction;
-  fprintf(stderr, "console-level: brightness logical_direction=%d register_direction=%d\n",
-          direction, register_direction);
-  return brightness_raw(register_direction);
+  fprintf(stderr,"console-level: brightness logical_direction=%d register_direction=%d normalized=1\n",direction,direction);
+  return brightness_raw(direction);
 }
 static int mixer(const char *control, const char *value, char *output, size_t capacity) {
   int pipefd[2], status;
@@ -340,11 +329,9 @@ static int read_brightness(void) {
 }
 static int restore_levels(const struct console_levels *levels) {
   int result = 0;
-  unsigned int target=levels->brightness;
-  if(cl_brightness_target_read(&target)!=0 && target==0U){
-    int current=read_brightness();
-    if(current>=8)target=(unsigned int)current;
-  }
+  unsigned int selected=levels->brightness>=1U && levels->brightness<=10U?levels->brightness:5U;
+  unsigned int target=cl_brightness_raw(selected);
+  (void)cl_brightness_target_read(&target);
   if (target != 0U) {
     unsigned long gate[4] = {0UL};
     struct stat st;
@@ -357,6 +344,7 @@ static int restore_levels(const struct console_levels *levels) {
       if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode)) result = 1;
       else {
         cl_brightness_trace("restore-before",fd);
+        if(cl_brightness_mode_ensure(fd)!=0)result=1;
         if(ioctl(fd,LCD_BACKLIGHT_ENABLE,gate)<0)result=1;
         cl_brightness_trace("restore-after-enable",fd);
         /* Even a gate error cannot leave a successfully opened display at
@@ -407,7 +395,9 @@ int main(int argc, char **argv) {
             levels.revision, levels.brightness, levels.volume);
     result = restore_levels(&levels);
     int observed = read_brightness();
-    if (observed >= 0) publish_level("/run/console/brightness-level", brightness_menu_level((unsigned int)observed));
+    unsigned int selected_raw;
+    if (cl_brightness_target_read(&selected_raw)==0)
+      publish_level("/run/console/brightness-level", brightness_menu_level(selected_raw));
     struct playback_values dac;
     if (mixer_read("DAC volume", &dac) && dac.count == 2U)
       publish_level("/run/console/volume-level", raw_volume_percent(dac.left > dac.right ? dac.left : dac.right) / 5U);
@@ -420,9 +410,9 @@ int main(int argc, char **argv) {
   if (strcmp(argv[1], "brightness") == 0) {
     int observed;
     if (brightness(direction) != 0 || (observed = read_brightness()) < 0) goto done;
-    if(cl_brightness_target_write((unsigned int)observed)!=0)goto done;
-    publish_level("/run/console/brightness-level", brightness_menu_level((unsigned int)observed));
-    result = console_levels_save(&store, observed, -1) ? 0 : 1;
+    if(cl_brightness_target_write(adjusted_target)!=0)goto done;
+    publish_level("/run/console/brightness-level", brightness_menu_level(adjusted_target));
+    result = console_levels_save(&store, (int)brightness_menu_level(adjusted_target), -1) ? 0 : 1;
     if (result != 0) fprintf(stderr, "console-level: brightness changed; durable settings write failed\n");
   } else {
     unsigned int observed;

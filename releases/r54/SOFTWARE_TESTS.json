@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "markers": [
+    "AUDIO_RANGE_PASS",
+    "STANDBY_WAKE_LEVEL_PASS",
+    "R54_STATEFUL_LIFECYCLE_PASS",
+    "R54_FAT_MIGRATION_PASS",
+    "BRIGHTNESS_PROBE_FAULT_ISOLATION_PASS",
+    "TRANSITION_DIAGNOSTIC_VM_EXIT=0"
+  ],
+  "actual_aarch64_helper_and_standby_logic": true,
+  "panel_mocked": true,
+  "kernel_lifecycle_model_based_on_captured_r53": true,
+  "physical_r54_acceptance_passed": false,
+  "no_card_writes": true,
+  "durable_test_real_loop_vfat": true,
+  "audio_mixer_implementation_byte_identical_R53": true,
+  "all_248_legacy_raw_authenticated": true,
+  "all_10_logical_persistence_roundtrips": true,
+  "default_level_normalized": true,
+  "source_source_only_delta": true,
+  "legacy_migration_preserves_old_meter_not_unrecorded_physical_light": true
+}

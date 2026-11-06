@@ -24,3 +24,11 @@ The required result remains: Menu + Volume Up raises both screen light and meter
 Menu + Volume Down lowers both, and repeated wakes restore the chosen light.
 The existing R52 reconstruction instructions and toolchain apply to these source
 files. Vendor components and existing third-party notices are unchanged.
+
+The subsequent physical test and captured hardware samples identified the
+transition: backlight-disable ioctl `0x105` changes PWM0 polarity from inverse
+to normal, and wake retains normal. The same selected raw value is restored.
+This explains why the static inverse adapter reverses after the first sleep.
+The user reported no wake dimming during this diagnostic test, but controls still
+reversed. See [sanitized register samples](HARDWARE_TRANSITION.json). This is a
+confirmed state transition, not a completed correction or physical acceptance.

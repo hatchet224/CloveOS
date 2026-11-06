@@ -1,0 +1,73 @@
+{
+  "diagnostic_build": "r53-diag",
+  "user_report": {
+    "cold_boot_controls_correct": true,
+    "first_wake_controls_reversed": true,
+    "wake_dimmed_screen": false
+  },
+  "hardware_transition_confirmed": "Backlight-disable ioctl 0x105 changes PWM0 from inverse to normal; wake retains normal. Reapplying the same cached brightness does not restore that mode.",
+  "physical_fix_passed": false,
+  "optical_measurement_performed": false,
+  "samples": [
+    {
+      "stage": "standby-before-off",
+      "desired_raw": 72,
+      "cached_raw": 72,
+      "gate": "00000001",
+      "enable": "00000001",
+      "control0": "00000000",
+      "period0": "01df0088",
+      "polarity_bit8": "0",
+      "active_cycles": "136",
+      "total_cycles_minus1": "479"
+    },
+    {
+      "stage": "standby-command-102-value-0",
+      "desired_raw": 72,
+      "cached_raw": 0,
+      "gate": "00000001",
+      "enable": "00000001",
+      "control0": "00000000",
+      "period0": "01df0000",
+      "polarity_bit8": "0",
+      "active_cycles": "0",
+      "total_cycles_minus1": "479"
+    },
+    {
+      "stage": "standby-command-105-value-0",
+      "desired_raw": 72,
+      "cached_raw": 0,
+      "gate": "00000000",
+      "enable": "00000000",
+      "control0": "00000100",
+      "period0": "01df0000",
+      "polarity_bit8": "1",
+      "active_cycles": "0",
+      "total_cycles_minus1": "479"
+    },
+    {
+      "stage": "standby-after-enable",
+      "desired_raw": 72,
+      "cached_raw": 8,
+      "gate": "00000001",
+      "enable": "00000001",
+      "control0": "00000100",
+      "period0": "01df0010",
+      "polarity_bit8": "1",
+      "active_cycles": "16",
+      "total_cycles_minus1": "479"
+    },
+    {
+      "stage": "standby-restored",
+      "desired_raw": 72,
+      "cached_raw": 72,
+      "gate": "00000001",
+      "enable": "00000001",
+      "control0": "00000100",
+      "period0": "01df0088",
+      "polarity_bit8": "1",
+      "active_cycles": "136",
+      "total_cycles_minus1": "479"
+    }
+  ]
+}
