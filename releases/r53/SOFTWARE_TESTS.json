@@ -13,5 +13,12 @@
   "physical_cause_confirmed": false,
   "physical_r52_acceptance_passed": false,
   "diagnostic_helpers_built": true,
-  "no_card_writes": true
+  "no_card_writes": true,
+  "normal_observer_explicit_success": true,
+  "MMIO_fault_child_isolated": true,
+  "MMIO_observation_budget_ms": 150,
+  "live_channel_pin_guards_verified_against_inserted_card_boot_DT": true,
+  "actual_PWM_register_values_not_yet_captured": true,
+  "brightness_fix_implemented": false,
+  "physical_test_pending": true
 }
