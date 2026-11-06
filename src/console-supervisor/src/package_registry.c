@@ -45,7 +45,8 @@ static const struct sp_package packages[SP_PACKAGE_COUNT] = {
     {"app.expert", "Expert (Shortcut)", "", "system/bin/console-launcher", SP_PACKAGE_APPS, BIT(2), false, false},
     {"app.list-shortcuts", "List shortcuts (Filter+Refresh)", "", "system/bin/console-launcher", SP_PACKAGE_APPS, BIT(2), false, false},
     {"app.search", "Search (Find your games)", "", "system/bin/console-launcher", SP_PACKAGE_APPS, BIT(2), false, true},
-    {"app.battery", "Battery Monitor", "", "system/bin/console-launcher", SP_PACKAGE_APPS, BIT(2), false, false}
+    {"app.battery", "Battery Monitor", "", "system/bin/console-launcher", SP_PACKAGE_APPS, BIT(2), false, false},
+    {"collection.ports", "Ports Collection", "ports", "system/bin/console-ports", SP_PACKAGE_VERIFIED, BIT(2), false, true}
 };
 const struct sp_package *sp_package_at(size_t index)
 {

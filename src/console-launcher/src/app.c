@@ -1016,8 +1016,6 @@ static const struct tweak_row tweak_main_menu[] = {
 static const struct tweak_row tweak_appearance[] = {
     TF("Show recents","Hide Recent on Home while keeping GameSwitcher and history.",CL_HIDE_RECENT,off_on),
     TF("Show expert mode","Show the Expert game browser on Home.",CL_SHOW_EXPERT,on_off),
-    {"Show PortMaster","Show PortMaster in Games to download ports. Hiding it keeps installed ports and settings.",
-     TWEAK_GAME_CONTROL,26U,1U,1U,off_on,TWEAK_NUMBER},
     TV("OSD bar size","Set the width of the level meter shown when adjusting brightness or volume in MainUI and in games.",
        CL_OSD_SHIFT,4,15,NULL,TWEAK_NUMBER),
     TP("Theme overrides...","Adjust theme labels and the battery display.",THEME_OVERRIDES),
@@ -2529,8 +2527,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         else if ((keys & CL_KEY(CL_A)) != 0U && selected(a) != NULL)
         {
             if(selected(a)->library_action==CL_LIBRARY_PORTMASTER || selected(a)->library_action==CL_LIBRARY_PORTS){
-                if(a->busy || (selected(a)->library_action==CL_LIBRARY_PORTMASTER &&
-                   (a->shortcuts&CL_HIDE_PORTMASTER)!=0U))return false;
+                if(a->busy || !a->app_features_known || (a->app_features&CL_APP_PORTS)==0U)return false;
                 memset(intent,0,sizeof(*intent));intent->kind=CL_LAUNCH_PORTMASTER;
                 if(selected(a)->library_action==CL_LIBRARY_PORTMASTER)strcpy(intent->auxiliary,"catalog");
                 a->memory->systems=a->system_position;
@@ -3158,7 +3155,7 @@ static bool apply_update(struct app *a, struct cl_update *update)
                         (void)snprintf(page->entries[i].title, sizeof(page->entries[i].title), "%s",
                                        system_title(page->entries[i].system));
                     else if(page->entries[i].library_action==CL_LIBRARY_PORTS)
-                        (void)snprintf(page->entries[i].title,sizeof(page->entries[i].title),"%s",CL_TR("Installed Ports"));
+                        (void)snprintf(page->entries[i].title,sizeof(page->entries[i].title),"%s",CL_TR("Ports"));
             }
             if (!a->page_restore[mode] && page->count != 0U)
             {

@@ -10,6 +10,8 @@ static bool fixture_scan(const struct cs_library_card *cards,size_t count,struct
 #undef cs_library_scan
 bool sc_tools_system_visible(const struct sp_package_selection *s,const char *system)
 { (void)s;(void)system;return true; }
+unsigned int sc_tools_app_features(const struct sp_package_selection *s)
+{ return sp_package_enabled(s,"collection.ports")?CL_APP_PORTS:0U; }
 bool sc_tools_system_expert(const char *system)
 { (void)system;return false; }
 static bool fixture_scan(const struct cs_library_card *cards,size_t count,struct cs_library *out)
@@ -46,6 +48,13 @@ int main(void)
  selection.enabled++;assert(library_snapshot(c,out,&selection,q,&cache,&store)&&scans==4);
  strcpy(c->library_secondary,"/other");assert(library_snapshot(c,out,&selection,q,&cache,&store)&&scans==5);
  assert(library_snapshot(c,out,&selection,q,&cache,&store)&&scans==6);
+ c->library_secondary[0]=0;selection.enabled |= UINT64_C(1)<<34U;
+ assert(library_snapshot(c,out,&selection,q,&cache,&store)&&out->count==3U);
+ assert(out->entries[2].library_action==CL_LIBRARY_PORTS && strcmp(out->entries[2].title,"Ports")==0);
+ for(size_t i=0;i<out->count;++i)assert(out->entries[i].library_action!=CL_LIBRARY_PORTMASTER);
+ selection.enabled &= ~(UINT64_C(1)<<34U);
+ assert(library_snapshot(c,out,&selection,q,&cache,&store)&&out->count==2U);
+ puts("R55_PORTS_CATALOG_PACKAGE_GATE_PASS unique_tile=1 cache_invalidated_after_package_change=1");
  free(cache.entries);free(c);free(out);free(q);
  puts("LIBRARY_CACHE_PASS navigation scans once; explicit refresh, remount and package change rescan; secondary card cache disabled");return 0;
 }

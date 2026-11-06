@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-static const char *const cores[] = {"gambatte","mgba","picodrive","genesis_plus_gx","fceumm","snes9x2005_plus","pcsx_rearmed","mupen64plus_next","flycast","ppsspp","fbneo","mednafen_pce_fast","fake08"};
+static const char *const cores[] = {"gambatte","mgba","tgbdual","picodrive","genesis_plus_gx","fceumm","snes9x2005_plus","pcsx_rearmed","mupen64plus_next","flycast","ppsspp","fbneo","mednafen_pce_fast","fake08"};
 static bool core_id(const char *id)
 {
     for (size_t i = 0U; i < sizeof(cores)/sizeof(cores[0]); ++i) if (strcmp(id,cores[i]) == 0) return true;
@@ -18,16 +18,20 @@ static bool template_game(const struct sc_game *base, const char *id, struct sc_
 {
     char path[512], artifact[512]; struct cs_json j;
     if (!core_id(id)) return false;
-    (void)snprintf(artifact,sizeof(artifact),"/system/lib/libretro/%s_libretro.so",id);
+    bool tgb = strcmp(id,"tgbdual") == 0;
+    if (tgb && strcmp(base->entry.system,"GB") != 0 && strcmp(base->entry.system,"GBC") != 0) return false;
+    (void)snprintf(artifact,sizeof(artifact),"/system/lib/libretro/%s%s_libretro.so",tgb ? "onion-4.3.1-1/" : "",id);
     if (strcmp(artifact,base->core) == 0) { *out = *base; return true; }
     int n = snprintf(path,sizeof(path),"/etc/console/core-variants/%s/%s.json",base->entry.system,id);
     if (n < 0 || (size_t)n >= sizeof(path) || !sc_read_json(path,&j)) return false;
     const char *core = cs_json_string(&j,"core_path"), *cfg = cs_json_string(&j,"config_path");
     const char *config_hash = cs_json_string(&j,"config_file_hash"), *options = cs_json_string(&j,"options_path");
     const char *options_hash = cs_json_string(&j,"options_file_hash"), *system = cs_json_string(&j,"system");
-    if (core == NULL || strcmp(core,artifact) != 0 || cfg == NULL || strcmp(cfg,base->config) != 0 ||
+    const char *expected_config = tgb ? "/etc/console/core-configs/tgbdual-single.cfg" : base->config;
+    const char *expected_options = tgb ? "/etc/console/core-options/tgbdual-single.cfg" : "/etc/console/retroarch-core-options.cfg";
+    if (core == NULL || strcmp(core,artifact) != 0 || cfg == NULL || strcmp(cfg,expected_config) != 0 ||
         system == NULL || strcmp(system,base->entry.system) != 0 || config_hash == NULL || options_hash == NULL || options == NULL ||
-        strcmp(options,"/etc/console/retroarch-core-options.cfg") != 0 ||
+        strcmp(options,expected_options) != 0 ||
         !sc_hash_path(cfg,config_hash,1048576U) || !sc_hash_path(options,options_hash,1048576U)) return false;
     *out = *base;
     const char *const keys[] = {"core","config","retroarch","disc","policy"};
@@ -39,7 +43,7 @@ static bool template_game(const struct sc_game *base, const char *id, struct sc_
     }
     /* BIOS inventory belongs to the enrolled content, not an old template's
      * build-time inventory. Native state compatibility still checks all hashes. */
-    strcpy(out->core,core); out->entry.identity = out->profile.identity;
+    strcpy(out->core,core); strcpy(out->config,cfg); out->entry.identity = out->profile.identity;
     return true;
 }
 static bool choice(const struct sc_config *c, const char game[65], char out[64])
@@ -96,9 +100,11 @@ void sc_core_options(const struct sc_config *c, const struct cs_store *store,
     (void)snprintf(row->detail,sizeof(row->detail),"%.100s",strrchr(base->core,'/')+1);
     for (size_t i = 0U; i < sizeof(cores)/sizeof(cores[0]); ++i) {
         if (!template_game(base,cores[i],&variant)) continue;
-        row = &s->rows[s->count++]; strcpy(row->id,cores[i]); strcpy(row->label,cores[i]);
+        row = &s->rows[s->count++]; strcpy(row->id,cores[i]); strcpy(row->label,strcmp(cores[i],"tgbdual")==0 ? "TGB Dual" : cores[i]);
         row->available = true; row->enabled = resolved && strcmp(effective.core,variant.core) == 0;
-        strcpy(row->detail,"Per-game core. Existing states remain tied to their original core.");
+        strcpy(row->detail,strcmp(cores[i],"tgbdual")==0 ?
+            "Single-player GB/GBC. Link is off; battery saves can seed Pokemon link." :
+            "Per-game core. Existing states remain tied to their original core.");
     }
     s->ready = true;
     strcpy(s->status,r->operation == CL_TOOL_SET_CORE ? "Game core saved. Use Reset game after changing core; older states are retained." : "Select a qualified core for this game. Default restores the system core.");

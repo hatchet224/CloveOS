@@ -1,5 +1,6 @@
 #include "sessiond/durability.h"
 #include "supervisor/packages.h"
+#include "launcher/preferences.h"
 #include "sessiond/json.h"
 #include "sessiond/sha256.h"
 #include <errno.h>
@@ -19,6 +20,15 @@
 #define R35_PACKAGE_BITS ((UINT64_C(1) << 26U) - 1U)
 #define R38_PACKAGE_BITS ((UINT64_C(1) << 28U) - 1U)
 #define R44_PACKAGE_BITS ((UINT64_C(1) << 29U) - 1U)
+#define R54_PACKAGE_BITS ((UINT64_C(1) << 34U) - 1U)
+static const char r51_to_r55_registries[][65] = {
+    "1734394c5771fdaeb57e2412ad9445d84b5dba4548045ae8eab299e737ec3fcd",
+    "41e384da88e750bacd1348df13b5fc8c12c616da567a1cca621745bf953a4098",
+    "144e4d0e1a44564ff5ed0ecdf91f27de76ba8d2b3cdfdceb81fe16e7ffc7569d",
+    "bc3d7ab7397068f489d7a3a204f965467c8aea97c98396734dc24019866b7763",
+    "48c9e5732ecb471c4a203e4765590b7ca6108393ef6132bca1ece59a40b1cf04",
+    "6f59b98d4a9a6a815bb200f413852d83484754fa21e1af62d7d4889ee1f783c5",
+};
 #define R46_PACKAGE_BITS ((UINT64_C(1) << 30U) - 1U)
 static const char r34_registry[] = "83311cd29369da032bc5258803b8ed1598add524fb2b48e553a198bf053f4991";
 static const char r35_registry[] = "059dd34ce8c728b8990743c235370a824d3f39da04f2a84077b92de64adc6905";
@@ -96,7 +106,10 @@ static enum sp_package_status read_record(const struct cs_store *v, const char *
         !cs_hex_valid(checksum, 64U)) goto done;
     uint64_t previous_bits = 0U;
     if (strcmp(registry, r->fingerprint) != 0) {
-        if (strcmp(registry, r45_registry) == 0 || strcmp(registry, r46_registry) == 0)
+        for(size_t release=0U;release<sizeof(r51_to_r55_registries)/sizeof(r51_to_r55_registries[0]);++release)
+            if(strcmp(registry,r51_to_r55_registries[release])==0)previous_bits=R54_PACKAGE_BITS;
+        if(previous_bits!=0U) { /* Exact known stable34-bit table. */ }
+        else if (strcmp(registry, r45_registry) == 0 || strcmp(registry, r46_registry) == 0)
             previous_bits = R46_PACKAGE_BITS;
         else if (strcmp(registry, r38_registry) == 0) previous_bits = R38_PACKAGE_BITS;
         else if (strcmp(registry, r36_registry) == 0 || strcmp(registry, r35_registry) == 0)
@@ -121,6 +134,12 @@ static enum sp_package_status read_record(const struct cs_store *v, const char *
     if (previous_bits != 0U) {
         if ((parsed.enabled & ~previous_bits) != 0U) goto done;
         parsed.enabled |= sp_package_defaults(r) & ~previous_bits;
+        /* Preserve the former Show PortMaster choice only on legacy import.
+         * Once saved with this registry, the package bit is authoritative. */
+        uint32_t shortcuts=0U;(void)cl_preferences_runtime(v,&shortcuts);
+        int ports=sp_package_index("collection.ports");
+        if(ports>=0 && (shortcuts&CL_HIDE_PORTMASTER)!=0U)
+            parsed.enabled &= ~(UINT64_C(1) << (unsigned int)ports);
     }
     if (!sp_package_selection_valid(r, parsed.enabled)) goto done;
     parsed.initialized = true; *out = parsed; status = SP_PACKAGE_OK;
@@ -141,6 +160,10 @@ static enum sp_package_status load_internal(const struct cs_store *v,
     if (b == SP_PACKAGE_OK) { previous.recovered = true; *out = previous; return SP_PACKAGE_RECOVERED; }
     if (a == SP_PACKAGE_EMPTY && b == SP_PACKAGE_EMPTY) {
         current.enabled = sp_package_defaults(r);
+        uint32_t shortcuts=0U;(void)cl_preferences_runtime(v,&shortcuts);
+        int ports=sp_package_index("collection.ports");
+        if(ports>=0 && (shortcuts&CL_HIDE_PORTMASTER)!=0U)
+            current.enabled &= ~(UINT64_C(1) << (unsigned int)ports);
         if (!sp_package_selection_valid(r, current.enabled)) return SP_PACKAGE_UNAVAILABLE;
         *out = current; return SP_PACKAGE_EMPTY;
     }

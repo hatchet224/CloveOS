@@ -1,5 +1,7 @@
 # CloveOS test status
 
+- The [R56 candidate](releases/r56/README.md) exposes TGB Dual for normal GB/GBC play with isolated configuration, save/resume and Netplay-save-seeding software tests. Physical normal-core and cross-device trade acceptance remain pending. Ports Collection replaces the earlier duplicate PortMaster launch entries.
+
 r51 is a development test candidate. Current evidence includes ARM and original Zero 28 kernel tests in QEMU. A fresh boot of the clean image through the physical handheld's bootloader and display remains to be verified.
 
 - **Confirmed R54 cross-device Pokemon pairing bug:** testing with a Miyoo Mini Plus on Onion 4.3.1-1 stalled with Z28 hosting and returned a setup error with Miyoo hosting. The actual Miyoo TGB Dual core matches the expected peer build. Its valid `Emu/GBC/../../Roms` cartridge path is rejected by the raw-prefix check before normalization. The [R55 source candidate](releases/r55/README.md) corrects that check and adds recovery/log retention; no successful physical trade is claimed.

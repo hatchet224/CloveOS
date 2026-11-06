@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#define SP_PACKAGE_COUNT 34U
+#define SP_PACKAGE_COUNT 35U
 #define SP_PACKAGE_PATH 160U
 /* Stable bit positions: never reorder existing IDs in a compatible schema. */
 enum sp_package_layer { SP_PACKAGE_RUNTIME, SP_PACKAGE_VERIFIED, SP_PACKAGE_APPS, SP_PACKAGE_EXPERT };

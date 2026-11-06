@@ -409,11 +409,8 @@ paginate:
         }
         if (!query->library_expert && query->library_search_tile && (out->app_features & CL_APP_SEARCH) != 0U)
             library_action(&entries[entry_count++], CL_LIBRARY_SEARCH_RESULTS, "Search");
-        if (!query->library_expert) {
-            if (!query->library_hide_portmaster)
-                library_action(&entries[entry_count++],CL_LIBRARY_PORTMASTER,"PortMaster");
-            library_action(&entries[entry_count++],CL_LIBRARY_PORTS,"Installed Ports");
-        }
+        if (!query->library_expert && (out->app_features & CL_APP_PORTS) != 0U)
+            library_action(&entries[entry_count++],CL_LIBRARY_PORTS,"Ports");
     }
     else
     {

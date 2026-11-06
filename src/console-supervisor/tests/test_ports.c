@@ -26,10 +26,22 @@ int main(void)
     assert(strstr(getenv("SDL_GAMECONTROLLERCONFIG"),"a:b4,")!=NULL);
     assert(strcmp(getenv("CLOVE_LANGUAGE"),"es_ES")==0);
     assert(run("setup","")==0);
+    {
+        char hook[4096];
+        int fd=openat(directory,"PortMaster/control.txt",O_RDONLY|O_NOFOLLOW);assert(fd>=0);
+        ssize_t n=read(fd,hook,sizeof(hook)-1U);assert(n>0&&close(fd)==0);hook[n]='\0';
+        assert(strstr(hook,"/run/console/clove-controllerdb.txt")!=NULL);
+        fd=openat(directory,"PortMaster/clovectl.r51",O_RDONLY|O_NOFOLLOW);assert(fd>=0);
+        n=read(fd,hook,sizeof(hook)-1U);assert(n>0&&close(fd)==0);hook[n]='\0';
+        assert(strstr(hook,"$controlfolder/clove-controllerdb.txt")!=NULL);
+        assert(faccessat(directory,"PortMaster/clovectl.tmp",F_OK,0)<0&&errno==ENOENT);
+    }
     struct port found[PORT_LIMIT];size_t count=scan(directory,found);bool demo=false;
-    for(size_t i=0U;i<count;++i)if(strcmp(found[i].filename,"Clove Native Demo.sh")==0)demo=true;
+    for(size_t i=0U;i<count;++i)if(strcmp(found[i].filename,"Clove Native Demo.sh")==0){assert(strcmp(found[i].title,"Clove Native Demo")==0);demo=true;}
     assert(demo);
     assert(run("port","Clove Native Demo.sh")==0);
+    assert(access("/run/console/clove-controllerdb.txt",F_OK)==0);
+    assert(faccessat(directory,"PortMaster/clove-controllerdb.txt",F_OK,0)<0&&errno==ENOENT);
     assert(waitpid(-1,&(int){0},WNOHANG)<0 && errno==ECHILD);
     assert(umount(ports_path)==0);close(directory);SDL_Quit();
     assert(statvfs(ports_path,&after)==0 && (after.f_flag&ST_NOEXEC)!=0U);

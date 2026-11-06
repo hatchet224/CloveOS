@@ -1,0 +1,67 @@
+{
+  "passed": true,
+  "normal_TGB": {
+    "passed": true,
+    "markers": [
+      "R56_PORTS_R54_R55_MIGRATION_PREFERENCES_ONCE_PACKAGE_AUTHORITY_AND_REJECT_PASS",
+      "PASS package registry integrity",
+      "R56_NORMAL_TGB_CORE_PICKER_GB_GBC_ISOLATED_CONFIG_DEFAULT_AND_REJECTION_PASS",
+      "R55_PORTS_COLLECTION_UI_PASS",
+      "R55_PORTS_CATALOG_PACKAGE_GATE_PASS",
+      "REAL_TGB_NORMAL_SESSION_PASS=GB:capture",
+      "REAL_TGB_NORMAL_SESSION_PASS=GB:resume",
+      "REAL_TGB_NORMAL_SESSION_PASS=GBC:resume",
+      "REAL_TGB_NORMAL_BATTERY_TO_LINK_SEED_PASS=GB",
+      "REAL_TGB_NORMAL_BATTERY_TO_LINK_SEED_PASS=GBC",
+      "R56_TGB_VM_EXIT=0"
+    ],
+    "actual_pinned_ARM64_core": true,
+    "actual_production_RetroArch": true,
+    "actual_session_store_and_link_helper": true,
+    "generated_GB_GBC_cartridges": true,
+    "disposable_FAT32": true,
+    "display_and_input_test_drivers": "null; QEMU has no handheld GPU",
+    "production_config_identity_tested_by_picker": true,
+    "physical_handheld_pending": true,
+    "no_SD_writes": true
+  },
+  "launcher_backend_and_packages": {
+    "passed": true,
+    "markers": [
+      "R56_NORMAL_TGB_CORE_PICKER_GB_GBC_ISOLATED_CONFIG_DEFAULT_AND_REJECTION_PASS",
+      "R56_PORTS_R54_R55_MIGRATION_PREFERENCES_ONCE_PACKAGE_AUTHORITY_AND_REJECT_PASS",
+      "R55_PORTS_COLLECTION_UI_PASS",
+      "R56_TGB_VM_EXIT=0"
+    ],
+    "actual_pinned_ARM64_core": false,
+    "actual_production_RetroArch": false,
+    "actual_session_store_and_link_helper": false,
+    "actual_launcher_backend_authorization": true,
+    "generated_GB_GBC_cartridges": true,
+    "disposable_FAT32": true,
+    "display_and_input_test_drivers": "null; QEMU has no handheld GPU",
+    "production_config_identity_tested_by_picker": true,
+    "physical_handheld_pending": true,
+    "no_SD_writes": true,
+    "scope": "Launcher package authorization, picker, migration, UI and language only; emulator execution is qualified by separate tgb-test/RESULT.json"
+  },
+  "native_ports": {
+    "passed": true,
+    "original_generated_native_demo": true,
+    "real_FAT32_executable_subtree": true,
+    "old_R51_hook_migration_and_backup": true,
+    "installed_port_and_user_state_preserved": true,
+    "native_audio_input_render_passed": true,
+    "all_children_reaped": true,
+    "clean_FAT_before_and_after": true,
+    "production_control_hook_used": true,
+    "test_only_sed_correction": false,
+    "no_SD_writes": true,
+    "physical_handheld_pending": true
+  },
+  "catalog_entries": 556,
+  "translation_regeneration_byte_identical": true,
+  "R54_brightness_and_R55_Netplay_source_identical": true,
+  "physical_handheld_acceptance_pending": true,
+  "no_SD_writes": true
+}

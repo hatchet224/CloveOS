@@ -98,6 +98,13 @@ bool sc_tools_game_enabled(struct sc_tools_backend *b, const struct cs_store *st
     struct sp_package_selection s;
     if (!sc_tools_packages(b, store, &s))
         return false;
+    /* TGB Dual is the pinned normal-play variant of the existing GB/GBC
+     * package. Keep that package's enable/disable policy authoritative. */
+    if (strcmp(game->core,"/system/lib/libretro/onion-4.3.1-1/tgbdual_libretro.so")==0 &&
+        strcmp(game->config,"/etc/console/core-configs/tgbdual-single.cfg")==0 &&
+        strcmp(game->profile.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")==0 &&
+        (strcmp(game->entry.system,"GB")==0 || strcmp(game->entry.system,"GBC")==0))
+        return sp_package_system_enabled(&s,game->entry.system);
     for (size_t i = 0U; i < SP_PACKAGE_COUNT; ++i)
     {
         const struct sp_package *p = sp_package_at(i);
@@ -124,7 +131,8 @@ unsigned int sc_tools_app_features(const struct sp_package_selection *selection)
 {
     static const struct { const char *id; unsigned int flag; } apps[] = {
         {"app.gallery", CL_APP_GALLERY}, {"app.search", CL_APP_SEARCH}, {"app.expert", CL_APP_EXPERT},
-        {"app.list-shortcuts", CL_APP_LIST_SHORTCUTS}, {"app.battery", CL_APP_BATTERY}
+        {"app.list-shortcuts", CL_APP_LIST_SHORTCUTS}, {"app.battery", CL_APP_BATTERY},
+        {"collection.ports", CL_APP_PORTS}
     };
     unsigned int flags = 0U;
     for (size_t i = 0U; i < sizeof(apps) / sizeof(apps[0]); ++i)

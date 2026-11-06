@@ -362,7 +362,7 @@ void cl_view_draw(SDL_Surface *s, const struct cl_view *v)
                 fit(s,
                     v->systems ? (e->library_action == CL_LIBRARY_SEARCH_RESULTS ? v->assets->apps[CL_APP_ICON_SEARCH] :
                                   e->library_action == CL_LIBRARY_PORTMASTER ? v->assets->apps[15] :
-                                  e->library_action == CL_LIBRARY_PORTS ? v->assets->apps[3] :
+                                  e->library_action == CL_LIBRARY_PORTS ? v->assets->apps[15] :
                                   system_icon(v->assets, e->system, v->expert)) :
                         (v->grid_artwork[i] != NULL ? v->grid_artwork[i] :
                          (active && v->artwork != NULL ? v->artwork : system_icon(v->assets, e->system, v->expert))),

@@ -12,6 +12,15 @@ case "${1-}" in
         cp -R "$runtime/template/." "$pm/"
         : > "$pm/.clove-template-r51"
     fi
+    # Refresh only our platform hook on already-populated R51 installations.
+    # Retain the previous hook and never replace installed ports or GUI state.
+    if ! /bin/busybox cmp -s "$runtime/template/control.txt" "$pm/control.txt"; then
+        if [ -f "$pm/control.txt" ] && [ ! -e "$pm/clovectl.r51" ]; then
+            cp "$pm/control.txt" "$pm/clovectl.r51"
+        fi
+        cp "$runtime/template/control.txt" "$pm/clovectl.tmp"
+        mv -f "$pm/clovectl.tmp" "$pm/control.txt"
+    fi
     mkdir -p "$pm/home" "$pm/autoinstall"
     exit 0;;
  manager|port) ;;

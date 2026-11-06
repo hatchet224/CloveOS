@@ -29,7 +29,7 @@ static inline const struct cl_icon_slot *cl_icon_slots(enum cl_icon_group group,
         {"files","commander","File Explorer"}, {"gallery","gallery","Gallery"},
         {"search","search","Search"},
         {"expert","expert","Expert"}, {"battery","battery_monitor","Battery Monitor"},
-        {"portmaster","pacman","PortMaster"},
+        {"portmaster","pacman","Ports"},
     };
     static const struct cl_icon_slot expert[] = {
         {"N64","n64","Nintendo 64"}, {"DC","dc","Dreamcast"}, {"PSP","psp","PSP"},

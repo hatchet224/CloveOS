@@ -2,6 +2,10 @@
 
 CloveOS is a controller-first Linux firmware project for the **MagicX Mini Zero 28**, inspired by the OnionOS experience.
 
+The [R56 development source](releases/r56/README.md) adds normal single-player
+TGB Dual selection and the Ports Collection layout. Real-core software save and
+resume tests pass; physical Pokemon trading remains unverified.
+
 The original CloveOS source is published under **GPL-3.0-or-later**. Start with
 [BUILDING.md](BUILDING.md), [LICENSE](LICENSE), and
 [LICENSE_SCOPE.md](LICENSE_SCOPE.md). Native application sources are in `src/`,

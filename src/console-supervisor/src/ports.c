@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "launcher/ports.h"
+#include "supervisor/packages.h"
 #include "launcher/display.h"
 #include "launcher/input.h"
 #include "launcher/assets.h"
@@ -25,7 +26,7 @@
 #define PORT_LIMIT 512U
 static volatile sig_atomic_t stopping;
 static void stop(int signal_number) { (void)signal_number; stopping=1; }
-struct port { char filename[256]; };
+struct port { char filename[256], title[256]; };
 static int compare(const void *a,const void *b)
 { return strcasecmp(((const struct port *)a)->filename,((const struct port *)b)->filename); }
 static size_t scan(int directory,struct port ports[PORT_LIMIT])
@@ -40,7 +41,8 @@ static size_t scan(int directory,struct port ports[PORT_LIMIT])
         if(n<4U || n>=sizeof(ports[0].filename) || item->d_name[0]=='.' ||
            strcmp(item->d_name+n-3U,".sh")!=0 ||
            fstatat(directory,item->d_name,&st,AT_SYMLINK_NOFOLLOW)!=0 || !S_ISREG(st.st_mode)) continue;
-        memcpy(ports[count++].filename,item->d_name,n+1U);
+        memcpy(ports[count].filename,item->d_name,n+1U);
+        memcpy(ports[count].title,item->d_name,n-3U);ports[count].title[n-3U]='\0';++count;
     }
     closedir(stream);qsort(ports,count,sizeof(ports[0]),compare);return count;
 }
@@ -145,6 +147,13 @@ int main(void)
     struct cs_store_config storage={.card_path="/mnt/SDCARD",.card_uuid=config.device.card_uuid,
                                     .qualified_fat_syncfs=config.device.qualified_fat_syncfs,.max_state_bytes=UINT64_C(134217728)};
     if(cs_store_open_reader(&store,&storage)!=CS_STORE_OK)return 3;
+    struct sp_package_registry registry;struct sp_package_selection selection;
+    int root=open("/",O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW);
+    bool available=root>=0 && sp_package_registry_describe(root,"etc/console/BINARY_MANIFEST.json",&registry);
+    if(root>=0)close(root);
+    enum sp_package_status selection_status=available?sp_package_load(&store,&registry,&selection):SP_PACKAGE_UNAVAILABLE;
+    if((selection_status!=SP_PACKAGE_OK && selection_status!=SP_PACKAGE_EMPTY && selection_status!=SP_PACKAGE_RECOVERED) ||
+       !sp_package_enabled(&selection,"collection.ports"))goto done;
     uint32_t preferences=0U;(void)cl_preferences_runtime(&store,&preferences);
     config.language=(preferences&CL_LANGUAGE_MASK)>>CL_LANGUAGE_SHIFT;
     cl_language_set(config.language);
@@ -175,8 +184,8 @@ int main(void)
         bool picked=false,back=false,dirty=true;
         while(!stopping && !picked && !back){
             if(dirty){
-                const char *labels[PORT_LIMIT+1U];labels[0]=CL_TR("Open PortMaster");
-                for(size_t i=0U;i<count;++i)labels[i+1U]=ports[i].filename;
+                const char *labels[PORT_LIMIT+1U];labels[0]=CL_TR("Download games (PortMaster)");
+                for(size_t i=0U;i<count;++i)labels[i+1U]=ports[i].title;
                 struct cl_view view={.theme=&theme,.assets=&assets,.battery=-1};
                 cl_options_draw(display.surface,&view,CL_TR("Ports"),labels,count+1U,selected);
                 cl_view_footer(display.surface,&view,last_status==0?CL_TR("A Open   X Refresh   B Home"):

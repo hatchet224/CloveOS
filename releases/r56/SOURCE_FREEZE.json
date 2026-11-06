@@ -1,0 +1,106 @@
+{
+  "files": [
+    {
+      "path": "src/console-launcher/include/launcher/history.h",
+      "sha256": "cdce9007d6e9add8b4e67f082754a19528bca251ff782094501a6335c521f306"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/icons.h",
+      "sha256": "ecc1168d87cb2fcc375c0f55a1befb3d4d316130777785de200ebc29848441f1"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/preferences.h",
+      "sha256": "1e7cd789fbb3b4289c10e7280cf747d19ef22c17583020d429117c2ae3d7df5b"
+    },
+    {
+      "path": "src/console-launcher/locales/es.json",
+      "sha256": "53ef251f05e36b26ea29d67340386ace623af549327d18ad75ced02758077428"
+    },
+    {
+      "path": "src/console-launcher/src/app.c",
+      "sha256": "f0c3aa41a342e17ddd7cec81afa17a1dde58bd09d10ef5b2243aed3281e63e7b"
+    },
+    {
+      "path": "src/console-launcher/src/i18n.c",
+      "sha256": "60e683a39d07a0de0c20db8c4954aeedd7d5fd452edd3a30050aa391aea23482"
+    },
+    {
+      "path": "src/console-launcher/src/view.c",
+      "sha256": "92690d0ded3ed406ecc185e09f8d20caf575cb4ab635cbdbd36276d0d3f67375"
+    },
+    {
+      "path": "src/console-launcher/tests/test_portmaster_entry.c",
+      "sha256": "31a75cbdaf202af333b89cd5adc51c93a5079da02403932c56de5516f2e58390"
+    },
+    {
+      "path": "src/console-packaging/generate_tgbdual_variant.py",
+      "sha256": "ec62e6bd4d304131814da52df78553a9f99e758389f55b158dc1702efa189179"
+    },
+    {
+      "path": "src/console-portmaster/control.txt",
+      "sha256": "34c199fceda4cc1958a72a7b52a7ee218c072b633d893ceee21b838e6dd02357"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "b138371e5e4a921a1ab96167888080b8c35534766baeb71eff7c2eccbf612937"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/build.h",
+      "sha256": "15f64b380dbec4f8613e61ad046908e025257dbfaabda09edc723d727aa04e6c"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/packages.h",
+      "sha256": "6f0d30d7c0346c4086b30c557af9b7d2cb4f9663f7457aab0321f21da011d8d6"
+    },
+    {
+      "path": "src/console-supervisor/init/console-portmaster-launch",
+      "sha256": "646c3118315cc3befbd7605f5ad2d097081e431da613c82b62c1a22b5daf0c12"
+    },
+    {
+      "path": "src/console-supervisor/src/core_choice.c",
+      "sha256": "733d74c60c1019ed3b765eabf396b07102dd11f9c19fb75c2c3ba57d8e03cb48"
+    },
+    {
+      "path": "src/console-supervisor/src/disk.c",
+      "sha256": "4161d38e7f5f27c26b516147aea57fbbf19b0d4ffd7b64dea62fc96632a3a554"
+    },
+    {
+      "path": "src/console-supervisor/src/package_manager.c",
+      "sha256": "871102592e8f10f0a1ec3072ba751c40640f817a505fcc39191382f263bc8f7f"
+    },
+    {
+      "path": "src/console-supervisor/src/package_registry.c",
+      "sha256": "f3e9d8bb2447d4f4ed5c46fff45c7a28bf2a8852782dc32c7f37a3da406bd348"
+    },
+    {
+      "path": "src/console-supervisor/src/ports.c",
+      "sha256": "245ff8f0d57982e8637ed75854c61288ae50676d8b774f46085f43b6360407e8"
+    },
+    {
+      "path": "src/console-supervisor/src/tools_backend.c",
+      "sha256": "4a539667047d9153aafd1ef1b2ad249cba4de0af2c9b4c57dede62ab202aeaaa"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_library_cache.c",
+      "sha256": "96dde742d5d35c25880bcd71bd6c3ee036aee95010067aef7285ee975a7ee2c7"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_ports.c",
+      "sha256": "89d657519704fc686200343de66f362804b7e04cc46ffc2a09a9749b44285207"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_ports_migration.c",
+      "sha256": "4841b40f0d10868a78b435f66edc8abeb028c1e3f692e084c0209be676893389"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_tgb_core_choice.c",
+      "sha256": "4c52a7e29b39af745e24b0e2254b61ab4b4d1e151849a151c463bf01c3ad1a06"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_tgb_session.c",
+      "sha256": "130056e1749635b668dd2d67b4d03d7c895131f4cc79adbd0398199d6ad40eb9"
+    }
+  ],
+  "physical_normal_core_passed": false,
+  "physical_trade_passed": false
+}
