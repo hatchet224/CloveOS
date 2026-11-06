@@ -1,0 +1,66 @@
+{
+  "status": "Source follow-up built and tested; NOT installed or published",
+  "base_release": "r56",
+  "base_source_commit": "ec97995abdcf1d245169386cbc2a0839757b6676",
+  "no_SD_access": true,
+  "Miyoo_untouched": true,
+  "sealed_R56_source_image_installer_unchanged": true,
+  "physical_acceptance_pending": true,
+  "issue": {
+    "official_port": "Bananaguy Classic",
+    "official_port_package_sha256": "173a808b0b874dd0a9129fe4556d16c5a693485847b9709f684e7546ad9a2c9f",
+    "official_FRT_sha256": "a86ded4cba32fdf4bfb06c4a584180f77f3b2676b51e10f9b7002eb1083c601f",
+    "reproduced_error": "GLIBCXX_3.4.26 not found; Godot engine exits 1 before startup",
+    "R50_R51_R56_vendor_CXX_library_sha256": "11c8e6cef125b32625d53361c3c3531ac2335f157615a1d3ddb6158eac212a02",
+    "fixed_VM_observation": "Actual Godot 3.3.4 starts; then shipped SDL rejects dummy driver unavailable in VM",
+    "physical_causality": "Proven independent loader blocker; physical handheld resolution still needs testing",
+    "uncached_script_probe": "Virtual hardware discovery exceeded fixture time budget; not evidence of physical discovery failure",
+    "unmodified_official_launcher_error_reproduced": true,
+    "official_launcher_final_status": 0,
+    "official_launcher_masks_engine_failure": true,
+    "cached_hardware_fixture": true,
+    "standalone_launcher_cleanup_scope": "Raw wrapper probe omitted console-ports subreaper and left helpers; separate production run() cleanup test passes; raw wrapper is not production lifecycle proof"
+  },
+  "changes": [
+    "Isolated ARM64 C++ runtime in system/portmaster/lib; vendor and emulator libraries unchanged",
+    "Original package/library/source checksums and GCC/Debian notices retained; portable offline overlay builder",
+    "Retained supervisor diagnostics now identify launched port, script result, signal and elapsed time"
+  ],
+  "validation": {
+    "source_audit": "SOURCE_AUDIT.json; 679 files, zero findings in isolated source checkout",
+    "published_base_check": "674 files, zero findings; publication checkout not modified",
+    "ARM64_compile": true,
+    "actual_failing_script_stderr_and_status_test": true,
+    "existing_native_audio_input_render_and_cleanup_VM_test": true,
+    "FAT_before_after_clean_and_user_state_preserved": true,
+    "runtime_overlay_builder_checksum_test": true,
+    "tampered_package_rejected_before_output": true,
+    "matching_GCC_and_Debian_source_archive_checksums": true,
+    "physical_rendering_audio_input": false,
+    "physical_control_report": "Unconfirmed; no global mappings changed",
+    "official_unmodified_launcher_with_production_run_passed": true,
+    "official_port_owned_children_reaped": true,
+    "official_port_executable_view_unmounted": true,
+    "official_port_FAT_postcheck_clean": true,
+    "official_hardware_fixture_cached": true
+  },
+  "candidate": {
+    "sealed": true,
+    "variant": "private",
+    "rootfs_sha256": "b0d6e3f946edbcbf5ded4173222507e2a09b18e45db1de3b41fa80f4a5968be2",
+    "rootfs_bytes": 195305472,
+    "baseline_sha256": "5df9df1a12bbaa475212d99815137486ebf0226f5e55190e960c433dd75c4270",
+    "changed_files": [
+      "./etc/console/BINARY_MANIFEST.json",
+      "./system/bin/console-ports",
+      "./system/portmaster/lib/libstdc++.so.6",
+      "./system/portmaster/licenses/gcc-10.txt"
+    ],
+    "boot_kernel_partition_scripts_unchanged": true,
+    "retroarch_and_emulator_cores_unchanged": true,
+    "personal_card_flashed": false,
+    "rights_cleared": false,
+    "release_qualified": false,
+    "source_first_review_required": true
+  }
+}

@@ -63,6 +63,18 @@ static bool executable_view(int directory)
 }
 static int run(const char *mode,const char *filename)
 {
+    /* stderr already belongs to the supervisor's retained, bounded diagnostics.
+     * Call this a script result: upstream scripts can mask an engine failure. */
+    char diagnostic_name[sizeof(((struct port *)0)->filename)];
+    size_t used=0U;
+    while(filename[used]!='\0' && used+1U<sizeof(diagnostic_name)){
+        unsigned char byte=(unsigned char)filename[used];
+        diagnostic_name[used]=(byte<32U || byte==127U)?'?':(char)byte;++used;
+    }
+    diagnostic_name[used]='\0';
+    Uint64 started=SDL_GetTicks64();
+    fprintf(stderr,"ports: begin mode=%s script=%s\n",mode,diagnostic_name);
+    (void)fflush(stderr);
     pid_t child=fork();
     if(child<0)return -1;
     if(child==0){
@@ -116,7 +128,12 @@ static int run(const char *mode,const char *filename)
         }
         SDL_Delay(20U);
     }
-    return WIFEXITED(status)?WEXITSTATUS(status):128+(WIFSIGNALED(status)?WTERMSIG(status):0);
+    int script_status=WIFEXITED(status)?WEXITSTATUS(status):128+(WIFSIGNALED(status)?WTERMSIG(status):0);
+    fprintf(stderr,"ports: end mode=%s script=%s script_status=%d signal=%d elapsed_ms=%llu\n",
+            mode,diagnostic_name,script_status,WIFSIGNALED(status)?WTERMSIG(status):0,
+            (unsigned long long)(SDL_GetTicks64()-started));
+    (void)fflush(stderr);
+    return script_status;
 }
 static bool controls_environment(const struct cl_ports_config *config)
 {

@@ -1,5 +1,7 @@
 # CloveOS test status
 
+- **Bananaguy Classic runtime loader failure:** the official Godot runtime requires newer C++ symbols than the vendor library provides. The [isolated native-runtime correction candidate](releases/portmaster-runtime/README.md) passes software loading and launcher cleanup tests; physical gameplay remains unverified.
+
 - The [R56 candidate](releases/r56/README.md) exposes TGB Dual for normal GB/GBC play with isolated configuration, save/resume and Netplay-save-seeding software tests. Physical normal-core and cross-device trade acceptance remain pending. Ports Collection replaces the earlier duplicate PortMaster launch entries.
 
 r51 is a development test candidate. Current evidence includes ARM and original Zero 28 kernel tests in QEMU. A fresh boot of the clean image through the physical handheld's bootloader and display remains to be verified.

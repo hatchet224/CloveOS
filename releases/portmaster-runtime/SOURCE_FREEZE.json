@@ -1,0 +1,38 @@
+{
+  "base_source_commit": "ec97995abdcf1d245169386cbc2a0839757b6676",
+  "files": [
+    {
+      "file": "src/console-portmaster/native-cpp.lock.json",
+      "sha256": "3bac5534698de5d102ae94dae6ca3b69b6c6e32869f586befafe5f99120fe01b"
+    },
+    {
+      "file": "src/console-portmaster/NATIVE_CPP.md",
+      "sha256": "3d87f8aa7c268933acbc028e73db6d781138e91a68ce366f18baefeb84fed2b8"
+    },
+    {
+      "file": "src/console-portmaster/prepare_native_cpp.py",
+      "sha256": "21178485c48f61e427c81554498b10b90bcd15941ef5102056faeea3461cb2b0"
+    },
+    {
+      "file": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "6085d826cc3c320fe7666646a767c10209310a290234ff7426c934f999b3e28b"
+    },
+    {
+      "file": "src/console-supervisor/src/ports.c",
+      "sha256": "73988fba0caca64a9e5a4bbf0d53348f5b081f1ce98a3542014cca35a9e1351d"
+    },
+    {
+      "file": "src/console-supervisor/tests/test_native_port_launch.c",
+      "sha256": "b31f0f12c3e78fdbe09e487266006973a1826d0bef9719192f1554834ed65177"
+    },
+    {
+      "file": "src/console-supervisor/tests/test_ports.c",
+      "sha256": "1a6dd08948b593f40b15e1074ec0d96177f7635bbe94c4dfbd62d6b042dd922b"
+    },
+    {
+      "file": "src/console-portmaster/notices/gcc-10.txt",
+      "sha256": "719dd73912334e65a64c63fb1f7ccdacf70c27258570de0fb123b33d490eddf5"
+    }
+  ],
+  "physical_gameplay_passed": false
+}

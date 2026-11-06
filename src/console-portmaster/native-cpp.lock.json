@@ -1,0 +1,23 @@
+{
+  "package": "libstdc++6",
+  "version": "10.2.1-6",
+  "architecture": "arm64",
+  "url": "https://deb.debian.org/debian/pool/main/g/gcc-10/libstdc++6_10.2.1-6_arm64.deb",
+  "sha256": "7869aa540cc46e9f3d4267d5bde2af0e5b429a820c1d6f1a4cfccfe788c31890",
+  "member": "./usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.28",
+  "library_sha256": "20a9317b0b33288ad1f004bfaf768c86168b2404f3f89bfb023046ed4b677cd6",
+  "destination": "system/portmaster/lib/libstdc++.so.6",
+  "notice": "notices/gcc-10.txt",
+  "notice_sha256": "719dd73912334e65a64c63fb1f7ccdacf70c27258570de0fb123b33d490eddf5",
+  "source": [
+    {
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-10/gcc-10_10.2.1.orig.tar.xz",
+      "sha256": "ea3c05faa381486e6b859c047dc14977418bf1ccda4567064e016493fd6fffec"
+    },
+    {
+      "url": "https://deb.debian.org/debian/pool/main/g/gcc-10/gcc-10_10.2.1-6.debian.tar.xz",
+      "sha256": "a95d6b9da2be83f9751850b002021281411ff1003d9feb77298b131da47820b3"
+    }
+  ],
+  "scope": "Native Ports only. Never overwrite vendor or emulator runtime libraries."
+}

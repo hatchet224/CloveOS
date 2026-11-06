@@ -42,6 +42,24 @@ int main(void)
     assert(run("port","Clove Native Demo.sh")==0);
     assert(access("/run/console/clove-controllerdb.txt",F_OK)==0);
     assert(faccessat(directory,"PortMaster/clove-controllerdb.txt",F_OK,0)<0&&errno==ENOENT);
+    {
+        const char *name="Failure Fixture.sh";
+        const char script[]="#!/bin/bash\nprintf 'ORIGINAL_ENGINE_FAILURE_DIAGNOSTIC\\n' >&2\nexit 23\n";
+        int fd=openat(directory,name,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,0700);assert(fd>=0);
+        assert(write(fd,script,sizeof(script)-1U)==(ssize_t)(sizeof(script)-1U));assert(close(fd)==0);
+        FILE *capture=tmpfile();assert(capture!=NULL);
+        int saved=dup(STDERR_FILENO);assert(saved>=0);
+        assert(dup2(fileno(capture),STDERR_FILENO)>=0);
+        assert(run("port",name)==23);
+        assert(dup2(saved,STDERR_FILENO)>=0 && close(saved)==0);
+        assert(fseek(capture,0,SEEK_SET)==0);
+        char log[8192];size_t bytes=fread(log,1,sizeof(log)-1U,capture);log[bytes]='\0';
+        assert(strstr(log,"ports: begin mode=port script=Failure Fixture.sh")!=NULL);
+        assert(strstr(log,"ORIGINAL_ENGINE_FAILURE_DIAGNOSTIC")!=NULL);
+        assert(strstr(log,"script_status=23 signal=0 elapsed_ms=")!=NULL);
+        assert(fclose(capture)==0 && unlinkat(directory,name,0)==0);
+        puts("PORTS_SCRIPT_IDENTITY_STDERR_AND_NONZERO_STATUS_DIAGNOSTICS_PASS");
+    }
     assert(waitpid(-1,&(int){0},WNOHANG)<0 && errno==ECHILD);
     assert(umount(ports_path)==0);close(directory);SDL_Quit();
     assert(statvfs(ports_path,&after)==0 && (after.f_flag&ST_NOEXEC)!=0U);
