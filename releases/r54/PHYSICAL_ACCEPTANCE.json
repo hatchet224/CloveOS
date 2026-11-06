@@ -1,0 +1,15 @@
+{
+  "build": "r54",
+  "result": "passed",
+  "basis": "User physical handheld test report",
+  "reported_on": "2026-11-06",
+  "test_prompt": [
+    "Set middle brightness",
+    "Test Menu + Volume Up/Down",
+    "Sleep/wake twice and confirm direction and selected brightness retention"
+  ],
+  "user_confirmation": "yes its working like it should",
+  "instrumented_optical_measurement": false,
+  "postfix_PWM_log_verification": false,
+  "public_binary_published": false
+}

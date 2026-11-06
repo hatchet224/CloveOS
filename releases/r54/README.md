@@ -17,9 +17,11 @@ exact pre-update physical light cannot be inferred from that old value alone.
 The targeted software checks and reconstruction instructions are included.
 Hardware-state observations remain available for device confirmation. Passing
 models and cached register checks do not establish visible panel behavior.
-Physical acceptance is pending: Menu + Volume Up must raise screen light and
-bar, Menu + Volume Down must lower both, and repeated wakes must preserve the
-selected light. No public R54 binary release is claimed by this source record.
+The user confirmed the physical check passed: Menu + Volume Up/Down and
+brightness retention through the requested two sleep/wake cycles worked as
+intended. See [acceptance record](PHYSICAL_ACCEPTANCE.json). This is user-reported
+acceptance; post-correction PWM logs and optical measurements are not claimed.
+No public R54 binary release is claimed by this source record.
 
 The correction is limited to brightness state, initialization, storage and
 associated tests. The queued Ports Collection layout remains separate. Existing

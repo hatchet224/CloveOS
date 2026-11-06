@@ -42,7 +42,7 @@ The clean image includes:
 - File Explorer, Gallery, Search, Expert access, list filtering and refresh, and Battery Monitor.
 - Cores for GB, GBC, GBA, NES, SNES, N64, Master System, Genesis, Game Gear, PlayStation, PSP, Dreamcast, Atari 2600, TurboGrafx-16, PICO-8, Neo Geo arcade, FBNeo, and MAME 2003-Plus. Compatibility and performance vary by game.
 - PlayStation playlist disc switching and checkpoint restore.
-- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and PokÃ©mon trade/battle verification is pending.
+- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and PokÃƒÂ©mon trade/battle verification is pending.
 
 The download contains no ROMs, emulator BIOS files, game saves, downloaded box art, Wi-Fi profiles, or personal account credentials. Users supply their own game content and configure their own accounts on the handheld.
 
@@ -54,4 +54,4 @@ Report reproducible problems in [Issues](https://github.com/hatchet224/CloveOS/i
 
 Project credits are in [CREDITS.md](CREDITS.md). The outstanding binary, source, firmware, and asset review is recorded in [REDISTRIBUTION.md](REDISTRIBUTION.md). Component licenses and notices need to be preserved with the matching source release.
 
-[R54 brightness lifecycle correction source](releases/r54/README.md) addresses the captured PWM mode change; physical acceptance is pending.
+[R54 brightness lifecycle correction source](releases/r54/README.md) addresses the captured PWM mode change. The user confirmed the requested brightness-direction and two-cycle sleep/wake test passed; see the [physical acceptance record](releases/r54/PHYSICAL_ACCEPTANCE.json).
