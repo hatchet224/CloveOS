@@ -1,5 +1,12 @@
 # R52 brightness correction candidate
 
+**Physical R52 acceptance failed after sleep/wake.** The direction initially
+worked after boot, but waking reduced visible brightness and left the meter
+moving opposite to the screen's light output. The same saved native value was
+reported before and after wake. Static register-polarity tests do not cover
+this lifecycle failure. Display-state investigation is in progress; no public
+R52 binary release has been published.
+
 Physical R51 testing confirmed that Settings → Brightness → Right dimmed the
 actual screen, as did Menu + Volume Up. Ordinary sound controls worked correctly.
 The R51 tests assumed the opposite relationship between native brightness

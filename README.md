@@ -19,6 +19,10 @@ with compatibility-core patches in [the R49 supplement](releases/r49/README.md).
 [R52 source candidate](releases/r52/README.md) corrects the board adapter and
 meter. Its targeted software checks pass; handheld confirmation is pending.
 
+R52 subsequently failed physical sleep/wake acceptance despite initially correct
+controls. Its lifecycle correction is under investigation; no public R52 binary
+release has been published. See [current test status](KNOWN_ISSUES.md).
+
 [RELEASE_POLICY.md](RELEASE_POLICY.md) requires matching source, build inputs,
 notices, privacy checks, and verified redistribution rights for every future
 update. The current image still has unresolved vendor/component source and

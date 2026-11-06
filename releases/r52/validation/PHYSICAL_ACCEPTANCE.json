@@ -1,0 +1,19 @@
+{
+  "release": "r52",
+  "physical_acceptance_passed": false,
+  "cold_start_direction_initially_correct": true,
+  "after_sleep_wake": [
+    "Visible brightness dropped to minimum",
+    "Raising the meter dims the physical screen; lowering it brightens the screen"
+  ],
+  "logged_first_standby_native_target": 8,
+  "logged_first_wake_native_target": 8,
+  "exact_hardware_cause_confirmed": false,
+  "static_model_tests_sufficient": false,
+  "required": [
+    "Menu + Volume Up increases light and meter",
+    "Menu + Volume Down decreases light and meter",
+    "Wake restores selected visible brightness and preserves direction"
+  ],
+  "public_binary_published": false
+}

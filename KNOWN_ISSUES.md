@@ -2,6 +2,8 @@
 
 r51 is a development test candidate. Current evidence includes ARM and original Zero 28 kernel tests in QEMU. A fresh boot of the clean image through the physical handheld's bootloader and display remains to be verified.
 
+- **R52 cold-start success does not establish wake correctness:** physical testing found dim wake brightness and reversed light/meter behavior after sleep. The selected raw value remained unchanged in logs. A lifecycle correction is being investigated; no public R52 binary release is available.
+
 - **Confirmed R51 brightness bug:** Settings Right and Menu + Volume Up dim the reported physical panel while ordinary sound controls work correctly. The [R52 source candidate](releases/r52/README.md) corrects the shared brightness mapping and meter; physical confirmation is pending.
 
 - R50 suppressed PortMaster catalog/Featured updates through `--no-check`. R51 removes that restriction while pinning GUI updates. Native-port compatibility remains game-specific.
