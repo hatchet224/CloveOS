@@ -31,6 +31,13 @@ esac;fi
 mkdir "$session" || exit 22
 exec </dev/null >>"$root/easy-netplay.log" 2>&1
 ra= ap= peer= ready_peer= pairing= station= notice= recover= prior_ssid= prior_state= dhcp_server=
+phase=initializing
+mark_phase() {
+    phase=$1
+    printf 'pokemon-link: wrapper_phase=%s role=%s mode=%s\n' "$phase" "$role" "$mode"
+    printf '%s\n' "$phase" >"$root/easy-netplay.phase"
+}
+mark_phase initializing
 
 system_wpa() { wpa_cli -p "$root/wpa" -i "$radio" "$@"; }
 temporary_wpa() { wpa_cli -p "$session/wpa" -i "$radio" "$@"; }
@@ -57,9 +64,13 @@ netplay_listening() {
 link_task() {
     /system/bin/console-onion-peer "$@" & pairing=$!
     local status=0;wait "$pairing" || status=$?;pairing=
+    printf 'pokemon-link: helper=%s exit=%s\n' "$1" "$status"
+    [ "$status" != 28 ] || exit 28
     [ "$status" = 0 ] || exit 26
 }
 launch_link() {
+    mark_phase starting-emulator
+    stop_child "$notice";notice=
     /system/bin/retroarch --verbose --config "$config" "$@" -L "$core" --subsystem gb_link_2p \
         "$session/player1.gb" "$session/player2.gb" >"$session/retroarch.log" 2>&1 & ra=$!
 }
@@ -92,6 +103,7 @@ cleanup() {
     result=$?
     trap - EXIT
     trap '' INT TERM
+    printf 'pokemon-link: final_phase=%s result=%s\n' "$phase" "$result"
     stop_child "$notice"
     stop_child "$dhcp_server"
     stop_child "$peer"
@@ -105,7 +117,9 @@ cleanup() {
         restore_station || result=23
     fi
     if [ "$mode" = link ]; then
-        if [ "$result" != 0 ]; then "$bb" tail -n 24 "$session/retroarch.log" 2>/dev/null || :; fi
+        # Copy only a bounded text tail before the transient session is removed.
+        # The normal diagnostic archive retains this alongside phase/helper errors.
+        "$bb" tail -n 32 "$session/retroarch.log" 2>/dev/null || :
         rm -rf -- /run/console/easy-netplay/saves /run/console/easy-netplay/states /run/console/easy-netplay/inbox
         rm -f "$session/player1.gb" "$session/player2.gb" "$session/own.srm" "$session/own.rtc" "$session/link-session.json" "$session/retroarch.log"
         for temporary in "$session"/.link-*;do [ ! -f "$temporary" ] || rm -f "$temporary";done
@@ -194,13 +208,16 @@ if [ "$role" = host ]; then
         "$bb" netstat -lnt 2>/dev/null | "$bb" grep -q "$host_ip:21 "
     }
     wait_until 32 backends_ready || exit 22
-    stop_child "$notice"; notice=
     if [ "$mode" = link ]; then
+        mark_phase pairing-cartridges-and-saves
         link_task link-pair "$client_ip:21" "$session"
         launch_link --host
+        mark_phase waiting-emulator-listen
         wait_until 80 netplay_listening || exit 22
+        mark_phase sending-ready
         link_task link-ready "$session"
     else
+        stop_child "$notice";notice=
         CLOVE_EASY_NETPLAY=1 /system/bin/console-startup-app netplay host '' "$config" "$core" "$content" & ra=$!
         wait_until 80 netplay_listening || exit 22
     fi
@@ -219,18 +236,20 @@ else
     associated() { temporary_wpa status | "$bb" grep -qx wpa_state=COMPLETED; }
     wait_until 80 associated || exit 20
     "$bb" ifconfig "$radio" "$client_ip" netmask 255.255.255.0 up || exit 22
-    stop_child "$notice"; notice=
     if [ "$mode" = link ]; then
+        mark_phase pairing-cartridges-and-saves
         /system/bin/console-onion-peer serve "$client_ip:21" "$session/export.json" & peer=$!
         link_task link-pair "$host_ip:21" "$session"
         link_task link-ready "$session"
         launch_link --connect "$host_ip"
     else
+        stop_child "$notice";notice=
         core=$(/system/bin/console-onion-peer check "$host_ip:21" "$registry" "$content" "$session") || exit 26
         [ "$core" = "$expected_core" ] || exit 26
         CLOVE_EASY_NETPLAY=1 /system/bin/console-startup-app netplay join "$host_ip" "$config" "$core" "$content" & ra=$!
     fi
 fi
+mark_phase emulator-running
 status=0
 wait "$ra" || status=$?
 ra=

@@ -42,7 +42,7 @@ The clean image includes:
 - File Explorer, Gallery, Search, Expert access, list filtering and refresh, and Battery Monitor.
 - Cores for GB, GBC, GBA, NES, SNES, N64, Master System, Genesis, Game Gear, PlayStation, PSP, Dreamcast, Atari 2600, TurboGrafx-16, PICO-8, Neo Geo arcade, FBNeo, and MAME 2003-Plus. Compatibility and performance vary by game.
 - PlayStation playlist disc switching and checkpoint restore.
-- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and PokÃƒÂ©mon trade/battle verification is pending.
+- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and Pokémon trade/battle verification is pending.
 
 The download contains no ROMs, emulator BIOS files, game saves, downloaded box art, Wi-Fi profiles, or personal account credentials. Users supply their own game content and configure their own accounts on the handheld.
 

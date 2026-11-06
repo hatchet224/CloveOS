@@ -59,30 +59,43 @@ int main(int argc, char **argv)
     assert(snprintf(text, sizeof(text), "boot-%u-first\n", boot) < (int)sizeof(text));
     put("/run/console/supervisor.log", text);
     put("/run/console/startup.log", text);
+    put("/run/console/easy-netplay.log", text);
+    put("/run/console/easy-netplay.phase", text);
     assert(sc_diagnostics_save(&store));
     check(argv[1], "supervisor.log", text);
+    check(argv[1], "easy-netplay.log", text);
+    check(argv[1], "easy-netplay.phase", text);
     if (boot > 1U) {
         assert(snprintf(expected, sizeof(expected), "boot-%u-last\n", boot - 1U) <
                (int)sizeof(expected));
         check(argv[1], "supervisor.previous1.log", expected);
         check(argv[1], "startup.previous1.log", expected);
+        check(argv[1], "easy-netplay.previous1.log", expected);
+        check(argv[1], "easy-netplay.previous1.phase", expected);
     }
     assert(snprintf(text, sizeof(text), "boot-%u-last\n", boot) < (int)sizeof(text));
     put("/run/console/supervisor.log", text);
     put("/run/console/startup.log", text);
+    put("/run/console/easy-netplay.log", text);
+    put("/run/console/easy-netplay.phase", text);
     assert(sc_diagnostics_save(&store));
     check(argv[1], "supervisor.log", text);
+    check(argv[1], "easy-netplay.log", text);
+    check(argv[1], "easy-netplay.phase", text);
     if (boot > 1U) check(argv[1], "supervisor.previous1.log", expected);
     if (boot > 3U) {
         assert(snprintf(expected, sizeof(expected), "boot-%u-last\n", boot - 3U) <
                (int)sizeof(expected));
         check(argv[1], "supervisor.previous3.log", expected);
+        check(argv[1], "easy-netplay.previous3.log", expected);
     }
     /* A missing/swapped card refuses writes and leaves committed logs intact. */
     store.poisoned = true;
     assert(!sc_diagnostics_save(&store));
     store.poisoned = false;
     check(argv[1], "supervisor.log", text);
+    check(argv[1], "easy-netplay.log", text);
+    check(argv[1], "easy-netplay.phase", text);
     /* Never follow a runtime-log symlink, even in the private runtime folder. */
     assert(unlink("/run/console/startup.log") == 0);
     assert(symlink("/etc/passwd", "/run/console/startup.log") == 0);
@@ -90,6 +103,8 @@ int main(int argc, char **argv)
     check(argv[1], "startup.log", text);
     assert(unlink("/run/console/startup.log") == 0);
     put("/run/console/startup.log", text);
+    put("/run/console/easy-netplay.log", text);
+    put("/run/console/easy-netplay.phase", text);
     assert(sc_diagnostics_save(&store));
     cs_store_close(&store);
     printf("DIAGNOSTIC_RETENTION_PASS boot=%u fat=%u bounded_three_boots=1 "

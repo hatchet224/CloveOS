@@ -351,6 +351,8 @@ static const struct translation translations[] = {
     {"PortMaster could not open. Finish transfers and check the card.", "No se pudo abrir PortMaster. Termina las transferencias y revisa la tarjeta."},
     {"PortMaster is updated with CloveOS. Game ports can still be installed and updated here.", "PortMaster se actualiza con CloveOS. Aquí puedes instalar y actualizar juegos."},
     {"Ports", "Ports"},
+    {"Pokemon link setup failed. The phase and exact error are in .tmp_update/logs/easy-netplay.log.", "Falló la conexión Pokémon. La fase y el error están en .tmp_update/logs/easy-netplay.log."},
+    {"Pokemon link setup timed out. MainUI is available; check .tmp_update/logs/easy-netplay.log.", "Se agotó el tiempo de conexión Pokémon. MainUI está disponible; revisa .tmp_update/logs/easy-netplay.log."},
     {"Power daemon died without OFF proof. No automatic shutdown or restart.", "Falló el servicio de energía. No se apagará ni reiniciará automáticamente."},
     {"Power off", "Apagar"},
     {"Power single press", "Pulsación de POWER"},

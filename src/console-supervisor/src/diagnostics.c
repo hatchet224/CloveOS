@@ -142,7 +142,9 @@ static bool archive_logs(struct cs_store *store, int destination)
         {"startup.log", "startup.previous1.log", "startup.previous2.log",
          "startup.previous3.log"},
         {"kernel.log", "kernel.previous1.log", "kernel.previous2.log",
-         "kernel.previous3.log"}
+         "kernel.previous3.log"},
+        {"easy-netplay.log", "easy-netplay.previous1.log", "easy-netplay.previous2.log", "easy-netplay.previous3.log"},
+        {"easy-netplay.phase", "easy-netplay.previous1.phase", "easy-netplay.previous2.phase", "easy-netplay.previous3.phase"}
     };
     if (archived && device == store->device && strcmp(uuid, store->uuid) == 0)
         return true;
@@ -210,6 +212,8 @@ bool sc_diagnostics_save(struct cs_store *store)
     /* Optional on kernels that restrict syslog access. Retain any prior boot's
      * kernel snapshot even when the running kernel cannot supply a new one. */
     (void)snapshot(store, source, "kernel.log", destination, "kernel.log", false);
+    (void)snapshot(store, source, "easy-netplay.log", destination, "easy-netplay.log", false);
+    (void)snapshot(store, source, "easy-netplay.phase", destination, "easy-netplay.phase", false);
     (void)snapshot(store, source, "usb.log", destination, "usb.log", false);
     (void)snapshot(store, source, "usb.status", destination, "usb.status", false);
     ok = first && second;

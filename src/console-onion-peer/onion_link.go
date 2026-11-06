@@ -22,6 +22,17 @@ import (
 	"time"
 )
 
+// Bound the entire startup command, including repeated per-request network
+// timeouts. Never apply this guard to durable link-save publication.
+func startupGuard(budget time.Duration) func() {
+	timer := time.AfterFunc(budget, func() {
+		fmt.Fprintln(os.Stderr, "pokemon-link: startup deadline exceeded; returning to MainUI")
+		os.Exit(28)
+	})
+	return func() { timer.Stop() }
+}
+func linkPhase(stage string) { fmt.Fprintln(os.Stderr, "pokemon-link: phase="+stage) }
+
 type LinkSession struct {
 	Role, Registry, ROM, Hash, OwnSave, PeerROM, PeerSave, PeerAddress string
 	OwnSRAM, PeerSRAM                                                  int
@@ -134,6 +145,7 @@ func linkInit(registry, rom, folder, role string) {
 	if role != "host" && role != "join" {
 		die(errors.New("invalid link role"))
 	}
+	linkPhase("initializing-tgbdual")
 	prepare(registry, "tgbdual_libretro.so", rom, folder)
 	raw, e := readBounded(rom, 8*1024*1024)
 	die(e)
@@ -141,6 +153,7 @@ func linkInit(registry, rom, folder, role string) {
 	die(e)
 	digest := sha256.Sum256(raw)
 	hash := hex.EncodeToString(digest[:])
+	linkPhase("checking-own-battery-save")
 	sram, rtc, e := seedBattery("/mnt/SDCARD", hash, size)
 	die(e)
 	die(os.MkdirAll(path.Join(folder, "inbox"), 0700))
@@ -218,6 +231,7 @@ func linkPair(address, folder string) {
 	readJSON(path.Join(folder, "link-session.json"), &state)
 	var data []byte
 	var e error
+	linkPhase("fetching-peer-cookie")
 	for attempt := 0; attempt < 80; attempt++ {
 		data, e = fetch(address, "/mnt/SDCARD/RetroArch/retroarch.cookie", 4096)
 		if e == nil {
@@ -231,12 +245,14 @@ func linkPair(address, folder string) {
 	if path.Base(fields["[core]"]) != "tgbdual_libretro.so" {
 		die(errors.New("Onion Pokemon link requires TGB Dual"))
 	}
+	linkPhase("checking-peer-tgbdual-version")
 	var found bool
 	for _, row := range cores(state.Registry) {
 		if row.Name == "tgbdual_libretro.so" {
 			die(pinned(row))
 			_, crc, e := fileDigest(row.ARM32)
 			die(e)
+			fmt.Fprintf(os.Stderr, "pokemon-link: tgbdual expected_crc=%s peer_crc=%s\n", crc, fields["[corechksum]"])
 			if !strings.EqualFold(crc, fields["[corechksum]"]) {
 				die(errors.New("Onion TGB Dual core revision differs"))
 			}
@@ -246,11 +262,14 @@ func linkPair(address, folder string) {
 	if !found {
 		die(errors.New("missing matching TGB Dual core"))
 	}
-	remote := fields["[rom]"]
+	remote, e := selectedROMPath(fields["[rom]"])
+	die(e)
 	extension := strings.ToLower(path.Ext(remote))
-	if !strings.HasPrefix(remote, "/mnt/SDCARD/Roms/") || (extension != ".gb" && extension != ".gbc") {
+	fmt.Fprintf(os.Stderr, "pokemon-link: peer_cartridge_extension=%q\n", extension)
+	if extension != ".gb" && extension != ".gbc" {
 		die(errors.New("peer must select an unpacked GB/GBC cartridge"))
 	}
+	linkPhase("fetching-peer-cartridge")
 	rom, e := fetch(address, remote, 8*1024*1024)
 	die(e)
 	crc := fmt.Sprintf("%08x", crc32IEEE(rom))
@@ -278,10 +297,12 @@ func linkPair(address, folder string) {
 	ownSave, e := readBounded(path.Join(folder, "own.srm"), 131072)
 	die(e)
 	if state.Role == "join" {
+		linkPhase("uploading-own-battery-save")
 		die(put(address, "/tmp/"+state.OwnSave, ownSave))
 	}
 	peerSave := make([]byte, size)
 	if state.Role == "host" {
+		linkPhase("waiting-peer-battery-save")
 		peerSave, e = waitFile(path.Join(folder, "inbox", state.PeerSave), 30)
 		die(e)
 		if len(peerSave) != size {
@@ -295,6 +316,7 @@ func linkPair(address, folder string) {
 	data, e = json.Marshal(state)
 	die(e)
 	die(atomicRAMFile(path.Join(folder, "link-session.json"), data))
+	linkPhase("first-ready-marker")
 	if state.Role == "host" {
 		die(notify(address, "host_ready"))
 		for attempt := 0; attempt < 120; attempt++ {
@@ -355,6 +377,7 @@ func persistLink(state LinkSession, sram, rtc []byte) error {
 	return nil
 }
 func linkReady(folder string) {
+	linkPhase("second-ready-marker")
 	var state LinkSession
 	readJSON(path.Join(folder, "link-session.json"), &state)
 	if state.Role == "host" {

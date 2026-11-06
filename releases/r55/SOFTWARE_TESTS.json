@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "markers": [
+    "ONION_LINK_BOTH_COOKIES_ROM_CRC_SAVES_AND_TWO_READY_MARKERS_PASS",
+    "ONION_POKEMON_PRODUCTION_WRAPPER_PAIR_SAVE_EXIT_WIFI_RESTORE_PASS=host",
+    "ONION_POKEMON_PRODUCTION_WRAPPER_PAIR_SAVE_EXIT_WIFI_RESTORE_PASS=join",
+    "R55_PAIR_FAILURE_TIMEOUT_CLEANUP_LOG_SAVE_PRESERVATION_PASS=host:21",
+    "R55_PAIR_FAILURE_TIMEOUT_CLEANUP_LOG_SAVE_PRESERVATION_PASS=join:28",
+    "DIAGNOSTIC_RETENTION_PASS boot=5 fat=1",
+    "ONION_RADIO_VM_EXIT=0"
+  ],
+  "radio_mocked": true,
+  "RetroArch_mocked": true,
+  "protocol_helper_real": true,
+  "actual_arm64_diagnostic_code_real": true,
+  "temporary_FAT32_retention": true,
+  "no_SD_writes": true,
+  "physical_pairing_fixed": false,
+  "Go_unit_tests_passed": true,
+  "stock_cookie_alias_reproduced_and_corrected": true,
+  "strict_scope_escape_rejection": true,
+  "reviewed_MENU_guard_corrected": true,
+  "updated_ARM64_controls_test": true,
+  "R54_brightness_source_byte_identical": true,
+  "physical_pair_trade_pending": true,
+  "no_SD_card_writes": true
+}

@@ -668,6 +668,21 @@ func fetch(address, remote string, maximum int64) ([]byte, error) {
 	}
 	return result, nil
 }
+
+// Stock GLO cookies may retain an Emu/SYSTEM/../../Roms path. Resolve
+// components before checking scope, then use only the canonical ROM path for
+// FTP. Normalization must never grant access outside the fixed ROM subtree.
+func selectedROMPath(raw string) (string, error) {
+	if !path.IsAbs(raw) || strings.ContainsAny(raw, "\r\n\x00\\") {
+		return "", errors.New("peer cartridge path is invalid")
+	}
+	canonical := path.Clean(raw)
+	if !strings.HasPrefix(canonical, "/mnt/SDCARD/Roms/") {
+		return "", errors.New("peer cartridge path is outside Roms")
+	}
+	return canonical, nil
+}
+
 func check(address, registry, rom, folder string) {
 	data, e := fetch(address, "/mnt/SDCARD/RetroArch/retroarch.cookie", 4096)
 	die(e)
@@ -709,8 +724,8 @@ func check(address, registry, rom, folder string) {
 		if coreName == "fbalpha2012_neogeo_libretro.so" {
 			die(errors.New("select the exact Neo Geo ROM ZIP used by the Onion host"))
 		}
-		remote := fields["[rom]"]
-		if !strings.HasPrefix(remote, "/mnt/SDCARD/Roms/") || fields["[romchksum]"] == "0" {
+		remote, scopeError := selectedROMPath(fields["[rom]"])
+		if scopeError != nil || fields["[romchksum]"] == "0" {
 			die(errors.New("host game checksum is unavailable"))
 		}
 		payload, e := fetch(address, remote, 26214400)
@@ -743,11 +758,13 @@ func main() {
 		if len(os.Args) != 4 {
 			os.Exit(2)
 		}
+		defer startupGuard(90 * time.Second)()
 		linkPair(os.Args[2], os.Args[3])
 	case "link-ready":
 		if len(os.Args) != 3 {
 			os.Exit(2)
 		}
+		defer startupGuard(90 * time.Second)()
 		linkReady(os.Args[2])
 	case "link-finish":
 		if len(os.Args) != 3 {

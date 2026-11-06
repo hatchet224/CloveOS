@@ -988,6 +988,7 @@ static void reap(struct supervisor *s) {
                     (void)sc_cpu_policy_restore(&s->cpu_policy);
                     s->ports_running = false;
                 }
+                if(s->netplay_running){s->diagnostics_dirty=true;s->diagnostics_at=0U;}
                 s->netplay_running = false;
                 int result = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
                 if (s->easy_netplay && (result == 23 || (!s->level_term && result != 0))) {
@@ -997,7 +998,8 @@ static void reap(struct supervisor *s) {
                         result == 23 ? "Easy Netplay ended. Wi-Fi could not restart automatically." :
                         result == 24 ? "Both handhelds need matching copies of both link cartridges in Roms/GB or Roms/GBC." :
                         result == 25 ? "Link save could not be verified or kept. Check the SD card and exit RetroArch normally." :
-                        result == 26 ? "Onion 4.3.1-1 requires a supported matching core and the same game revision. See the netplay log for details." :
+                        result == 26 ? (s->link_running ? "Pokemon link setup failed. The phase and exact error are in .tmp_update/logs/easy-netplay.log." : "Onion 4.3.1-1 requires a supported matching core and the same game revision. See the netplay log for details.") :
+                        result == 28 ? "Pokemon link setup timed out. MainUI is available; check .tmp_update/logs/easy-netplay.log." :
                         result == 27 ? "Pokemon link needs a normal in-game battery save before first use. Check the netplay log for details." :
                                        "Easy Netplay ended unexpectedly.";
                     remember_error(s, text);
@@ -1408,6 +1410,22 @@ static void client_request(struct supervisor *s, struct client *client) {
     }
     client->close_after_send = true;
 }
+/* Only the Onion wrapper's current per-launch phase can hand MENU to the
+ * emulator. Its log is not in the Clove-to-Clove link/ subdirectory. */
+static bool startup_menu_cancel_allowed(const struct supervisor *s)
+{
+    if(!s->link_running)return true;
+    if(strcmp(s->launch.auxiliary,"onion4")!=0)
+        return access("/run/console/easy-netplay/link/retroarch.log",F_OK)!=0;
+    char phase[48]={0};struct stat st;
+    int fd=open("/run/console/easy-netplay.phase",O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK);
+    if(fd<0)return true;
+    bool running=fstat(fd,&st)==0 && S_ISREG(st.st_mode) && st.st_uid==geteuid() &&
+        st.st_nlink==1U && st.st_size>0 && st.st_size<(off_t)sizeof(phase) &&
+        read(fd,phase,sizeof(phase)-1U)==st.st_size && strcmp(phase,"emulator-running\n")==0;
+    (void)close(fd);return !running;
+}
+
 static void menu_input(struct supervisor *s, uint64_t now) {
     if (s->menu.fd < 0 && now >= s->menu_retry) {
         bool held;
@@ -1586,7 +1604,7 @@ static void menu_input(struct supervisor *s, uint64_t now) {
         if (s->startup_child && action == CS_MENU_LIBRARY && !s->stopping) {
             /* During link gameplay the MENU chord belongs to RetroArch. A
              * supervised cancellation before launch still restores Wi-Fi. */
-            if (!s->link_running || access("/run/console/easy-netplay/link/retroarch.log", F_OK) != 0)
+            if (startup_menu_cancel_allowed(s))
                 (void)sc_term_once(s->level_pid, &s->level_term);
         } else if (action == CS_MENU_RECENT && s->boot_checked && !s->stopping) {
             if (s->status.state == CS_CHECKPOINT_ERROR || s->status.state == CS_RECOVERY) {
@@ -1726,6 +1744,7 @@ static bool launch_glo_app(struct supervisor *s)
             char *args[] = {onion ? "/system/bin/console-onion-easy-netplay" : "/system/bin/console-easy-netplay", host ? "host" : "join",
                             link ? game.profile.identity.content : proof, game.config, game.core, game.content,
                             link ? "link" : NULL, NULL};
+            if(onion && link)(void)unlink("/run/console/easy-netplay.phase");
             started = sc_spawn(args[0], args, -1, -1, NULL, &s->level_pid);
         } else if (automatic_lan) {
             char *args[] = {"/system/bin/console-standard-netplay", host ? "host" : "join",

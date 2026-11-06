@@ -1,0 +1,49 @@
+{
+  "files": [
+    {
+      "path": "src/console-launcher/src/i18n.c",
+      "sha256": "42b20e5d8a598f765ec17af606ce97c1e82a2c5cec86de92338ff217716dfd1e"
+    },
+    {
+      "path": "src/console-onion-peer/onion_link.go",
+      "sha256": "5600af10159b1d8c862f46a5d96b4fe9621c592c42c27b1cf7c102318a55e9a1"
+    },
+    {
+      "path": "src/console-onion-peer/onion_peer.go",
+      "sha256": "eaf357041d4525cffd652ad6ad19c3a9d76bb705018a5253734acb5dc9db601b"
+    },
+    {
+      "path": "src/console-onion-peer/startup_deadline_test.go",
+      "sha256": "f16808146aef128317f521a367bbf144ba9536cc2aa8d7cc85d434dfc4fac6f6"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "471878ec9cf42aab3c0739de8088cc77125607d211c829d004f699ae6b038b26"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/build.h",
+      "sha256": "005478bc390353e35610cb3db9d184f5d039834075b9b51f9f6efedf832a5e05"
+    },
+    {
+      "path": "src/console-supervisor/init/console-onion-easy-netplay",
+      "sha256": "be25de77293a27eb157f9ea5b9823590f0f0a918e0695ab5363e303234ac47ae"
+    },
+    {
+      "path": "src/console-supervisor/src/diagnostics.c",
+      "sha256": "e7b38dc273831223fc901731cf1d1aad6db8bc53b8d315ac231dc3b4a35e3b74"
+    },
+    {
+      "path": "src/console-supervisor/src/main.c",
+      "sha256": "949a48e5cc4641f323b937674e4e90e59ae32ca417afd1f791874072b7fab43c"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_diagnostic_retention.c",
+      "sha256": "20619bcb8d1a4f729cbeeef37d639f891b9ed314219d3853c6476833035c6714"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_level_router.c",
+      "sha256": "370d94d2c6cef2d15bea8ce8084335259d803bee03f33375192de31d77907eb7"
+    }
+  ],
+  "physical_trade_passed": false
+}

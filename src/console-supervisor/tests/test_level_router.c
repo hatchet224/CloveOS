@@ -14,13 +14,13 @@ int supervisor_program_main(int argc, char **argv);
 #undef sc_identity_file
 #undef sc_term_once
 #include <assert.h>
-static unsigned int spawned;
+static unsigned int spawned,terminated;
 static char target_kind[16], target_step[16];
 static uint64_t test_clock;
 bool test_identity(const char *path,const struct cs_identity *expected)
 {(void)path;(void)expected;return true;}
 bool test_term(pid_t pid,bool *sent)
-{(void)pid;(void)sent;return true;}
+{(void)pid;(void)sent;++terminated;return true;}
 bool test_now(uint64_t *now)
 {
     *now = test_clock;
@@ -233,6 +233,34 @@ int main(void)
         assert(spawned==before+2U);assert(close(fds[1])==0);cs_evdev_close(&s->menu);
     }
     puts("R51_GAME_AND_QUICK_MENU_PHYSICAL_VOLUME_AND_BRIGHTNESS_REPEAT_POLARITY_PASS");
+    /* Production observer must cancel setup but leave MENU+SELECT to
+     * RetroArch once this transport reports emulator-running. */
+    assert(mkdir("/run/console",0700)==0||errno==EEXIST);
+    s->link_running=true;s->startup_child=true;s->stopping=false;
+    s->status.state=CS_MENU_READY;s->status.active=false;s->status.unsettled=false;
+    s->level_pid=456;s->ra_pid=0;strcpy(s->launch.auxiliary,"onion4");
+    static const char *const phases[]={"initializing\n","pairing-cartridges-and-saves\n",
+        "starting-emulator\n","waiting-emulator-listen\n","sending-ready\n","emulator-running\n"};
+    for(size_t phase=0U;phase<6U;++phase){
+        int fd=open("/run/console/easy-netplay.phase",O_WRONLY|O_CREAT|O_TRUNC|O_NOFOLLOW,0600);assert(fd>=0);
+        assert(write(fd,phases[phase],strlen(phases[phase]))==(ssize_t)strlen(phases[phase])&&close(fd)==0);
+        assert(startup_menu_cancel_allowed(s)==(phase!=5U));
+        int fds[2];assert(pipe2(fds,O_NONBLOCK|O_CLOEXEC)==0);
+        cs_evdev_init(&s->menu);s->menu.fd=fds[0];s->menu.code=KEY_BACK;
+        cs_hotkeys_reset(&s->hotkeys,false);
+        uint64_t now=90000U+phase*2000U;test_clock=now;
+        struct input_event e={.type=EV_KEY,.code=KEY_BACK,.value=1};
+        e.time.tv_sec=(time_t)(now/1000U);assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));
+        menu_input(s,now);
+        if(phase==5U){e.code=BTN_SELECT;e.time.tv_usec=100000;
+            assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));}
+        unsigned int before=terminated;test_clock=now+701U;menu_input(s,test_clock);
+        assert(terminated==before+(phase==5U?0U:1U));
+        close(fds[1]);cs_evdev_close(&s->menu);
+    }
+    assert(unlink("/run/console/easy-netplay.phase")==0);
+    assert(startup_menu_cancel_allowed(s));
+    puts("R55_NETPLAY_MENU_SETUP_CANCEL_GAMEPLAY_CHORD_PASS current_onion_phase=1 no_wrong_subdirectory_probe=1 physical_emulator_input_pending=1");
     free(s);
     puts("LEVEL_ROUTER_PASS running-game/native-Quick-Menu/menu allowed; actual raw volume path and brightness chord consumed; checkpoint/shutdown/aux barriers preserved");
     puts("LEVEL_CLOCK_RACE_PASS post-read MENU edge retained; brightness-up routed; future and stale edges rejected");

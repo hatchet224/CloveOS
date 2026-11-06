@@ -134,6 +134,11 @@ install(FILES config/cards.conf DESTINATION bootstrap/etc/console
 install(FILES config/supervisor.json config/base-profile.json config/bridge-launch.json config/ui.json
         DESTINATION bootstrap/etc/console)
 if(BUILD_TESTING)
+    add_executable(netplay_diagnostic_retention tests/test_diagnostic_retention.c src/diagnostics.c)
+    target_link_libraries(netplay_diagnostic_retention PRIVATE sessiond_linux)
+    target_include_directories(netplay_diagnostic_retention PRIVATE include)
+    target_compile_definitions(netplay_diagnostic_retention PRIVATE _GNU_SOURCE _FILE_OFFSET_BITS=64)
+    target_compile_options(netplay_diagnostic_retention PRIVATE -UNDEBUG)
     add_executable(brightness_state_migration ../console-packaging/tests/test_brightness_migration.c ../console-packaging/image/level-state.c)
     target_compile_definitions(brightness_state_migration PRIVATE _GNU_SOURCE _FILE_OFFSET_BITS=64)
     target_compile_options(brightness_state_migration PRIVATE -UNDEBUG)
