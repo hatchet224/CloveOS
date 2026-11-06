@@ -72,7 +72,7 @@ struct supervisor {
     pid_t daemon_pid, ui_pid, ra_pid, level_pid;
     uint64_t hook_token, hook_deadline, active_session, ui_epoch, telemetry_at, menu_retry,
         diagnostics_at, launch_diagnostics_at,
-        boot_deadline, activity_at, menu_sampled_at;
+        boot_deadline, activity_at, menu_sampled_at, wake_levels_after;
     bool hook_pending, selection_pending, launch_pending, ui_result_valid;
     bool stopping, external_stop, auto_poweroff, daemon_off, daemon_reaped, daemon_failed;
     bool ui_term, ra_term, level_term, ui_fault, transport_fault, disk_closing, disk_final, disk_ok;
@@ -82,7 +82,7 @@ struct supervisor {
     bool startup_checked, startup_child, startup_advance, file_explorer_running;
     bool diagnostic_running, diagnostic_shown, start_levels_restore;
     bool diagnostics_dirty, diagnostics_pending, menu_diagnostics;
-    bool level_adjusting, level_queued;
+    bool level_adjusting, level_queued, display_levels_pending, wake_levels_pending;
     struct sc_level queued_level;
     bool standby_transition, standby_active, standby_helper;
     char error[161], selected_theme[512], selected_icons[512], icon_theme[512];
@@ -594,19 +594,45 @@ static void daemon_message(struct supervisor *s, const struct sc_message *messag
         s->transport_fault = true;
     }
 }
+static void queue_wake_levels(struct supervisor *s) {
+    uint64_t now = 0U;
+    if (s->config.level_helper[0] == '\0') return;
+    (void)sc_now(&now);
+    s->wake_levels_after = now + 75U;
+    s->wake_levels_pending = true;
+    s->display_levels_pending = true;
+}
+static void service_display_levels(struct supervisor *s) {
+    if (!s->display_levels_pending) return;
+    if (s->stopping) { s->display_levels_pending = s->wake_levels_pending = false; return; }
+    bool menu = s->status.state == CS_MENU_READY && !s->status.active;
+    bool game = s->wake_levels_pending && s->status.state == CS_GAME_RUNNING &&
+                s->status.active && s->ra_pid > 0;
+    if ((!menu && !game) || s->hook_pending ||
+        s->status.unsettled || s->standby_transition || s->standby_active || s->level_pid > 0)
+        return;
+    if (s->wake_levels_pending) {
+        uint64_t now;
+        if (!sc_now(&now) || now < s->wake_levels_after) return;
+    }
+    s->display_levels_pending = false;
+    s->wake_levels_pending = false;
+    char *restore[] = {s->config.level_helper, "restore", s->config.base.card_path,
+                       s->config.base.card_uuid, NULL};
+    fprintf(stderr, "supervisor: display ready; replaying brightness target and volume\n");
+    if (sc_spawn(s->config.level_helper, restore, -1, -1, NULL, &s->level_pid))
+        s->level_term = false;
+    else ui_error(s, "Display settings could not be restored.");
+}
 static void level_request(struct supervisor *s, const struct sc_level *level) {
     char *args[6];
     bool menu = s->status.state == CS_MENU_READY && !s->status.active;
     bool game = (s->status.state == CS_GAME_RUNNING || s->status.state == CS_QUICK_MENU) &&
                 s->status.active && s->ra_pid > 0;
     if (level->direction == 0) {
-        if (s->stopping || !menu || s->hook_pending || s->status.unsettled ||
-            s->level_pid > 0 || s->config.level_helper[0] == '\0') return;
-        char *restore[] = {s->config.level_helper, "restore", s->config.base.card_path,
-                           s->config.base.card_uuid, NULL};
-        fprintf(stderr, "supervisor: display ready; restoring saved brightness and volume\n");
-        if (sc_spawn(s->config.level_helper, restore, -1, -1, NULL, &s->level_pid))
-            s->level_term = false;
+        if (s->stopping || !menu || s->config.level_helper[0] == '\0') return;
+        s->display_levels_pending = true;
+        service_display_levels(s);
         return;
     }
     fprintf(stderr, "supervisor: level request kind=%s direction=%d state=%s helper_active=%u\n",
@@ -985,6 +1011,7 @@ static void reap(struct supervisor *s) {
                 s->standby_helper = false;
                 s->standby_transition = false;
                 if (success) s->standby_active = entering;
+                if (success && !entering) queue_wake_levels(s);
                 fprintf(stderr, "supervisor: standby display %s result=%s; kernel suspend=disabled\n",
                         entering ? "off" : "on", success ? "completed" : "failed");
                 s->diagnostics_dirty = true;
@@ -1941,6 +1968,7 @@ int main(int argc, char **argv) {
         service_hook(&s, now);
         start_progress(&s, now);
         service_level_queue(&s);
+        service_display_levels(&s);
         /* Keep RAM diagnostics current, but defer optional FAT snapshots while
          * the core is running or saving. Whole-volume barriers contend with
          * disc reads even when issued by the background worker. */

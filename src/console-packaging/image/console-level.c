@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "backlight-runtime.h"
 
 /* MinUI zero28 libmsettings uses this exact 64-bit unsigned-long argument ABI.
  * GET is defined beside SET in Allwinner's sunxi_display2.h; the ioctl return
@@ -72,6 +73,10 @@ static int brightness_raw(int direction) {
   if (current < 0 || current > 255) {
     fprintf(stderr, "console-level: invalid LCD brightness readback=%d\n", current);
     goto done;
+  }
+  {
+    unsigned int target;
+    if(cl_brightness_target_read(&target)==0)current=(int)target;
   }
   previous = current;
   requested = next_brightness((unsigned int)current, direction);
@@ -327,7 +332,12 @@ static int read_brightness(void) {
 }
 static int restore_levels(const struct console_levels *levels) {
   int result = 0;
-  if (levels->brightness != 0U) {
+  unsigned int target=levels->brightness;
+  if(cl_brightness_target_read(&target)!=0 && target==0U){
+    int current=read_brightness();
+    if(current>=8)target=(unsigned int)current;
+  }
+  if (target != 0U) {
     unsigned long args[4] = {0UL, 8UL, 0UL, 0UL};
     unsigned long gate[4] = {0UL};
     struct stat st;
@@ -338,11 +348,11 @@ static int restore_levels(const struct console_levels *levels) {
           ioctl(fd, LCD_SET_BRIGHTNESS, args) < 0 || ioctl(fd, LCD_BACKLIGHT_ENABLE, gate) < 0)
         result = 1;
       else {
-        args[1] = levels->brightness;
-        if (ioctl(fd, LCD_SET_BRIGHTNESS, args) < 0) result = 1;
+        if (cl_brightness_reapply(fd,target) != 0) result = 1;
       }
       if (close(fd) != 0) result = 1;
-      if (read_brightness() != (int)levels->brightness) result = 1;
+      if (read_brightness() != (int)target) result = 1;
+      else if(cl_brightness_target_write(target)!=0)result=1;
     }
   }
   if (volume_apply(levels->volume <= 100U ? levels->volume : ZERO28_VOLUME_DEFAULT) != 0)
@@ -396,6 +406,7 @@ int main(int argc, char **argv) {
   if (strcmp(argv[1], "brightness") == 0) {
     int observed;
     if (brightness(direction) != 0 || (observed = read_brightness()) < 0) goto done;
+    if(cl_brightness_target_write((unsigned int)observed)!=0)goto done;
     publish_level("/run/console/brightness-level", brightness_menu_level((unsigned int)observed));
     result = console_levels_save(&store, observed, -1) ? 0 : 1;
     if (result != 0) fprintf(stderr, "console-level: brightness changed; durable settings write failed\n");

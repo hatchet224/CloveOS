@@ -1,8 +1,9 @@
 # R49 implementation and compatibility source
 
-This is the R49 software source supplement. A public full-card R49 download is
-still pending release qualification and vendor redistribution/source evidence.
-It must not be treated as a published image or physical handheld verification.
+This is the R49 software source supplement for the experimental full-card
+pre-release. See the repository Releases page for download status. Software
+checks do not establish physical handheld behavior or complete the vendor
+redistribution/corresponding-source review.
 
 Native application changes are in `src/console-*`. The RetroArch installer in
 `src/retroarch-magicx-bridge/install.py` now applies the R49 residual patch after

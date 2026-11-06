@@ -1,6 +1,7 @@
-# Redistribution review for the r48 test image
+# Redistribution review for CloveOS full-card images
 
-The review applies to the exact ZIP and image listed in `SHA256SUMS.txt`.
+Read this record alongside the checksum and audit files attached to each release.
+The R48 historical inventory below is retained; R49 changes are recorded here.
 
 ## Source publication update
 
@@ -18,9 +19,18 @@ license grant, so its upstream implementation is excluded from this source impor
 pending verification. Theme/splash/font rights, vendor firmware grants, and exact
 kernel/bootloader corresponding source remain unresolved.
 
-Complete binary image publication is held under `RELEASE_POLICY.md` until these
-requirements are resolved. Original CloveOS source can be shared under its stated
-license independently of uncleared third-party payloads.
+The maintainer requested publication of the R49 experimental full-card image
+while this review remains incomplete. Publication does not resolve the open
+source/provenance questions or change third-party license conditions. Original
+CloveOS source is shared under its stated license.
+
+R49 replaces the unverified DinguxCommander snapshot with an original GPL File
+Explorer and replaces the public Silky interface assets with an original Clove
+theme and an OFL-licensed font. The supplied house-and-hatchets splash is
+preserved. R49 source includes compatibility-core patches and pins, native
+application changes, RetroArch integration, build configuration and notices.
+These improvements do not close the remaining vendor kernel/bootloader source
+and binary-component rights questions. Physical device testing is also pending.
 
 | Included component | Provenance | Open requirement |
 | --- | --- | --- |

@@ -151,6 +151,10 @@ int main(void)
     level.direction=0;level_request(s,&level);
     assert(spawned==7U && strcmp(target_kind,"restore")==0);
     s->level_pid=0;s->selected=&s->config.games[0];s->ra_pid=123;
+    char published[]="/tmp/clove-level-XXXXXX.identity.json";
+    int identity_fd=mkstemps(published,14);assert(identity_fd>=0&&close(identity_fd)==0);
+    assert(snprintf(s->config.base.bridge,sizeof(s->config.base.bridge),"%.*s",
+                    (int)strlen(published)-14,published)>0);
     s->hook_pending=true;s->hook.request.operation=CS_OP_START;s->hook_token=55;
     service_hook(s,10000U);
     assert(spawned==8U && s->start_levels_restore && s->hook_pending && s->hook_out.count==0U);
@@ -160,6 +164,7 @@ int main(void)
     s->start_levels_restore=true;s->hook_pending=true;s->ra_pid=0;
     assert(finish_start_levels(s,0) && !s->hook_pending && s->hook_out.count==1U);
     assert(!finish_start_levels(s,0));sc_discard(&s->hook_out);
+    assert(unlink(published)==0);
     puts("LEVEL_RESTORE_LIFECYCLE_PASS UI-ready restore; START waits for helper; exited core never acknowledged ready");
     {
         int fds[2];
@@ -180,6 +185,26 @@ int main(void)
         assert(close(fds[1]) == 0); cs_evdev_close(&s->menu);
         puts("IN_GAME_DPAD_BRIGHTNESS_PASS");
     }
+    s->status.state=CS_MENU_READY;s->status.active=false;s->level_pid=0;
+    s->hook_pending=true;level.direction=0;level_request(s,&level);
+    assert(s->display_levels_pending&&spawned==9U);
+    s->hook_pending=false;s->standby_active=true;service_display_levels(s);
+    assert(s->display_levels_pending&&spawned==9U);
+    s->standby_active=false;s->level_pid=321;service_display_levels(s);
+    assert(s->display_levels_pending&&spawned==9U);
+    s->level_pid=0;service_display_levels(s);
+    assert(!s->display_levels_pending&&spawned==10U&&strcmp(target_kind,"restore")==0);
+    service_display_levels(s);assert(spawned==10U);
+    puts("WAKE_UI_READY_REPLAY_QUEUE_PASS hook_and_helper_busy_do_not_drop_restore=1");
+    s->level_pid=0;s->status.state=CS_STANDBY;s->status.active=true;s->ra_pid=123;
+    test_clock=12000U;queue_wake_levels(s);
+    assert(s->wake_levels_pending&&s->wake_levels_after==12075U);
+    test_clock=12100U;service_display_levels(s);assert(spawned==10U);
+    s->status.state=CS_GAME_RUNNING;test_clock=12050U;
+    service_display_levels(s);assert(spawned==10U);
+    test_clock=12100U;service_display_levels(s);
+    assert(spawned==11U&&!s->wake_levels_pending&&!s->display_levels_pending);
+    puts("WAKE_GAME_RELEASE_REPLAY_PASS waits_for_running_state_and_display_settle=1");
     free(s);
     puts("LEVEL_ROUTER_PASS running-game/native-Quick-Menu/menu allowed; actual raw volume path and brightness chord consumed; checkpoint/shutdown/aux barriers preserved");
     puts("LEVEL_CLOCK_RACE_PASS post-read MENU edge retained; brightness-up routed; future and stale edges rejected");

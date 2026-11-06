@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "markers": [
+    "R49_WAKE_VM_EXIT=0",
+    "R48_MISSING_SAVED_BRIGHTNESS_REPRO",
+    "STANDBY_RUNTIME_TARGET_REPLAY_PASS",
+    "WAKE_OWNER_REPLAY_PASS",
+    "WAKE_UI_READY_REPLAY_QUEUE_PASS",
+    "WAKE_GAME_RELEASE_REPLAY_PASS"
+  ],
+  "hardware_mocked": true,
+  "physical_handheld": false,
+  "legacy_adapter_sha256": "4666d23e4c1e484ff7fa2d0a28b5f65d9e25a00114b10bce55d528febeb4d51d",
+  "helper_sha256": {
+    "console-standby": "4fd705997a2fd3d61b06a51fe51cf893674883de3286df935964a7f3ed2993ca",
+    "console-level": "f292583537733fd185097e64b8fd5fbd00f740c91fffd154f0ae99608f24d5e7"
+  },
+  "meaning": "R48 source reproduction plus final AArch64 runtime-record/deferred-reset/UI-helper queue and power-control regression fixtures"
+}

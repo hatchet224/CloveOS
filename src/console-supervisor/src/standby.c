@@ -18,6 +18,7 @@
 #define LCD_BACKLIGHT_ENABLE 0x104UL
 #define LCD_BACKLIGHT_DISABLE 0x105UL
 #define DISP_BLANK 0x0cUL
+#include "../../console-packaging/image/backlight-runtime.h"
 struct display_record { uint32_t magic, brightness; };
 static int display_command(int fd, unsigned long command, unsigned long value)
 {
@@ -51,7 +52,7 @@ static int restore_display(int display, unsigned int saved_level)
     if (set_level(display, 8U) != 0) failed = 1;
     if (display_command(display, LCD_BACKLIGHT_ENABLE, 0UL) != 0) failed = 1;
     if (display_command(display, DISP_BLANK, 0UL) != 0) failed = 1;
-    if (set_level(display, saved_level) != 0) failed = 1;
+    if (cl_brightness_reapply(display, saved_level) != 0) failed = 1;
     fprintf(stderr, "standby: wake brightness saved=%u result=%s\n",
             saved_level, failed ? "failed" : "verified");
     return failed ? -1 : 0;
@@ -85,8 +86,10 @@ static int enter(int display)
     struct display_record record = {UINT32_C(0x43534259), 0U};
     int current = ioctl(display, LCD_GET_BRIGHTNESS, args);
     int fd;
-    if (current < 1 || current > 255) return -1;
-    record.brightness = (unsigned int)current;
+    if (cl_brightness_target_read(&record.brightness) != 0) {
+        if (current < 1 || current > 255) return -1;
+        record.brightness = (unsigned int)current;
+    }
     fprintf(stderr, "standby: preserving brightness=%u before screen off\n", record.brightness);
     /* O_EXCL preserves the original level across duplicate/failed requests. */
     fd = open(STANDBY_RECORD, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0600);
@@ -95,6 +98,7 @@ static int enter(int display)
         (void)close(fd); (void)unlink(STANDBY_RECORD); return -1;
     }
     if (close(fd) != 0) { (void)unlink(STANDBY_RECORD); return -1; }
+    if (cl_brightness_target_write(record.brightness) != 0) return -1;
     /* A brightness readback of zero is only a PWM setting, not proof that
      * the panel is dark. Gate the backlight and blank the display explicitly. */
     /* Do not require GET_BRIGHTNESS==0 here: drivers may clamp PWM to a
@@ -115,13 +119,17 @@ static int leave(int display)
         unsigned long args[4] = {0UL, 0UL, 0UL, 0UL};
         int current;
         if (errno != ENOENT) return -1;
+        unsigned int target;
+        if (cl_brightness_target_read(&target) == 0)
+            return restore_display(display,target);
         current = ioctl(display, LCD_GET_BRIGHTNESS, args);
         if (current < 1 || current > 255) return -1;
         /* Also repair a disabled gate/blank scanout after interrupted helper
          * cleanup. A positive cached brightness alone does not prove wake. */
-        return restore_display(display, (unsigned int)current);
+        return restore_display(display,(unsigned int)current);
     }
-    if (restore_display(display, record.brightness) != 0) return -1;
+    if (cl_brightness_target_write(record.brightness) != 0 ||
+        restore_display(display, record.brightness) != 0) return -1;
     return unlink(STANDBY_RECORD);
 }
 int main(int argc, char **argv)

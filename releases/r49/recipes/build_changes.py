@@ -17,7 +17,8 @@ def run(name, args, timeout=900):
     result.check_returncode()
 run('configure', [cmake,'-S',work/'source/console-supervisor','-B',work/'build','-DCMAKE_SKIP_RPATH=ON'])
 run('production-build', [cmake,'--build',work/'build','--parallel','4','--target',
-    'console-supervisor','console-launcher','GameSwitcher','console-catalog','console-sessiond','console-file-explorer',
+    'console-supervisor','console-launcher','GameSwitcher','console-catalog','console-sessiond','console-file-explorer','console-standby','console-level',
+    'r49_standby_display','r49_level_runtime','r49_level_router',
     'five_apps_backend_tests','five_apps_controller_tests','r49_readiness_race','r49_failed_launch_recovery',
     'r49_managed_control','r49_managed_selection'])
 for path in (work/'retroarch-patches').rglob('*.c'):

@@ -13,8 +13,14 @@
 static int brightness=128, backlight=1, blanked, fail_zero, fail_restore, writes;
 static int fail_disable, fail_enable, fail_blank, fail_unblank;
 static int clamp_zero, reset_on_enable, reset_on_unblank;
+static int deferred_reset;
 struct display_op { unsigned long command, value; };
-static struct display_op operations[256];
+static struct display_op operations[1024];
+static int fake_usleep(useconds_t delay){
+    assert(delay==25000U);
+    if(deferred_reset){brightness=8;deferred_reset=0;}
+    return 0;
+}
 static int fake_open(const char *path, int flags, ...)
 {
     mode_t mode=0;va_list args;
@@ -58,7 +64,10 @@ int fixture_standby_main(int argc,char **argv);
 #define main fixture_standby_main
 #define open fake_open
 #define ioctl fake_ioctl
+#define usleep fake_usleep
+#define CL_BRIGHTNESS_TARGET_PATH STANDBY_RECORD "-target"
 #include "../src/standby.c"
+#undef usleep
 #undef ioctl
 #undef open
 #undef main
@@ -67,6 +76,7 @@ int main(void)
     char *off[]={"standby","off",NULL},*on[]={"standby","on",NULL};
     struct display_record record;
     assert(unlink(STANDBY_RECORD)==0||errno==ENOENT);
+    assert(unlink(CL_BRIGHTNESS_TARGET_PATH)==0||errno==ENOENT);
     assert(set_level(1,0U)==0&&backlight==1&&blanked==0);
     brightness=128;writes=0;
     assert(fixture_standby_main(2,off)==0&&brightness==0&&backlight==0&&blanked==1);
@@ -77,7 +87,7 @@ int main(void)
     assert(read_record(&record)==0);fail_restore=0;
     int wake_start=writes;
     assert(fixture_standby_main(2,on)==0&&brightness==128&&backlight==1&&blanked==0);
-    assert(writes==wake_start+4&&operations[wake_start].value==8UL);
+    assert(writes==wake_start+6&&operations[wake_start].value==8UL);
     backlight=0;blanked=1; /* no record, positive brightness is not proof of wake */
     assert(fixture_standby_main(2,on)==0&&brightness==128&&backlight==1&&blanked==0);
     /* The old ordering verified the saved PWM before enable/unblank, then
@@ -85,12 +95,20 @@ int main(void)
     static const unsigned int saved_levels[]={8U,16U,32U,48U,72U,96U,128U,160U,192U,255U};
     for(unsigned int i=0U;i<sizeof(saved_levels)/sizeof(saved_levels[0]);++i){
         brightness=(int)saved_levels[i];
+        assert(cl_brightness_target_write(saved_levels[i])==0);
         assert(fixture_standby_main(2,off)==0);
         reset_on_enable=reset_on_unblank=1;
+        deferred_reset=1;
         assert(fixture_standby_main(2,on)==0&&brightness==(int)saved_levels[i]&&backlight==1&&blanked==0);
+        assert(deferred_reset==0);
         reset_on_enable=reset_on_unblank=0;
     }
     brightness=128;
+    assert(cl_brightness_target_write(128U)==0);
+    /* A later owner can reset PWM even after the standby record is removed. */
+    brightness=8;assert(fixture_standby_main(2,on)==0&&brightness==128);
+    brightness=0;assert(fixture_standby_main(2,on)==0&&brightness==128);
+    puts("STANDBY_RUNTIME_TARGET_REPLAY_PASS delayed_reset=1 missing_record_and_stale_minimum=1");
     puts("STANDBY_WAKE_LEVEL_PASS enable_and_unblank_reset_pwm=8 final_saved_level_reapplied_and_verified=1");
     fail_zero=1;assert(fixture_standby_main(2,off)==1&&brightness==128);
     assert(read_record(&record)==0);assert(fixture_standby_main(2,on)==0);
@@ -118,6 +136,7 @@ int main(void)
     assert(fixture_standby_main(2,on)==1&&writes==before);assert(unlink(STANDBY_RECORD)==0);
     assert(symlink("/tmp/no-standby-follow",STANDBY_RECORD)==0);
     assert(fixture_standby_main(2,on)==1&&writes==before);assert(unlink(STANDBY_RECORD)==0);
+    assert(unlink(CL_BRIGHTNESS_TARGET_PATH)==0);
     puts("STANDBY_DISPLAY_PASS real tmpfs record; brightness-zero-does-not-blank regression; explicit disable+blank; prime+enable+unblank+restore; clamped-zero-still-gates-off; failed off rollback; failed gate/unblank retains retry record; idempotent wake repairs hardware; corrupt/symlink record refused; fake display only");
     return 0;
 }

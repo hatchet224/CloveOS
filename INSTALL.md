@@ -1,10 +1,10 @@
-# Installing CloveOS r48
+# Installing CloveOS r49
 
 This test image targets the **MagicX Mini Zero 28**. Use a microSD card sold as 8 GB or larger. Tested virtual capacities extend through 1 TB. The fresh image is 4 GiB.
 
-1. Download `CloveOS-r48.zip` and `SHA256SUMS.txt` from the same release.
-2. Verify the ZIP's SHA-256 against `SHA256SUMS.txt`. In PowerShell, run `Get-FileHash .\CloveOS-r48.zip -Algorithm SHA256`.
-3. Extract `CloveOS-r48.img`. Allow at least 4 GiB of free disk space for extraction. You can verify the extracted image with `Get-FileHash .\CloveOS-r48.img -Algorithm SHA256` and the image entry in the same checksum file.
+1. Download `CloveOS-r49.zip` and `SHA256SUMS.txt` from the same release.
+2. Verify the ZIP's SHA-256 against `SHA256SUMS.txt`. In PowerShell, run `Get-FileHash .\CloveOS-r49.zip -Algorithm SHA256`.
+3. Extract `CloveOS-r49.img`. Allow at least 4 GiB of free disk space for extraction. You can verify the extracted image with `Get-FileHash .\CloveOS-r49.img -Algorithm SHA256` and the image entry in the same checksum file.
 4. Back up anything you need from the destination card. Use a whole-card image writer such as balenaEtcher or Rufus in DD mode to write the `.img`. Confirm the correct target card before starting. Flashing erases that card.
 5. Safely eject the card, put it in the Mini Zero 28's TF1 slot, and power on. Keep power connected while CloveOS prepares the data volume. It automatically expands before normal launcher services start. If Windows offers to format a Linux partition, cancel that prompt.
 6. Add your own games to `Roms/<system>` and any required emulator BIOS files to `BIOS` on the Windows-visible `CLOVE_DATA` volume. Use the folders supplied by the image. Configure Wi-Fi and other preferences on the handheld.

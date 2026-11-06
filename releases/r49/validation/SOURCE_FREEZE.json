@@ -1,0 +1,19 @@
+{
+  "implementation_frozen": true,
+  "physical_hardware_tested": false,
+  "private_public_sources_match": true,
+  "files": {
+    "console-supervisor/src/main.c": "5c3331f7a7144afffbc5441cc00f24e75b9880eebd6064077ad54d5daee33db1",
+    "console-supervisor/src/standby.c": "968e7b8b29ba5718090c195c75269065fdcc6d276ae59bcd226c60896278a0db",
+    "console-supervisor/CMakeLists.txt": "1f970c206625c28325d14b70ea5f103580e1dbaeaf63674794746e5fc550fcc0",
+    "console-supervisor/tests/test_standby_display.c": "887f651ee81703ed8d2cf4f76032dfab1c5ead78e573dff6c259a1ab813c8f80",
+    "console-supervisor/tests/test_level_router.c": "1cf6dec22890c90db73cc361b163d58d45f56e9024b37e35bf06a3cd1ed8f24e",
+    "console-packaging/image/console-level.c": "630660bea81bfa7e7476126e18053f6ef655c68de54b4fb864e069cc6e1b65ea",
+    "console-packaging/image/level-state.c": "277cbaee9ac41f1e60d0733e46b4fe17145660c4f278024def3b37f1b4f5f096",
+    "console-packaging/image/level-state.h": "397c3b937d9f5e7ec4408a24257c3ad61552791d34a70ada420fe14d97d3bcda",
+    "console-packaging/image/backlight-runtime.h": "754054f655db8aac202298c7ce8ef2423fb4154aaa24d192e0c5d9b6a4bf4111",
+    "console-packaging/tests/test_levels.c": "470bc50028c3230b20d710d66b60df7ba88c2309cdcbed04956c642e81371a56"
+  },
+  "new_candidate_requires_source_commit_after": "d6d4e68279165a4d2de70dc190bd51755113e259",
+  "scope": "brightness runtime intent, bounded deferred-backlight replay, queued UI-ready replay and post-game-wake replay; build and overlay both actual helpers"
+}

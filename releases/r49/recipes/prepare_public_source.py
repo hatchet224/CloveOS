@@ -24,7 +24,7 @@ commands=[['-S',public/'console-supervisor','-B',build,'-G','Ninja',
  '-DCONSOLE_ONLINE_PREFIX='+str(root/'work/build-download/prefix'),'-DCMAKE_SKIP_RPATH=ON',
  '-DCMAKE_C_FLAGS=-ffile-prefix-map='+public.as_posix()+'=cloveos-source',
  '-DACTIVITY_BUILD_TESTS=OFF','-DLAUNCHER_BUILD_TESTS=OFF','-DBUILD_TESTING=ON'],
- ['--build',build,'--parallel','4','--target','console-supervisor','console-launcher','GameSwitcher','console-sessiond','console-file-explorer','public_boot_tests','r49_netplay_menu']]
+ ['--build',build,'--parallel','4','--target','console-supervisor','console-launcher','GameSwitcher','console-sessiond','console-file-explorer','console-standby','console-level','public_boot_tests','r49_netplay_menu']]
 for index,args in enumerate(commands):
  with (work/f'public-build-{index}.log').open('w') as output:
   result=subprocess.run([str(cmake),*map(str,args)],env=env,stdout=output,stderr=subprocess.STDOUT,timeout=900)

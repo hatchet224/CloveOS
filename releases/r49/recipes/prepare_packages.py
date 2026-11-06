@@ -23,7 +23,7 @@ for public in (False,True):
  build=work/('public-build' if public else 'build')
  originals=public_files['etc/console/BINARY_MANIFEST.json'] if public else private_manifest
  mods={file.relative_to(net/'staging').as_posix():file.read_bytes() for file in (net/'staging').rglob('*') if file.is_file()}
- for program in ('console-launcher','GameSwitcher','console-supervisor'):
+ for program in ('console-launcher','GameSwitcher','console-supervisor','console-standby','console-level'):
   mods['system/bin/'+program]=(build/program).read_bytes()
  mods['system/bin/console-sessiond']=(build/'launcher/sessiond/console-sessiond').read_bytes()
  mods['system/bin/console-file-explorer']=(build/'file-explorer/console-file-explorer').read_bytes()
