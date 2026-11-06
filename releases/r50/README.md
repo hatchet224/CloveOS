@@ -41,3 +41,14 @@ wake, charging transitions and two-handheld Netplay remain device checks.
 No ROMs, emulator BIOS or commercial game data belong in this source or the
 clean image. Third-party licenses remain in force, and the existing vendor
 kernel/bootloader corresponding-source and binary-component review remains open.
+
+
+Final public packaging rebuilds the static Mbed TLS libraries using compiler
+file/macro prefix maps (`recipes/build_public_dependencies.py`) before
+`recipes/build.py --public`. The final diagnostic path scrub receipt is empty;
+no executable bytes were rewritten by the fallback account-path scrub.
+The published packaging recipe accepts `CLOVE_NOTICES_DIR` for the notice
+directory and `CLOVE_BUILD_ACCOUNT` for the local build account instead of
+embedding developer-specific host inputs. Recipes assume the existing work
+layout and immutable R49/R48 inputs documented in the earlier release recipes;
+they are reconstruction records, not a standalone vendor SDK.

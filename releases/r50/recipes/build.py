@@ -11,7 +11,7 @@ commands=[['configure',[cmake,'-S',source/'console-supervisor','-B',build,'-G','
  '-DCMAKE_TOOLCHAIN_FILE='+str(root/'work/zig-aarch64.cmake'),
  '-DCMAKE_MAKE_PROGRAM='+str(root/'work/ninja-tools/bin/ninja.exe'),
  '-DSDL2_DIR='+str(root/'work/current-sdl-cmake'),
- '-DCONSOLE_ONLINE_PREFIX='+str(root/'work/build-download/prefix'),
+ '-DCONSOLE_ONLINE_PREFIX='+str(work/'public-dependencies/prefix' if public else root/'work/build-download/prefix'),
  '-DCMAKE_BUILD_TYPE=MinSizeRel','-DCMAKE_SKIP_RPATH=ON','-DBUILD_TESTING=ON','-DLAUNCHER_BUILD_TESTS=ON']],
  ['build',[cmake,'--build',build,'--parallel','4','--target',
  'SDL2_mixer','clove-port-display','SDL2_gfx','console-ports','console-launcher','GameSwitcher','console-supervisor','console-catalog','console-sessiond',

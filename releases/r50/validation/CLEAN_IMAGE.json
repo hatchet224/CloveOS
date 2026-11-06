@@ -1,0 +1,16 @@
+{
+  "built": true,
+  "user_publication_authorized": true,
+  "release_qualified": false,
+  "rights_cleared": false,
+  "redistribution_audit_complete": false,
+  "image_path": "CloveOS-r50-candidate.img",
+  "image_bytes": 4294967296,
+  "image_sha256": "0f2d5f6b689c0ae29e46cf699567ebb5c8e0b002a4283f098ee7951f6b60ae5d",
+  "rootfs_sha256": "9160ebb887310081d21669db384109458379e4352f8ab278d044356210aeb89d",
+  "all_bytes_outside_rootfs_unchanged": true,
+  "old_rootfs_padding_zero": true,
+  "games_bios_artwork_and_personal_settings_absent": true,
+  "baseline_clean_audit": "r48 SHARE_COPY_VERIFIED.json",
+  "expansion_and_boot_firmware_unchanged": true
+}
