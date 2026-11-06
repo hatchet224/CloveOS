@@ -42,7 +42,7 @@ struct cl_input_profile {
 enum cl_launch_kind { CL_LAUNCH_FRESH, CL_LAUNCH_CHECKPOINT, CL_LAUNCH_MANUAL,
                       CL_LAUNCH_SCRIPT, CL_LAUNCH_NETPLAY_HOST, CL_LAUNCH_NETPLAY_JOIN,
                       CL_LAUNCH_FILE_EXPLORER, CL_LAUNCH_EASY_HOST, CL_LAUNCH_EASY_JOIN,
-                      CL_LAUNCH_LINK_HOST, CL_LAUNCH_LINK_JOIN };
+                      CL_LAUNCH_LINK_HOST, CL_LAUNCH_LINK_JOIN, CL_LAUNCH_PORTMASTER };
 enum cl_glo_scope { CL_GLO_GAMES, CL_GLO_EXPERT, CL_GLO_FAVORITES, CL_GLO_RECENTS };
 struct cl_launch_intent {
     struct cs_identity identity;

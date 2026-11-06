@@ -1,5 +1,6 @@
 #include "supervisor/process.h"
 #include "launcher/file_explorer.h"
+#include "launcher/ports.h"
 #include "launcher/preferences.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -125,6 +126,14 @@ bool sc_spawn_file_explorer(const struct cl_file_explorer_config *config, pid_t 
     close(pair[0]);
     close(pair[1]);
     return started;
+}
+bool sc_spawn_portmaster(const struct cl_ports_config *config, pid_t *pid)
+{
+    int pair[2];char program[]="/system/bin/console-ports";char *args[]={program,NULL};
+    if(socketpair(AF_UNIX,SOCK_SEQPACKET|SOCK_CLOEXEC,0,pair)!=0)return false;
+    bool ok=send(pair[0],config,sizeof(*config),MSG_NOSIGNAL)==(ssize_t)sizeof(*config) &&
+            sc_spawn(program,args,pair[1],-1,NULL,pid);
+    close(pair[0]);close(pair[1]);return ok;
 }
 bool sc_term_once(pid_t pid, bool *sent)
 {

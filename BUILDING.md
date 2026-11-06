@@ -1,10 +1,9 @@
 # Building CloveOS source
 
-This import publishes the privacy-clean r48 native application source and the
-pinned RetroArch integration, LAN service, capacity helper, and build/provenance
-records. R49 changes are still being developed and must be committed separately
-with their validation results. This is not a claim of a complete rebuild of every
-vendor component in the existing image.
+This repository publishes the privacy-clean native application source, pinned
+RetroArch integration, LAN service, capacity helper, and build/provenance records.
+R49 and R50 supplements record their implementation and software validation.
+This is not a claim of a complete rebuild of every vendor component in the image.
 
 ## Portable daemon tests
 
@@ -43,6 +42,7 @@ SQLite, LodePNG, minimp3, and stb_image source are included with their notices.
 Configure the dependency prefix and toolchain explicitly:
 
 ```sh
+python3 src/console-portmaster/fetch_sources.py
 cmake -S src/console-supervisor -B build/appliance \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/matching-toolchain.cmake \
   -DCMAKE_BUILD_TYPE=MinSizeRel \
@@ -58,6 +58,25 @@ explicit placeholders with qualified board profiles before deployment. Theme
 assets are separate inputs with separate licenses. Installing optional themes
 from this source tree is disabled by default; the protected fallback renderer
 remains in source. This does not change artwork on an existing personal card.
+
+R50 adds SDL_mixer and SDL2_gfx as private PortMaster dependencies. The fetcher
+verifies exact source archive SHA-256 values from `DEPENDENCIES.json` before
+extracting the SDL projects into the ignored vendor directories. It retains
+complete upstream source ZIPs, including unused Apple framework aliases that
+are skipped during extraction on Windows. PortMaster GUI and Device-Info source
+archives are also verified and cached. The CloveOS platform glue and upstream
+patch are in `src/console-portmaster`; runtime reconstruction records and notices
+are in `releases/r50/`.
+
+Spanish text is maintained in `src/console-launcher/locales/es.json`. Regenerate
+and validate its C lookup table with:
+
+```sh
+python3 src/console-launcher/tools/generate-i18n.py
+```
+
+Preserve printf placeholders, protocol names and filenames. The generator checks
+format conversions; unrecognized messages fall back to their English text.
 
 ## RetroArch integration
 

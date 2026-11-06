@@ -1,3 +1,4 @@
+#include "launcher/i18n.h"
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
@@ -116,7 +117,7 @@ void sc_file_service_request(struct sc_file_service *s, const char *card,
                 row = &out->rows[out->count++]; strcpy(row->id,"refresh"); row->available = true;
                 (void)snprintf(row->label,sizeof(row->label),"http://%s:8021/",address);
                 char pin[5];transfer_pin(s->token,pin);
-                (void)snprintf(row->detail,sizeof(row->detail),"PIN: %s (enter once per browser)",pin);
+                (void)snprintf(row->detail,sizeof(row->detail),CL_TR("PIN: %s (enter once per browser)"),pin);
             }
             freeifaddrs(interfaces);
         }

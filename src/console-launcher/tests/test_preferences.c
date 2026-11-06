@@ -2,6 +2,7 @@
 #error "Preferences fixture requires active assertions"
 #endif
 #include "launcher/preferences.h"
+#include "launcher/i18n.h"
 #include "sessiond/json.h"
 #include "sessiond/store.h"
 #include <SDL.h>
@@ -107,7 +108,7 @@ int main(int argc,char **argv)
  assert(cl_preferences_submit_display(w,true,1U,s.appearance|CL_DISABLE_AUTO_RESUME|CL_APPS_REVERSE));
  assert(cl_preferences_stop(w));
  struct cs_store store;
- struct cs_store_config config={.card_path=path,.card_uuid=uuid,.max_state_bytes=1U,.test_root=true};
+ struct cs_store_config config={.card_path=path,.card_uuid=uuid,.max_state_bytes=1U,.test_root=true,.qualified_fat_syncfs=true};
  assert(cs_store_open_reader(&store,&config)==CS_STORE_OK);
  assert(!cl_preferences_auto_resume(&store));
  assert((cl_preferences_settings(&store)&CL_APPS_REVERSE)!=0U);
@@ -129,6 +130,22 @@ int main(int argc,char **argv)
  assert((cl_preferences_runtime(&store,&runtime)&CL_APPS_REVERSE)!=0U);
  assert(runtime==(0x1003U|game_controls));
  cs_store_close(&store);
+ /* Language persists independently of all game controls and existing flags. */
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ assert(cl_preferences_submit_ui(w,s.grid,s.main_tab,s.appearance,s.shortcuts|(UINT32_C(1)<<CL_LANGUAGE_SHIFT)));
+ assert(cl_preferences_stop(w));
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ assert(!s.error&&s.shortcuts==(runtime|(UINT32_C(1)<<CL_LANGUAGE_SHIFT)));
+ cl_language_set((s.shortcuts&CL_LANGUAGE_MASK)>>CL_LANGUAGE_SHIFT);
+ assert(cl_language_get()==CL_SPANISH&&strcmp(CL_TR("Settings"),"Ajustes")==0);
+ assert(cl_preferences_submit_ui(w,s.grid,s.main_tab,s.appearance,(s.shortcuts&~CL_LANGUAGE_MASK)|(UINT32_C(2)<<CL_LANGUAGE_SHIFT)));
+ assert(cl_preferences_stop(w));
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ assert(!s.error&&s.shortcuts==(runtime|(UINT32_C(2)<<CL_LANGUAGE_SHIFT)));
+ cl_language_set((s.shortcuts&CL_LANGUAGE_MASK)>>CL_LANGUAGE_SHIFT);
+ assert(cl_language_get()==CL_ENGLISH&&strcmp(CL_TR("Settings"),"Settings")==0);
+ assert(cl_preferences_stop(w));
+ puts("R50_LANGUAGE_PERSIST_RESTART_RESERVED_FALLBACK_PASS");
  puts("IN_GAME_PREFERENCES_DURABLE_MERGE_PASS");
  puts("MAINUI_SHORTCUT_PREFERENCES_V2_MIGRATION_AND_MERGE_PASS");
  puts("APPEARANCE_PREFERENCES_V1_MIGRATION_AND_RELOAD_PASS");

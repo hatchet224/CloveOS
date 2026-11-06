@@ -1,3 +1,4 @@
+#include "launcher/i18n.h"
 #include "sessiond/durability.h"
 #include "supervisor/tools_backend.h"
 #include "supervisor/battery_monitor.h"
@@ -1236,7 +1237,7 @@ static void regenerate_history(const struct sc_config *c, const struct cs_store 
     }
     s->ready = true;
     s->enabled_mask = CL_HISTORY_REGENERATED;
-    (void)snprintf(s->status, sizeof(s->status), "GameSwitcher list regenerated from %zu played games.", history->count);
+    (void)snprintf(s->status, sizeof(s->status), CL_TR("GameSwitcher list regenerated from %zu played games."), history->count);
 done:
     free(recent);
     free(history);

@@ -1,0 +1,32 @@
+{
+  "qemu_only": true,
+  "physical_boot_measured": false,
+  "sd_accessed": false,
+  "catalogs_identical": true,
+  "metrics": [
+    {
+      "variant": "baseline-a",
+      "elapsed_ms": 35879,
+      "core_hashes": 11,
+      "core_bytes": 164598832
+    },
+    {
+      "variant": "candidate-a",
+      "elapsed_ms": 1390,
+      "core_hashes": 0,
+      "core_bytes": 0
+    },
+    {
+      "variant": "candidate-b",
+      "elapsed_ms": 1374,
+      "core_hashes": 0,
+      "core_bytes": 0
+    },
+    {
+      "variant": "baseline-b",
+      "elapsed_ms": 35903,
+      "core_hashes": 11,
+      "core_bytes": 164598832
+    }
+  ]
+}

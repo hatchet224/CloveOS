@@ -1,3 +1,4 @@
+#include "launcher/i18n.h"
 #include "supervisor/clock.h"
 #include "supervisor/process.h"
 #include "supervisor/timezone.h"
@@ -45,7 +46,7 @@ void sc_clock_request(const struct cs_store *store,const struct cl_tool_request 
     if(!saved && r->operation!=CL_TOOL_SYNC_CLOCK){
         char stamp[64];FILE *f=fopen("/run/console/ntp.synced","r");
         if(f!=NULL){if(fgets(stamp,sizeof(stamp),f)!=NULL){stamp[strcspn(stamp,"\r\n")]='\0';
-            if(strlen(stamp)==20U && strspn(stamp,"0123456789-: UTC")==20U)(void)snprintf(s->status,sizeof(s->status),"Internet time synchronized: %s. RTC saved. X refreshes.",stamp);}
+            if(strlen(stamp)==20U && strspn(stamp,"0123456789-: UTC")==20U)(void)snprintf(s->status,sizeof(s->status),CL_TR("Internet time synchronized: %s. RTC saved. X refreshes."),stamp);}
             (void)fclose(f);}
     }
     return;

@@ -1,4 +1,5 @@
 #include "launcher/preferences.h"
+#include "launcher/i18n.h"
 #include "launcher/view.h"
 #include <stdio.h>
 #include <string.h>
@@ -27,7 +28,10 @@ void cl_view_text(SDL_Surface *s, struct cl_assets *a, enum cl_theme_role role, 
     if (cl_runtime_text(a, role, s, x, y, text, color, width)) {
         return;
     }
-    if (a->fonts[role].surface != NULL) {
+    bool ascii = true;
+    for (const unsigned char *p = (const unsigned char *)text; *p != 0U; ++p)
+        if (*p >= 128U) { ascii = false; break; }
+    if (ascii && a->fonts[role].surface != NULL) {
         cl_atlas_text(&a->fonts[role], s, x, y, text, color, 120U, width);
     } else {
         cl_text(s, x, y, text, role == CL_FONT_DETAIL ? 1U : 2U, rgb(s, color),
@@ -156,6 +160,7 @@ void cl_view_frame(SDL_Surface *s, const struct cl_view *v, const char *title)
 }
 void cl_view_footer(SDL_Surface *s, const struct cl_view *v, const char *hints)
 {
+    hints=CL_TR(hints);
     SDL_Rect footer = {0, 420, 640, 60};
     (void)SDL_FillRect(s, &footer, rgb(s, v->theme->background));
     image_rect(s, v->assets->footer, footer);
@@ -206,13 +211,13 @@ void cl_main_draw(SDL_Surface *s, const struct cl_view *v, unsigned int tab)
             image_rect(s, v->assets->tabs[item][active ? 1U : 0U], rect);
         else cl_round_rect(s, rect, v->theme->radius, active ? v->theme->selected : v->theme->panel);
         if (item==5U)
-            fit_label(s,v,CL_FONT_TITLE,(SDL_Rect){rect.x+10,168,136,65},"Expert",
+            fit_label(s,v,CL_FONT_TITLE,(SDL_Rect){rect.x+10,168,136,65},CL_TR("Expert"),
                       readable_ink(v->theme->selected_text,active?v->theme->selected:v->theme->panel));
         else if (!v->theme->hide_icon_labels && (v->appearance & CL_HIDE_ICON_LABELS) == 0U)
-            fit_label(s, v, CL_FONT_GRID_MAIN, (SDL_Rect){rect.x+4, 332, 148, 44}, labels[item],
+            fit_label(s, v, CL_FONT_GRID_MAIN, (SDL_Rect){rect.x+4, 332, 148, 44}, CL_TR(labels[item]),
                       active ? v->theme->selected_text : v->theme->fonts[CL_FONT_GRID_MAIN].color);
     }
-    cl_view_footer(s, v, "A Select                       Left/Right");
+    cl_view_footer(s, v, CL_TR("A Select                       Left/Right"));
 }
 void cl_level_meter(SDL_Surface *s, const struct cl_view *v, bool brightness_level)
 {
@@ -229,6 +234,7 @@ void cl_level_meter(SDL_Surface *s, const struct cl_view *v, bool brightness_lev
 void cl_view_dialog(SDL_Surface *s, const struct cl_view *v, const char *title,
                     const char *message, const char *cancel, const char *confirm, size_t selected)
 {
+    title=CL_TR(title);message=CL_TR(message);cancel=CL_TR(cancel);confirm=CL_TR(confirm);
     cl_view_frame(s, v, title);
     if (v->assets->popup != NULL)
         image_rect(s, v->assets->popup, (SDL_Rect){0, 80, 640, 330});
@@ -257,7 +263,7 @@ void cl_view_dialog(SDL_Surface *s, const struct cl_view *v, const char *title,
                   i == 0U ? cancel : confirm,
                   selected == i ? v->theme->selected_text : v->theme->fonts[CL_FONT_LIST].color);
     }
-    cl_view_footer(s, v, cancel != NULL ? "A Select     B Cancel" : "A OK     B Back");
+    cl_view_footer(s, v, cancel != NULL ? CL_TR("A Select     B Cancel") : CL_TR("A OK     B Back"));
 }
 static SDL_Surface *system_icon(struct cl_assets *assets, const char *system, bool expert)
 {
@@ -289,14 +295,14 @@ void cl_view_gallery(SDL_Surface *s,const struct cl_view *v,const char *name,
     (void)SDL_FillRect(s,NULL,rgb(s,0U));
     fit(s,v->artwork,(SDL_Rect){0,hide_bars?0:48,640,hide_bars?480:384});
     if(v->artwork==NULL)
-        fit_label(s,v,CL_FONT_LIST,(SDL_Rect){80,212,480,48},"Screenshot unavailable",v->theme->muted);
+        fit_label(s,v,CL_FONT_LIST,(SDL_Rect){80,212,480,48},CL_TR("Screenshot unavailable"),v->theme->muted);
     if(hide_bars) return;
     const SDL_Rect header={0,0,640,48},footer={0,432,640,48};
     (void)SDL_FillRect(s,&header,rgb(s,v->theme->panel));
     (void)SDL_FillRect(s,&footer,rgb(s,v->theme->panel));
     cl_view_text(s,v->assets,CL_FONT_LIST,16,10,name,v->theme->fonts[CL_FONT_LIST].color,505);
     cl_view_text(s,v->assets,CL_FONT_HINT,527,14,position,v->theme->fonts[CL_FONT_HINT].color,100);
-    cl_view_footer(s,v,"LEFT/RIGHT Browse   Y Fullscreen   MENU Exit");
+    cl_view_footer(s,v,CL_TR("LEFT/RIGHT Browse   Y Fullscreen   MENU Exit"));
 }
 
 void cl_view_draw(SDL_Surface *s, const struct cl_view *v)
@@ -307,15 +313,15 @@ void cl_view_draw(SDL_Surface *s, const struct cl_view *v)
     const struct cl_entry *selected = v->position->selected < v->history->count
                                           ? &v->history->entries[v->position->selected]
                                           : NULL;
-    cl_view_frame(s, v, v->carousel ? "GameSwitcher" : (v->heading != NULL ? v->heading : "Games"));
+    cl_view_frame(s, v, v->carousel ? "GameSwitcher" : (v->heading != NULL ? v->heading : CL_TR("Games")));
     if (selected == NULL) {
         cl_view_text(s, v->assets, CL_FONT_LIST, 28, 200,
-                     v->carousel ? "No recent games" : "No games in this view", t->muted, 584);
+                     v->carousel ? CL_TR("No recent games") : CL_TR("No games in this view"), t->muted, 584);
     } else if (v->carousel) {
         (void)SDL_FillRect(s, NULL, rgb(s, 0U));
         fit(s, v->artwork, (SDL_Rect){0, v->fullscreen ? 0 : 40, 640, v->fullscreen ? 480 : 400});
         if (v->artwork == NULL)
-            fit_label(s, v, CL_FONT_LIST, (SDL_Rect){100, 200, 440, 48}, "No screenshot available", t->muted);
+            fit_label(s, v, CL_FONT_LIST, (SDL_Rect){100, 200, 440, 48}, CL_TR("No screenshot available"), t->muted);
         if (!v->fullscreen) {
             SDL_Rect header = {0, 0, 640, 40}, footer = {0, 440, 640, 40};
             (void)SDL_FillRect(s, &header, rgb(s, t->panel));
@@ -395,7 +401,7 @@ void cl_view_draw(SDL_Surface *s, const struct cl_view *v)
     }
     if (!t->hide_hints && !v->carousel) {
         cl_view_footer(s, v, v->systems || (selected != NULL && selected->library_action != CL_LIBRARY_PLAY) ?
-                       "A Select     B Back" : "A Play   B Back   X States   Y Options");
+                       CL_TR("A Select     B Back") : CL_TR("A Play   B Back   X States   Y Options"));
         uint64_t current = selected != NULL ? (uint64_t)v->position->selected+1U : 0U;
         uint64_t total = (uint64_t)v->history->count;
         if (v->history->library_total != 0U) {
@@ -414,10 +420,10 @@ void cl_settings_draw(SDL_Surface *s, const struct cl_view *v, bool grid, size_t
     const struct cl_theme *t = v->theme;
     const char *labels[] = {"Brightness", "Volume", "Wi-Fi", "Theme",
         grid ? "Games layout: Grid" : "Games layout: List", "Button settings",
-        "About device", "Storage recovery", "Date & Time", "Power off"};
+        "About device", "Storage recovery", "Date & Time", "Language", "Power off"};
     size_t first = selected < 6U ? 0U : selected - 5U;
-    cl_view_frame(s, v, "Settings");
-    for (size_t i = first; i < 10U && i < first + 6U; ++i) {
+    cl_view_frame(s, v, CL_TR("Settings"));
+    for (size_t i = first; i < 11U && i < first + 6U; ++i) {
         int y = t->list_top + (int)(i - first) * t->row_height;
         SDL_Rect r = {t->border_left, y, 640 - t->border_left - t->border_right,
                       t->row_height - t->row_gap};
@@ -426,8 +432,8 @@ void cl_settings_draw(SDL_Surface *s, const struct cl_view *v, bool grid, size_t
             image_rect(s, v->assets->list_item[active ? 1U : 0U], r);
         else if (active)
             cl_round_rect(s, r, t->radius, t->selected);
-        fit(s, v->assets->settings[i], (SDL_Rect){r.x + 8, y + 4, 40, 40});
-        cl_view_text(s, v->assets, CL_FONT_LIST, r.x + 62, y + 9, labels[i],
+        fit(s, v->assets->settings[i < 9U ? i : (i == 10U ? 9U : 6U)], (SDL_Rect){r.x + 8, y + 4, 40, 40});
+        cl_view_text(s, v->assets, CL_FONT_LIST, r.x + 62, y + 9, CL_TR(labels[i]),
                      active ? t->selected_text : t->fonts[CL_FONT_LIST].color, r.w - 120);
         if (i < 2U) {
             char level[24];
@@ -438,7 +444,7 @@ void cl_settings_draw(SDL_Surface *s, const struct cl_view *v, bool grid, size_t
                       level, active ? t->selected_text : t->fonts[CL_FONT_DETAIL].color);
         }
     }
-    cl_view_footer(s, v, selected < 2U ? "Left/Right Adjust     B Back" : "A Select     B Back");
+    cl_view_footer(s, v, selected < 2U ? CL_TR("Left/Right Adjust     B Back") : CL_TR("A Select     B Back"));
 }
 
 void cl_options_draw(SDL_Surface *s, const struct cl_view *v, const char *title,
@@ -458,5 +464,5 @@ void cl_options_draw(SDL_Surface *s, const struct cl_view *v, const char *title,
         fit_label(s, v, CL_FONT_LIST, (SDL_Rect){label_x, row.y+6, 610-label_x, 48}, labels[i],
                   i == selected ? v->theme->selected_text : v->theme->fonts[CL_FONT_LIST].color);
     }
-    cl_view_footer(s, v, "A Select     B Back");
+    cl_view_footer(s, v, CL_TR("A Select     B Back"));
 }

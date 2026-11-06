@@ -15,6 +15,9 @@
 #include "supervisor/core_choice.h"
 #include "supervisor/glo_scripts.h"
 #include "launcher/preferences.h"
+#include "launcher/ports.h"
+#include <sys/mount.h>
+#include "launcher/i18n.h"
 #include "launcher/file_explorer.h"
 #include <arpa/inet.h>
 #include <errno.h>
@@ -79,7 +82,7 @@ struct supervisor {
     bool boot_checked, boot_queried, boot_decided, boot_override, menu_held, menu_initial,
         menu_released;
     bool clean_record, ever_started, card_helper_running, preflight_pending, show_gameswitcher;
-    bool startup_checked, startup_child, startup_advance, file_explorer_running;
+    bool startup_checked, startup_child, startup_advance, file_explorer_running, ports_running;
     bool diagnostic_running, diagnostic_shown, start_levels_restore;
     bool diagnostics_dirty, diagnostics_pending, menu_diagnostics;
     bool level_adjusting, level_queued, display_levels_pending, wake_levels_pending;
@@ -114,7 +117,7 @@ static void activity_update(struct supervisor *s, uint64_t now) {
     }
 }
 static void remember_error(struct supervisor *s, const char *text) {
-    (void)snprintf(s->error, sizeof(s->error), "%s", text);
+    (void)snprintf(s->error, sizeof(s->error), "%s", CL_TR(text));
     fprintf(stderr, "supervisor: %s\n", s->error);
     s->diagnostics_dirty = true;
     s->diagnostics_at = 0U; /* Persist the failure before a user retries or powers off. */
@@ -123,7 +126,7 @@ static void game_services_policy(struct supervisor *s)
 {
     bool paused = (s->preferences & CL_DISABLE_GAME_SERVICES) != 0U &&
         (s->launch_pending || s->selection_pending || s->ra_pid > 0 ||
-         s->netplay_running || s->status.active || s->status.unsettled);
+         s->netplay_running || s->ports_running || s->status.active || s->status.unsettled);
     if (paused == s->services_paused) return;
     if (paused) {
         int fd = open("/run/console/game-services.lock",
@@ -980,6 +983,11 @@ static void reap(struct supervisor *s) {
             s->level_pid = 0;
             if (s->startup_child) {
                 s->startup_child = false;
+                if (s->ports_running) {
+                    (void)umount("/mnt/SDCARD/Roms/ports");
+                    (void)sc_cpu_policy_restore(&s->cpu_policy);
+                    s->ports_running = false;
+                }
                 s->netplay_running = false;
                 int result = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
                 if (s->easy_netplay && (result == 23 || (!s->level_term && result != 0))) {
@@ -1065,7 +1073,10 @@ static void disk_results(struct supervisor *s) {
         if(s->catalog_refreshing && result->message.token == s->catalog_refresh_token &&
            (result->message.type==SC_UI_LIBRARY || result->message.type==SC_UI_ERROR))
             s->catalog_refreshing=false;
-        if (result->settings_loaded) s->shortcuts = result->shortcuts;
+        if (result->settings_loaded) {
+            s->shortcuts = result->shortcuts;
+            cl_language_set((s->shortcuts & CL_LANGUAGE_MASK) >> CL_LANGUAGE_SHIFT);
+        }
         if(result->settings_loaded && result->settings!=s->preferences) {
             struct sc_message preferences;
             sc_message_init(&preferences,SC_RUNTIME_PREFS,0U);
@@ -1727,6 +1738,26 @@ static bool launch_glo_app(struct supervisor *s)
     }
     return started;
 }
+static bool launch_portmaster(struct supervisor *s)
+{
+    if (s->status.state != CS_MENU_READY || s->status.active || s->status.unsettled ||
+        s->transport_fault || s->catalog_refreshing || s->selection_pending ||
+        s->ra_pid > 0 || s->level_pid > 0 || s->file_service.pid > 0 ||
+        !s->memory.input_persisted || strcmp(s->config.base.card_path,"/mnt/SDCARD") != 0) return false;
+    struct cl_ports_config config = {
+        .device = {.display = {.display_index=s->config.ui_config.display,
+            .rotation=(enum cl_rotation)s->config.ui_config.rotation,
+            .portrait_rotation=(enum cl_rotation)s->config.ui_config.portrait_rotation,
+            .qualified_software_fallback=s->config.ui_config.software_fallback},
+            .input=s->memory.checked_input,.qualified_fat_syncfs=s->config.base.qualified_fat_syncfs},
+        .language=(s->shortcuts & CL_LANGUAGE_MASK) >> CL_LANGUAGE_SHIFT
+    };
+    memcpy(config.device.card_uuid,s->config.base.card_uuid,sizeof(config.device.card_uuid));
+    if(!sc_spawn_portmaster(&config,&s->level_pid))return false;
+    (void)sc_cpu_policy_prepare(&s->cpu_policy,"/sys/devices/system/cpu/cpu0/cpufreq");
+    s->startup_child=true;s->startup_advance=false;s->ports_running=true;s->level_term=false;
+    return true;
+}
 static bool launch_file_explorer(struct supervisor *s)
 {
     if (s->status.state != CS_MENU_READY || s->status.active || s->status.unsettled ||
@@ -1807,7 +1838,10 @@ static void start_progress(struct supervisor *s, uint64_t now) {
         !s->standby_transition && !s->standby_active &&
         (!pause_lan || !sc_lan_busy(&s->lan_services)) &&
         (s->file_service.pid <= 0 || s->launch.kind == CL_LAUNCH_FILE_EXPLORER)) {
-        if (s->launch.kind == CL_LAUNCH_FILE_EXPLORER) {
+        if (s->launch.kind == CL_LAUNCH_PORTMASTER) {
+            s->launch_pending=false;
+            if(!launch_portmaster(s))ui_error(s,"PortMaster could not open. Finish transfers and check the card.");
+        } else if (s->launch.kind == CL_LAUNCH_FILE_EXPLORER) {
             s->launch_pending = false;
             if (!launch_file_explorer(s))
                 ui_error(s, s->file_service.pid > 0 ? "Stop file transfer before opening File Explorer." :

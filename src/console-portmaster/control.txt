@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# CloveOS platform hook for upstream PortMaster ports.
+export controlfolder=/roms/ports/PortMaster directory=roms
+export CFW_NAME=CloveOS DEVICE_ARCH=aarch64 ANALOGSTICKS=2 LOWRES=N
+export DISPLAY_WIDTH=640 DISPLAY_HEIGHT=480 ESUDO='' ESUDOKILL=-1 ESUDOKILL2=-1
+export CUR_TTY=/dev/fd/1 HOTKEY=guide
+export HOME="$controlfolder/home"
+export SDL_GAMECONTROLLERCONFIG_FILE="$controlfolder/clove-controllerdb.txt"
+get_controls() { sdl_controllerconfig="${SDL_GAMECONTROLLERCONFIG}"; printf '%s\n' "$sdl_controllerconfig" > "$SDL_GAMECONTROLLERCONFIG_FILE"; }
+source "$controlfolder/funcs.txt"
+export GPTOKEYB="$controlfolder/gptokeyb -1"
+export GPTOKEYB2="env LD_PRELOAD=$controlfolder/libinterpose.aarch64.so $controlfolder/gptokeyb2 -1"
+
+# SDL2 Renderer ports use the same landscape orientation as CloveOS. OpenGL
+# contexts require a compatible upstream/per-port renderer and are not forced.
+export LD_PRELOAD="/system/portmaster/libclove-port-display.so${LD_PRELOAD:+:$LD_PRELOAD}"
+# Foreground process ownership/cleanup belongs to console-ports, not a global pkill.
+pm_finish() { pm_message_end; }

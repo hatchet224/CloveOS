@@ -1,4 +1,5 @@
 #include "launcher/app.h"
+#include "launcher/i18n.h"
 #include "launcher/favorites.h"
 #include "launcher/paging.h"
 #include "launcher/preferences.h"
@@ -35,6 +36,7 @@ enum screen
     TOOLS,
     SYSTEMS,
     SETTINGS,
+    LANGUAGE,
     STATES,
     ACTIONS,
     FILTER_LIST,
@@ -118,14 +120,14 @@ struct app
     uint64_t play_revision, play_deadline, network_poll_at;
     int battery;
     unsigned int brightness_level, volume_level;
-    char message[161];
+    char message[512];
 };
 static void request_states(struct app *a);
 static const char *const apps[] = {"Package Manager", "Activity Tracker", "Theme Switcher",
                                    "GameSwitcher", "Refresh ROM library", "Storage recovery",
                                    "ScreenScraper", "Package downloads", "File transfer", "Tweaks",
-                                   "File Explorer", "Gallery", "Search", "Expert", "Battery Monitor"};
-enum { APP_FILES = 10U, APP_GALLERY, APP_SEARCH, APP_EXPERT, APP_BATTERY, APP_COUNT };
+                                   "File Explorer", "Gallery", "Search", "Expert", "Battery Monitor", "PortMaster"};
+enum { APP_FILES = 10U, APP_GALLERY, APP_SEARCH, APP_EXPERT, APP_BATTERY, APP_PORTMASTER, APP_COUNT };
 _Static_assert(APP_COUNT == CL_APP_ICON_COUNT && APP_SEARCH == CL_APP_ICON_SEARCH, "App icon order must match");
 enum { SHORTCUT_DEFAULT, SHORTCUT_DISABLED, SHORTCUT_FIRST_APP,
        SHORTCUT_FIRST_TOOL = SHORTCUT_FIRST_APP + APP_FILES };
@@ -147,7 +149,7 @@ static size_t visible_app_count(const struct app *a)
 }
 static size_t app_at(const struct app *a,size_t position)
 {
-    static const size_t alphabetical[]={1U,APP_BATTERY,APP_EXPERT,APP_FILES,8U,APP_GALLERY,3U,7U,0U,4U,6U,APP_SEARCH,5U,2U,9U};
+    static const size_t alphabetical[]={1U,APP_BATTERY,APP_EXPERT,APP_FILES,8U,APP_GALLERY,3U,7U,0U,APP_PORTMASTER,4U,6U,APP_SEARCH,5U,2U,9U};
     bool sorted = (a->appearance & CL_APPS_SORTED) != 0U;
     bool reverse = sorted && (a->appearance & CL_APPS_REVERSE) != 0U;
     for (size_t i = 0U; i < APP_COUNT; ++i) {
@@ -415,10 +417,10 @@ static struct cl_view make_view(struct app *a)
         .history = list(a),
         .position = position(a),
         .expert = a->expert_view && !a->favorite_view && !a->search_view,
-        .heading = a->screen == SYSTEMS ? (a->expert_view ? "Expert" : "Games") :
-                   a->search_view ? "Search" : a->favorite_view ? "Favorites"
-                                    : (!a->memory->library_tab && !a->carousel ? "Recent" :
-                                       (a->system_filter[0] != '\0' ? a->system_filter : "Games")),
+        .heading = a->screen == SYSTEMS ? (a->expert_view ? CL_TR("Expert") : CL_TR("Games")) :
+                   a->search_view ? CL_TR("Search") : a->favorite_view ? CL_TR("Favorites")
+                                    : (!a->memory->library_tab && !a->carousel ? CL_TR("Recent") :
+                                       (a->system_filter[0] != '\0' ? a->system_filter : CL_TR("Games"))),
         .systems = a->screen == SYSTEMS,
         .artwork = a->screen == SYSTEMS ? NULL : a->artwork,
         .carousel = a->carousel,
@@ -518,30 +520,30 @@ static size_t glo_rows(struct app *a, struct glo_row rows[GLO_MAX_ROWS])
     bool games = a->memory->library_tab && !a->favorite_view && !a->expert_view && !a->search_view;
     bool registered = !entry->discovered || entry->launch_registered;
     size_t count = 0U;
-    if (registered) rows[count++] = (struct glo_row){GLO_RESET, "Reset game"};
-    rows[count++] = (struct glo_row){GLO_CORE, a->glo_core[0] ? a->glo_core : "Game core"};
-    if (a->glo_core_overridden) rows[count++] = (struct glo_row){GLO_DEFAULT_CORE, "Restore default core"};
+    if (registered) rows[count++] = (struct glo_row){GLO_RESET, CL_TR("Reset game")};
+    rows[count++] = (struct glo_row){GLO_CORE, a->glo_core[0] ? a->glo_core : CL_TR("Game core")};
+    if (a->glo_core_overridden) rows[count++] = (struct glo_row){GLO_DEFAULT_CORE, CL_TR("Restore default core")};
     if (games) {
         if (a->filter_keyword[0] != '\0') {
-            rows[count++] = (struct glo_row){GLO_CLEAR_FILTER, "Clear filter"};
-            (void)snprintf(a->glo_filter, sizeof(a->glo_filter), "Filter: %s", a->filter_keyword);
+            rows[count++] = (struct glo_row){GLO_CLEAR_FILTER, CL_TR("Clear filter")};
+            (void)snprintf(a->glo_filter, sizeof(a->glo_filter), CL_TR("Filter: %s"), a->filter_keyword);
         }
-        rows[count++] = (struct glo_row){GLO_FILTER, a->filter_keyword[0] ? a->glo_filter : "Filter list"};
+        rows[count++] = (struct glo_row){GLO_FILTER, a->filter_keyword[0] ? a->glo_filter : CL_TR("Filter list")};
     }
-    if (games || a->expert_view) rows[count++] = (struct glo_row){GLO_REFRESH, "Refresh list"};
+    if (games || a->expert_view) rows[count++] = (struct glo_row){GLO_REFRESH, CL_TR("Refresh list")};
     if (registered) rows[count++] = (struct glo_row){GLO_NETPLAY,
-        netplay_system(entry->system) || link_system(entry->system) ? "Netplay" : "No Netplay"};
-    rows[count++] = (struct glo_row){GLO_RANDOM, "Random game"};
-    rows[count++] = (struct glo_row){GLO_SCRAPER, "Scraper"};
-    rows[count++] = (struct glo_row){GLO_CLOCK, "Set time"};
+        netplay_system(entry->system) || link_system(entry->system) ? "Netplay" : CL_TR("No Netplay")};
+    rows[count++] = (struct glo_row){GLO_RANDOM, CL_TR("Random game")};
+    rows[count++] = (struct glo_row){GLO_SCRAPER, CL_TR("Scraper")};
+    rows[count++] = (struct glo_row){GLO_CLOCK, CL_TR("Set time")};
     for (size_t i = 0U; i < a->glo_script_count; ++i)
         rows[count++] = (struct glo_row){GLO_SCRIPT, a->glo_scripts[i].label};
-    rows[count++] = (struct glo_row){GLO_FAVORITE, "Toggle Favorite"};
-    if (registered) rows[count++] = (struct glo_row){GLO_DELETE_STATES, "Delete save states"};
-    if (!a->memory->library_tab && !a->search_view) rows[count++] = (struct glo_row){GLO_REMOVE_RECENT, "Remove from Recent"};
-    rows[count++] = (struct glo_row){GLO_COMPATIBILITY, "Inspect compatibility"};
+    rows[count++] = (struct glo_row){GLO_FAVORITE, CL_TR("Toggle Favorite")};
+    if (registered) rows[count++] = (struct glo_row){GLO_DELETE_STATES, CL_TR("Delete save states")};
+    if (!a->memory->library_tab && !a->search_view) rows[count++] = (struct glo_row){GLO_REMOVE_RECENT, CL_TR("Remove from Recent")};
+    rows[count++] = (struct glo_row){GLO_COMPATIBILITY, CL_TR("Inspect compatibility")};
     if (games && a->services->request_library_page != NULL && entry->disc_count > 1U)
-        rows[count++] = (struct glo_row){GLO_NEXT_DISC, "Next disc"};
+        rows[count++] = (struct glo_row){GLO_NEXT_DISC, CL_TR("Next disc")};
     return count;
 }
 
@@ -568,7 +570,7 @@ static void message(struct app *a, const char *text, enum screen back)
 {
     if (text != a->message)
     {
-        (void)snprintf(a->message, sizeof(a->message), "%s", text);
+        (void)snprintf(a->message, sizeof(a->message), "%s", CL_TR(text));
     }
     if (a->screen == INPUT_CHECK)
     {
@@ -606,7 +608,7 @@ static void open_tool(struct app *a, enum cl_tool_kind kind)
     {
         a->tools.waiting = false;
         a->tools.committing = false;
-        message(a, "Application request could not be queued.", a->tool_return);
+        message(a, CL_TR("Application request could not be queued."), a->tool_return);
     }
 }
 static bool scrape_running(const struct app *a)
@@ -627,7 +629,7 @@ static void refresh_tool_library(struct app *a, enum screen back)
         a->grid_art[i] = NULL;
     }
     (void)cl_art_request_grid(a->grid_worker, empty);
-    if (!library_refresh(a, true)) message(a, "ROM library refresh could not be queued.", back);
+    if (!library_refresh(a, true)) message(a, CL_TR("ROM library refresh could not be queued."), back);
 }
 static void close_transfer(struct app *a)
 {
@@ -639,7 +641,7 @@ static void close_transfer(struct app *a)
         a->dirty = true;
     } else {
         a->tools.waiting = false;
-        message(a, "File transfer could not be stopped. Try again.", TOOLS);
+        message(a, CL_TR("File transfer could not be stopped. Try again."), TOOLS);
     }
 }
 static bool theme_path_allowed(const char *path)
@@ -876,7 +878,7 @@ static void box(struct app *a, int y, int height, bool highlight)
 }
 static void wrapped_message(struct app *a, const char *s, int y)
 {
-    size_t length = strnlen(s, 161U), offset = 0U;
+    size_t length = strnlen(s, 512U), offset = 0U;
     while (offset < length && y < 330)
     {
         char line[47];
@@ -893,6 +895,8 @@ static void wrapped_message(struct app *a, const char *s, int y)
                 n = word;
             }
         }
+        while (n>0U && ((unsigned char)s[offset+n]&0xc0U)==0x80U) --n;
+        if(n==0U) break;
         memcpy(line, s + offset, n);
         line[n] = '\0';
         text(a, 28, y, line, 2U, 46U);
@@ -1165,22 +1169,22 @@ static void draw_tweaks(SDL_Surface *surface, const struct cl_view *view, struct
                 else if (row->format == TWEAK_RATE && n!=0U)
                     (void)snprintf(value,sizeof(value),"%u.0x",n);
                 else if (n==0U)
-                    (void)snprintf(value,sizeof(value),"%s",row->format==TWEAK_RATE?"Unlimited":"Theme");
+                    (void)snprintf(value,sizeof(value),"%s",row->format==TWEAK_RATE?CL_TR("Unlimited"):CL_TR("Theme"));
                 else
                     (void)snprintf(value,sizeof(value),"%u",row->field==CL_BATTERY_SIZE_SHIFT?n+11U:n);
                 display=value;
             }
         }
         if (display != NULL)
-            (void)snprintf(labels[i],sizeof(labels[i]),"%s   < %s >",row->label,display);
+            (void)snprintf(labels[i],sizeof(labels[i]),"%s   < %s >",CL_TR(row->label),CL_TR(display));
         else
-            (void)snprintf(labels[i],sizeof(labels[i]),"%s",row->label);
+            (void)snprintf(labels[i],sizeof(labels[i]),"%s",CL_TR(row->label));
         rows[i]=labels[i];
     }
-    cl_options_draw(surface,view,page->title,rows,page->count,a->choice);
-    cl_view_footer(surface,view,"A Select   SELECT Help   B Back");
+    cl_options_draw(surface,view,CL_TR(page->title),rows,page->count,a->choice);
+    cl_view_footer(surface,view,CL_TR("A Select   SELECT Help   B Back"));
     if (a->preference_snapshot.error)
-        cl_view_text(surface,&a->assets,CL_FONT_DETAIL,24,408,"Preferences not saved - check game card",
+        cl_view_text(surface,&a->assets,CL_FONT_DETAIL,24,408,CL_TR("Preferences not saved - check game card"),
                      a->theme.warning,592);
 }
 static void draw(struct app *a)
@@ -1188,8 +1192,9 @@ static void draw(struct app *a)
     SDL_Surface *surface = a->display.surface;
     char status[80];
     size_t i;
+    cl_language_set((a->shortcuts & CL_LANGUAGE_MASK) >> CL_LANGUAGE_SHIFT);
     struct cl_view view = make_view(a);
-    cl_view_frame(surface, &view, a->screen == INPUT_CHECK ? "Controller Setup" : "Mini Zero 28");
+    cl_view_frame(surface, &view, a->screen == INPUT_CHECK ? CL_TR("Controller Setup") : "Mini Zero 28");
     if (a->screen == MAIN)
     {
         cl_main_draw(surface, &view, a->memory->main_tab);
@@ -1201,8 +1206,8 @@ static void draw(struct app *a)
             const char *body = a->theme_with_icons ?
                 "Apply icons: ON. Use theme icons when available." :
                 "Apply icons: OFF. Keep the current icon pack.";
-            cl_view_dialog(surface, &view, "Apply theme", body, NULL, "Apply theme", 0U);
-            cl_view_footer(surface, &view, "X Toggle icons    A Apply    B Back");
+            cl_view_dialog(surface, &view, CL_TR("Apply theme"), body, NULL, CL_TR("Apply theme"), 0U);
+            cl_view_footer(surface, &view, CL_TR("X Toggle icons    A Apply    B Back"));
             return;
         }
         if (a->theme_preview != NULL) {
@@ -1217,9 +1222,9 @@ static void draw(struct app *a)
                 rect.x += (rect.w - width) / 2;
                 rect.w = width;
             }
-            cl_view_frame(surface, &view, a->tools.snapshot.kind == CL_TOOL_ICON_EDITOR ? "Icon Preview" : "Theme Preview");
+            cl_view_frame(surface, &view, a->tools.snapshot.kind == CL_TOOL_ICON_EDITOR ? CL_TR("Icon Preview") : CL_TR("Theme Preview"));
             (void)SDL_BlitScaled(preview, NULL, surface, &rect);
-            cl_view_footer(surface, &view, "A Apply   B Back");
+            cl_view_footer(surface, &view, CL_TR("A Apply   B Back"));
             return;
         }
         cl_tools_draw(surface, &view, &a->tools);
@@ -1238,16 +1243,21 @@ static void draw(struct app *a)
         size_t count = visible_app_count(a);
         for (i = 0U; i < count; ++i) {
             size_t id = app_at(a, i);
-            ordered[i] = apps[id];
+            ordered[i] = CL_TR(apps[id]);
             icons[i] = a->assets.apps[id];
         }
         view.option_icons = icons;
-        cl_options_draw(surface,&view,"Apps",ordered,count,a->choice);
+        cl_options_draw(surface,&view,CL_TR("Apps"),ordered,count,a->choice);
         return;
     }
     const struct tweak_page *page = tweak_page(a->screen);
     if (page != NULL) {
         draw_tweaks(surface,&view,a,page);
+        return;
+    }
+    if (a->screen == LANGUAGE) {
+        const char *names[] = {"English", "Español"};
+        cl_options_draw(surface, &view, CL_TR("Language"), names, 2U, a->choice);
         return;
     }
     if (a->screen == SETTINGS)
@@ -1256,21 +1266,21 @@ static void draw(struct app *a)
         if (a->preference_snapshot.error || a->preferences_waiting ||
             a->preference_snapshot.pending)
             cl_view_text(surface, &a->assets, CL_FONT_DETAIL, 24, 410,
-                         a->preference_snapshot.error ? "Preferences not saved - check game card"
-                                                      : "Saving display settings...",
+                         a->preference_snapshot.error ? CL_TR("Preferences not saved - check game card")
+                                                      : CL_TR("Saving display settings..."),
                          a->preference_snapshot.error ? a->theme.warning : a->theme.muted, 592);
         return;
     }
     if (a->input.joystick == NULL)
     {
-        wrapped_message(a, "Connect the configured physical controller. Power remains available.",
+        wrapped_message(a, CL_TR("Connect the configured physical controller. Power remains available."),
                         120);
     }
     else if (a->screen == INPUT_CHECK)
     {
         static const char *const controls[] = {"UP", "DOWN", "LEFT", "RIGHT", "A", "B", "X", "Y"};
-        text(a, 28, 100, "PHYSICAL INPUT CHECK", 3U, 30U);
-        (void)snprintf(status, sizeof(status), "PRESS PHYSICAL %s", controls[a->check_step]);
+        text(a, 28, 100, CL_TR("PHYSICAL INPUT CHECK"), 3U, 30U);
+        (void)snprintf(status, sizeof(status), CL_TR("PRESS PHYSICAL %s"), CL_TR(controls[a->check_step]));
         text(a, 28, 165, status, 3U, 30U);
         wrapped_message(a,
                         "Release between steps. MENU swaps the two face-label profiles. Wrong "
@@ -1285,47 +1295,47 @@ static void draw(struct app *a)
         {
             cl_round_rect(surface, (SDL_Rect){0, 420, 640, 60}, 0, a->theme.panel);
             cl_view_text(surface, &a->assets, CL_FONT_HINT, 24, 440,
-                         "Opening game...   B Cancel", a->theme.fonts[CL_FONT_HINT].color, 592);
+                         CL_TR("Opening game...   B Cancel"), a->theme.fonts[CL_FONT_HINT].color, 592);
         }
         if (a->favorite_view && (!a->favorite_snapshot.ready || a->favorite_snapshot.error))
         {
             SDL_Rect panel = {24, 160, 592, 100};
             cl_round_rect(surface, panel, a->theme.radius, a->theme.panel);
             cl_view_text(surface, &a->assets, CL_FONT_LIST, 40, 176,
-                         a->favorite_snapshot.error ? "Favorites unavailable"
-                                                    : "Loading favorites...",
+                         a->favorite_snapshot.error ? CL_TR("Favorites unavailable")
+                                                    : CL_TR("Loading favorites..."),
                          a->theme.fonts[CL_FONT_LIST].color, 550);
             if (a->favorite_snapshot.error)
             {
                 cl_view_text(surface, &a->assets, CL_FONT_DETAIL, 40, 218,
-                             "Check the game card and favorites.json", a->theme.muted, 550);
+                             CL_TR("Check the game card and favorites.json"), a->theme.muted, 550);
             }
         }
     }
     else if (a->screen == SYSTEM_ACTIONS)
     {
-        static const char *const actions[] = {"Retry storage / session", "Power off"};
-        cl_options_draw(surface, &view, "System", actions, 2U, a->choice);
+        const char *const actions[] = {CL_TR("Retry storage / session"), CL_TR("Power off")};
+        cl_options_draw(surface, &view, CL_TR("System"), actions, 2U, a->choice);
     }
     else if (a->screen == CONFIRM_DELETE_STATES)
     {
-        cl_view_dialog(surface,&view,"Delete save states",
-            "Delete this game's automatic and manual states? In-game SRAM and RTC data are kept.",
-            "Cancel","Delete states",a->choice);
+        cl_view_dialog(surface,&view,CL_TR("Delete save states"),
+            CL_TR("Delete this game's automatic and manual states? In-game SRAM and RTC data are kept."),
+            CL_TR("Cancel"),CL_TR("Delete states"),a->choice);
     }
     else if (a->screen == CONFIRM_REGENERATE_HISTORY)
     {
-        cl_view_dialog(surface, &view, "Regenerate GameSwitcher list",
-                       "Rebuild the list from played games? Saved progress is kept.",
-                       "Cancel", "Regenerate", a->choice);
+        cl_view_dialog(surface, &view, CL_TR("Regenerate GameSwitcher list"),
+                       CL_TR("Rebuild the list from played games? Saved progress is kept."),
+                       CL_TR("Cancel"), "Regenerate", a->choice);
     }
     else if (a->screen == CONFIRM_RESET_SETTINGS)
     {
         cl_view_dialog(surface,&view,tweak_reset[a->reset_row].label,
             a->reset_scope == CL_RESET_ALL ?
-                "Restore defaults for Tweaks, MainUI, Wi-Fi, themes, RetroArch and AdvanceMENU? Games and saves are kept." :
-                "Restore this configuration to its defaults? Games and saves are kept.",
-            "Cancel","Reset settings",a->choice);
+                CL_TR("Restore defaults for Tweaks, MainUI, Wi-Fi, themes, RetroArch and AdvanceMENU? Games and saves are kept.") :
+                CL_TR("Restore this configuration to its defaults? Games and saves are kept."),
+            CL_TR("Cancel"),CL_TR("Reset settings"),a->choice);
     }
     else if (a->screen == CONFIRM_OFF || a->screen == CONFIRM_NEW || a->screen == CONFIRM_REMOVE)
     {
@@ -1334,17 +1344,17 @@ static void draw(struct app *a)
         const char *body = a->screen == CONFIRM_OFF ? "Save progress and shut down?" :
                            (a->screen == CONFIRM_NEW ? "Start this game from the beginning? In-game saves are kept." :
                             "Remove this game from Recent? Game files and saves are kept.");
-        cl_view_dialog(surface, &view, title, body, "Cancel",
-                       a->screen == CONFIRM_OFF ? "Power off" : (a->screen == CONFIRM_NEW ? "Start new" : "Remove"), a->choice);
+        cl_view_dialog(surface, &view, title, body, CL_TR("Cancel"),
+                       a->screen == CONFIRM_OFF ? CL_TR("Power off") : (a->screen == CONFIRM_NEW ? CL_TR("Start new") : "Remove"), a->choice);
     }
     else if (a->screen == MESSAGE)
     {
-        cl_view_dialog(surface, &view, "Information", a->message, NULL, "OK", 1U);
+        cl_view_dialog(surface, &view, "Information", CL_TR(a->message), NULL, CL_TR("OK"), 1U);
     }
     else if(a->screen==FILTER_LIST || a->screen==SEARCH_ENTRY)
     {
         static const char letters[]="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        cl_view_frame(surface,&view,a->screen==SEARCH_ENTRY ? "Search" : "Filter list");
+        cl_view_frame(surface,&view,a->screen==SEARCH_ENTRY ? CL_TR("Search") : CL_TR("Filter list"));
         cl_view_text(surface,&a->assets,CL_FONT_LIST,24,95,a->filter_editor,a->theme.fonts[CL_FONT_LIST].color,592);
         for(size_t key=0U;key<40U;++key){
             char label[5]={0};if(key<36U){label[0]=letters[key];}else strcpy(label,key==36U?"SP":key==37U?"DEL":key==38U?"CLR":"OK");
@@ -1353,41 +1363,41 @@ static void draw(struct app *a)
             cl_view_text(surface,&a->assets,CL_FONT_LIST,rect.x+5,rect.y+7,label,key==a->choice?a->theme.selected_text:a->theme.fonts[CL_FONT_LIST].color,50);
         }
         cl_view_footer(surface,&view,a->screen==SEARCH_ENTRY ?
-                       "A Type   X Delete   START Search   B Back" : "A Type   X Delete   START Apply   B Cancel");
+                       CL_TR("A Type   X Delete   START Search   B Back") : CL_TR("A Type   X Delete   START Apply   B Cancel"));
     }
     else if (a->screen == NETPLAY_OPTIONS)
     {
-        static const char *const options[] = {"Host a session...", "Join a session..."};
+        const char *const options[] = {CL_TR("Host a session..."), CL_TR("Join a session...")};
         cl_options_draw(surface, &view, "Netplay", options, 2U, a->choice);
     }
     else if (a->screen == NETPLAY_MODE)
     {
-        static const char *const options[] = {"Standard Netplay (Use current Wifi)",
-            "Easy Netplay (play anywhere, local only)", "Easy Netplay - Pokemon Trade/Battle"};
+        const char *const options[] = {CL_TR("Standard Netplay (Use current Wifi)"),
+            CL_TR("Easy Netplay (play anywhere, local only)"), CL_TR("Easy Netplay - Pokemon Trade/Battle")};
         const struct cl_entry *entry = selected(a);
         bool link_game = entry != NULL && link_system(entry->system);
-        cl_options_draw(surface, &view, a->netplay_host ? "Host a session" : "Join a session",
+        cl_options_draw(surface, &view, a->netplay_host ? CL_TR("Host a session") : CL_TR("Join a session"),
                         options, link_game ? 3U : 2U, a->choice);
     }
     else if (a->screen == NETPLAY_LINK_CONFIRM)
     {
         cl_view_dialog(surface, &view, "Pokémon Trade/Battle",
-                       "Your in-game save starts a separate link save. Game data and link saves are exchanged for this session. Use MENU+SELECT, then Quit RetroArch to keep progress.",
-                       "Cancel", a->netplay_host ? "Host" : "Join", a->choice);
+                       CL_TR("Your in-game save starts a separate link save. Game data and link saves are exchanged for this session. Use MENU+SELECT, then Quit RetroArch to keep progress."),
+                       CL_TR("Cancel"), a->netplay_host ? "Host" : CL_TR("Join"), a->choice);
     }
     else if (a->screen == NETPLAY_ADDRESS)
     {
         char value[44];
-        (void)snprintf(value, sizeof(value), "Host IP address: %s", a->netplay_address);
+        (void)snprintf(value, sizeof(value), CL_TR("Host IP address: %s"), a->netplay_address);
         const char *labels[] = {value, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "Delete", "Connect"};
-        cl_options_draw(surface, &view, "JOIN - Standard Netplay", labels,
+        cl_options_draw(surface, &view, CL_TR("JOIN - Standard Netplay"), labels,
                         sizeof(labels) / sizeof(*labels), a->choice + 1U);
     }
     else if (a->screen == CONFIRM_GLO_SCRIPT)
     {
         cl_view_dialog(surface, &view, a->glo_script.label,
-                       "Run this script from the SD card with access to the device?",
-                       "Cancel", "Run script", a->choice);
+                       CL_TR("Run this script from the SD card with access to the device?"),
+                       CL_TR("Cancel"), CL_TR("Run script"), a->choice);
     }
     else if (a->screen == ACTIONS)
     {
@@ -1402,7 +1412,7 @@ static void draw(struct app *a)
         size_t count = a->states_valid ? a->states.manual_count + 2U : 0U;
         if (!a->states_valid)
         {
-            wrapped_message(a, "Checking committed states. B returns to the list.", 130);
+            wrapped_message(a, CL_TR("Checking committed states. B returns to the list."), 130);
         }
         for (i = 0U; i < CL_VISIBLE_ROWS && a->first + i < count; ++i)
         {
@@ -1419,17 +1429,17 @@ static void draw(struct app *a)
             {
                 const struct cl_manual_state *manual = &a->states.manual[index - 2U];
                 state = manual->status;
-                (void)snprintf(label, sizeof(label), "MANUAL %u: %.40s [%c]", manual->slot,
+                (void)snprintf(label, sizeof(label), CL_TR("MANUAL %u: %.40s [%c]"), manual->slot,
                                manual->label, marker(state));
             }
             box(a, 80 + (int)i * 51, 47, a->choice == index);
             text(a, 24, 95 + (int)i * 51, label, 2U, 49U);
         }
-        cl_view_footer(surface, &view, "A Load   B Back   Left/Right Page");
+        cl_view_footer(surface, &view, CL_TR("A Load   B Back   Left/Right Page"));
     }
     if (a->busy)
     {
-        cl_view_footer(surface, &view, "Saving progress... Please wait");
+        cl_view_footer(surface, &view, CL_TR("Saving progress... Please wait"));
     }
     else if (!a->display.vsync)
     {
@@ -1470,7 +1480,7 @@ static bool launch(struct app *a, struct cl_launch_intent *intent, enum cl_launc
     if (a->verification_pending ||
         (a->services->request_input_verification != NULL && !a->memory->input_persisted))
     {
-        message(a, "Controller settings are not durably saved. Retry controller setup.", HOME);
+        message(a, CL_TR("Controller settings are not durably saved. Retry controller setup."), HOME);
         return false;
     }
     if (a->busy || entry == NULL)
@@ -1480,14 +1490,14 @@ static bool launch(struct app *a, struct cl_launch_intent *intent, enum cl_launc
     if (!a->states_valid || !cs_identity_equal(&entry->identity, &a->states.identity) ||
         a->states.game_status != CL_READY)
     {
-        message(a, "Game is unavailable or not yet verified. No launch was requested.", HOME);
+        message(a, CL_TR("Game is unavailable or not yet verified. No launch was requested."), HOME);
         return false;
     }
     if ((kind == CL_LAUNCH_CHECKPOINT || kind == CL_LAUNCH_MANUAL) &&
         (ref == NULL || !ready_reference(ref) ||
          !cs_identity_valid(&a->states.qualified_identity)))
     {
-        message(a, "Checkpoint is incompatible with the selected launch profile.", HOME);
+        message(a, CL_TR("Checkpoint is incompatible with the selected launch profile."), HOME);
         return false;
     }
     memset(intent, 0, sizeof(*intent));
@@ -1524,7 +1534,7 @@ static void tweak_activate(struct app *a, const struct tweak_row *row, int direc
         if (a->services->request_tool == NULL ||
             !a->services->request_tool(a->services->context, &request)) {
             a->tools.waiting = false;
-            message(a, "Icon editor could not open.", a->tool_return);
+            message(a, CL_TR("Icon editor could not open."), a->tool_return);
         }
         return;
     }
@@ -1546,7 +1556,7 @@ static void tweak_activate(struct app *a, const struct tweak_row *row, int direc
         a->tools.last_operation=request.operation;
         a->tools.committing=true;
         if(a->services->request_tool==NULL || !a->services->request_tool(a->services->context,&request)) {
-            message(a,"Tool request could not be queued.",a->screen);
+            message(a,CL_TR("Tool request could not be queued."),a->screen);
             return;
         }
         set_screen(a,TOOLS);
@@ -1554,7 +1564,7 @@ static void tweak_activate(struct app *a, const struct tweak_row *row, int direc
     }
     if (row->kind == TWEAK_REFRESH) {
         bool ok=library_refresh(a,true);
-        message(a,ok?"ROM library refresh queued.":"ROM library refresh could not be queued.",a->screen);
+        message(a,ok?CL_TR("ROM library refresh queued."):CL_TR("ROM library refresh could not be queued."),a->screen);
         return;
     }
     if (row->kind==TWEAK_SORT_APPS_UP || row->kind==TWEAK_SORT_APPS_DOWN) {
@@ -1661,7 +1671,7 @@ static void apply_search(struct app *a)
     set_screen(a, HOME);
     if (!request_page(a, CL_LIBRARY_GAMES, 0U, 0U, true)) {
         close_search(a);
-        message(a, "The game search could not start.", a->search_return);
+        message(a, CL_TR("The game search could not start."), a->search_return);
     }
 }
 
@@ -1685,6 +1695,12 @@ static bool activate_app(struct app *a,size_t id,struct cl_launch_intent *intent
     if (id == APP_SEARCH) {
         open_search(a);
         return false;
+    }
+    if (id == APP_PORTMASTER) {
+        if (a->busy) return false;
+        memset(intent, 0, sizeof(*intent));
+        intent->kind = CL_LAUNCH_PORTMASTER;
+        return true;
     }
     if (id == APP_FILES) {
         if (a->busy) return false;
@@ -1726,21 +1742,21 @@ static bool activate_app(struct app *a,size_t id,struct cl_launch_intent *intent
     {
         if (library_refresh(a, true))
         {
-            message(a, "ROM library refresh queued.", back);
+            message(a, CL_TR("ROM library refresh queued."), back);
         }
         else
         {
-            message(a, "ROM library refresh could not be queued.", back);
+            message(a, CL_TR("ROM library refresh could not be queued."), back);
         }
     }
     else if (a->services->request_system == NULL ||
              !a->services->request_system(a->services->context, false))
     {
-        message(a, "Storage recovery could not be queued.", back);
+        message(a, CL_TR("Storage recovery could not be queued."), back);
     }
     else
     {
-        message(a, "Storage recovery queued.", back);
+        message(a, CL_TR("Storage recovery queued."), back);
     }
     return false;
 }
@@ -1805,7 +1821,7 @@ static void activate_library_action(struct app *a, enum cl_library_action action
         apply_game_filter(a, "");
         break;
     case CL_LIBRARY_REFRESH:
-        if (!library_refresh(a, true)) message(a, "ROM refresh could not be queued.", HOME);
+        if (!library_refresh(a, true)) message(a, CL_TR("ROM refresh could not be queued."), HOME);
         break;
     case CL_LIBRARY_PLAY:
         break;
@@ -1883,7 +1899,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
                 a->services->request_tool(a->services->context, &request))
                 set_screen(a, TOOLS);
             else
-                message(a, "GameSwitcher history rebuild could not be queued.", TWEAKS_TOOLS);
+                message(a, CL_TR("GameSwitcher history rebuild could not be queued."), TWEAKS_TOOLS);
         }
         return false;
     }
@@ -1903,7 +1919,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
                 a->services->request_tool(a->services->context, &request))
                 set_screen(a, TOOLS);
             else
-                message(a, "Reset could not be queued.", TWEAKS_RESET);
+                message(a, CL_TR("Reset could not be queued."), TWEAKS_RESET);
         }
         return false;
     }
@@ -1915,6 +1931,15 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
     if (a->screen == APPS)
     {
         return activate_app(a,app_at(a,a->choice),intent);
+    }
+    if (a->screen == LANGUAGE) {
+        a->shortcuts = (a->shortcuts & ~CL_LANGUAGE_MASK) |
+                      ((uint32_t)a->choice << CL_LANGUAGE_SHIFT);
+        a->shortcuts_touched |= CL_LANGUAGE_MASK;
+        cl_language_set((unsigned int)a->choice);
+        set_screen(a, SETTINGS);
+        a->choice = 9U;
+        return false;
     }
     if (a->screen == SETTINGS)
     {
@@ -1948,15 +1973,19 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
             if (a->services->request_system == NULL ||
                 !a->services->request_system(a->services->context, false))
             {
-                message(a, "Storage recovery could not be queued.", SETTINGS);
+                message(a, CL_TR("Storage recovery could not be queued."), SETTINGS);
             }
             else
             {
-                message(a, "Storage recovery queued.", SETTINGS);
+                message(a, CL_TR("Storage recovery queued."), SETTINGS);
             }
         }
         else if (a->choice == 8U)
             open_tool(a, CL_TOOL_CLOCK);
+        else if (a->choice == 9U) {
+            set_screen(a, LANGUAGE);
+            a->choice = (size_t)cl_language_get();
+        }
         else
         {
             set_screen(a, CONFIRM_OFF);
@@ -1978,11 +2007,11 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
         else if (a->services->request_system == NULL ||
                  !a->services->request_system(a->services->context, a->screen == CONFIRM_OFF))
         {
-            message(a, "Supervisor could not queue this system request.", HOME);
+            message(a, CL_TR("Supervisor could not queue this system request."), HOME);
         }
         else
         {
-            message(a, "Request queued. Completion depends on storage and actual writer closure.",
+            message(a, CL_TR("Request queued. Completion depends on storage and actual writer closure."),
                     HOME);
         }
         return false;
@@ -2000,7 +2029,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
         (a->screen == HOME || a->screen == STATES))
     {
         message(
-            a, "ROM found. Install a compatible core and enroll its launch profile before playing.",
+            a, CL_TR("ROM found. Install a compatible core and enroll its launch profile before playing."),
             HOME);
         return false;
     }
@@ -2029,7 +2058,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
                 }
             }
             else
-                message(a, "Game check could not start. Try again.", HOME);
+                message(a, CL_TR("Game check could not start. Try again."), HOME);
         }
         else if (a->states.latest_status == CL_READY)
         {
@@ -2048,7 +2077,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
         }
         else if (a->states.latest_status == CL_UNKNOWN)
         {
-            message(a, "Latest state has not been verified. No launch was requested.", HOME);
+            message(a, CL_TR("Latest state has not been verified. No launch was requested."), HOME);
         }
         else
         {
@@ -2075,7 +2104,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
             break;
         case GLO_REFRESH:
             set_screen(a, HOME);
-            if (!library_refresh(a, true)) message(a, "ROM refresh could not be queued.", HOME);
+            if (!library_refresh(a, true)) message(a, CL_TR("ROM refresh could not be queued."), HOME);
             break;
         case GLO_RANDOM: {
             uint64_t random=SDL_GetPerformanceCounter();struct cl_history *games=list(a);
@@ -2108,7 +2137,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
                 a->services->request_tool(a->services->context, &request)) {
                 a->glo_core_pending = true;
             } else {
-                message(a, "Default core could not be restored.", ACTIONS);
+                message(a, CL_TR("Default core could not be restored."), ACTIONS);
             }
             break;
         }
@@ -2122,17 +2151,17 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
             break;
         case GLO_FAVORITE:
             if (!cl_favorites_toggle(a->favorite_worker, entry->identity.game))
-                message(a, "Favorites unavailable, full, or still being written. Check the game card.", ACTIONS);
+                message(a, CL_TR("Favorites unavailable, full, or still being written. Check the game card."), ACTIONS);
             else
-                message(a, "Favorite change queued.", ACTIONS);
+                message(a, CL_TR("Favorite change queued."), ACTIONS);
             break;
         case GLO_COMPATIBILITY:
             message(a, a->states_valid && a->states.compatibility[0] != '\0' ?
-                    a->states.compatibility : "Compatibility has not been verified.", ACTIONS);
+                    a->states.compatibility : CL_TR("Compatibility has not been verified."), ACTIONS);
             break;
         case GLO_NETPLAY:
             if (netplay_system(entry->system) || link_system(entry->system)) set_screen(a, NETPLAY_OPTIONS);
-            else message(a, "No qualified Netplay core for this system.", ACTIONS);
+            else message(a, CL_TR("No qualified Netplay core for this system."), ACTIONS);
             break;
         case GLO_SCRIPT:
             for (size_t i = 0; i < a->glo_script_count; ++i) {
@@ -2149,7 +2178,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
         if (a->choice == 1U && a->services->request_delete_states != NULL &&
             a->services->request_delete_states(a->services->context,entry->identity.game)) {
             a->states_valid = false;
-            message(a,"State deletion queued. In-game SRAM and RTC files are retained.",HOME);
+            message(a,CL_TR("State deletion queued. In-game SRAM and RTC files are retained."),HOME);
         } else set_screen(a,HOME);
     }
     else if (a->screen == CONFIRM_NEW)
@@ -2167,7 +2196,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
             if (a->services->request_remove_history == NULL ||
                 !a->services->request_remove_history(a->services->context, entry->identity.game))
             {
-                message(a, "History removal could not be queued. Saved states are unchanged.",
+                message(a, CL_TR("History removal could not be queued. Saved states are unchanged."),
                         HOME);
                 return false;
             }
@@ -2199,7 +2228,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
         {
             return false;
         }
-        (void)snprintf(a->message, sizeof(a->message), "Selected state: %s. No load was requested.",
+        (void)snprintf(a->message, sizeof(a->message), CL_TR("Selected state: %s. No load was requested."),
                        availability(state));
         message(a, a->message, STATES);
     }
@@ -2237,7 +2266,7 @@ static void input_check(struct app *a, uint32_t keys)
                     a->services->request_input_verification(a->services->context, &verification);
                 if (!a->verification_pending)
                 {
-                    message(a, "Controller settings could not be queued. Retry controller setup.",
+                    message(a, CL_TR("Controller settings could not be queued. Retry controller setup."),
                             MAIN);
                 }
             }
@@ -2287,7 +2316,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         if ((keys & CL_KEY(CL_START)) != 0U || (select && a->choice == 12U)) {
             struct in_addr address;
             if (inet_pton(AF_INET, a->netplay_address, &address) != 1)
-                message(a, "Enter the host's IPv4 address.", NETPLAY_ADDRESS);
+                message(a, CL_TR("Enter the host's IPv4 address."), NETPLAY_ADDRESS);
             else if (launch(a, intent, CL_LAUNCH_NETPLAY_JOIN, NULL, 0U)) {
                 strcpy(intent->auxiliary, a->netplay_address);
                 return true;
@@ -2357,7 +2386,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
                 a->tools.selected < a->tools.snapshot.count) {
                 const char *path = a->tools.snapshot.rows[a->tools.selected].detail;
                 if (path[0] != '\0') a->theme_preview = cl_image_read(path);
-                if (a->theme_preview == NULL) message(a, "No preview for this choice.", TOOLS);
+                if (a->theme_preview == NULL) message(a, CL_TR("No preview for this choice."), TOOLS);
                 a->dirty = true;
                 return false;
             }
@@ -2395,7 +2424,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
                        a->services->request_tool(a->services->context,&preview)) {
                         a->tools.waiting=true;
                         a->tools.last_operation=CL_TOOL_PREVIEW_THEME;
-                    } else message(a,"Theme preview could not be queued.",TOOLS);
+                    } else message(a,CL_TR("Theme preview could not be queued."),TOOLS);
                     a->dirty=true;
                     return false;
                 }
@@ -2405,7 +2434,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
                     a->theme_preview = cl_image_read(preview);
                 }
                 if (a->theme_preview == NULL)
-                    message(a, "This theme has no readable preview.", TOOLS);
+                    message(a, CL_TR("This theme has no readable preview."), TOOLS);
                 a->dirty = true;
                 return false;
             }
@@ -2455,7 +2484,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         {
             a->tools.waiting = false;
             a->tools.committing = false;
-            message(a, "Application request could not be queued.", TOOLS);
+            message(a, CL_TR("Application request could not be queued."), TOOLS);
         }
         a->dirty = true;
         return false;
@@ -2574,6 +2603,10 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
             const struct tweak_page *page=tweak_page(a->screen);
             set_screen(a,page->parent);
             a->choice=page->parent==APPS?app_position(a,page->parent_row):page->parent_row;
+        }
+        else if (a->screen == LANGUAGE) {
+            set_screen(a, SETTINGS);
+            a->choice = 9U;
         }
         else if (a->screen == HOME || a->screen == APPS || a->screen == SETTINGS)
         {
@@ -2705,7 +2738,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
     if (page != NULL && a->choice < page->count) {
         const struct tweak_row *row = &page->rows[a->choice];
         if ((keys & CL_KEY(CL_SELECT)) != 0U) {
-            message(a,row->help,a->screen);
+            message(a,CL_TR(row->help),a->screen);
             return false;
         }
         if ((keys & (CL_KEY(CL_LEFT) | CL_KEY(CL_RIGHT))) != 0U &&
@@ -2779,9 +2812,9 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
                 a->dirty = true;
             }
         }
-        else if (a->screen == APPS || a->screen == SETTINGS)
+        else if (a->screen == APPS || a->screen == SETTINGS || a->screen == LANGUAGE)
         {
-            choose_move(a, delta, a->screen == SETTINGS ? 10U : visible_app_count(a));
+            choose_move(a, delta, a->screen == LANGUAGE ? 2U : (a->screen == SETTINGS ? 11U : visible_app_count(a)));
         }
         else if (page != NULL)
             choose_move(a, delta, page->count);
@@ -2949,9 +2982,9 @@ static bool apply_update(struct app *a, struct cl_update *update)
                     if (!row->enabled) continue;
                     bool is_default = strcmp(row->id, "@default") == 0;
                     a->glo_core_overridden = !is_default;
-                    (void)snprintf(a->glo_core, sizeof(a->glo_core), "Game core: %.60s%s",
+                    (void)snprintf(a->glo_core, sizeof(a->glo_core), CL_TR("Game core: %.60s%s"),
                                    is_default ? row->detail : row->label,
-                                   is_default ? " (Default)" : "");
+                                   is_default ? CL_TR(" (Default)") : "");
                     break;
                 }
                 struct glo_row rows[GLO_MAX_ROWS];
@@ -2966,7 +2999,7 @@ static bool apply_update(struct app *a, struct cl_update *update)
             if(a->screen==TOOLS) {
                 if((update->tools->enabled_mask&CL_THEME_ARCHIVE_PREVIEW)!=0U)
                     a->theme_preview=cl_image_read("/run/console/theme-preview.png");
-                if(a->theme_preview==NULL) message(a,"This ZIP has no readable theme preview.",TOOLS);
+                if(a->theme_preview==NULL) message(a,CL_TR("This ZIP has no readable theme preview."),TOOLS);
                 a->dirty=true;
             }
             return false;
@@ -3041,7 +3074,7 @@ static bool apply_update(struct app *a, struct cl_update *update)
                     if (!apply_theme(a, tool->selected_theme)) {
                         strcpy(a->loaded_icons, old_pack);
                         strcpy(a->icon_theme, old_fallback);
-                        message(a, "Theme assets could not be loaded. Previous theme retained.", TOOLS);
+                        message(a, CL_TR("Theme assets could not be loaded. Previous theme retained."), TOOLS);
                     }
                 } else if (strcmp(old_pack, a->loaded_icons) != 0 ||
                            strcmp(old_fallback, a->icon_theme) != 0) {
@@ -3071,7 +3104,7 @@ static bool apply_update(struct app *a, struct cl_update *update)
         bool active = (a->memory->library_tab || a->search_view) == (update->kind == CL_UPDATE_LIBRARY);
         if (!snapshot_safe(update->history))
         {
-            message(a, "Invalid catalog update. Previous list retained.", HOME);
+            message(a, CL_TR("Invalid catalog update. Previous list retained."), HOME);
             return false;
         }
         if (update->kind == CL_UPDATE_HISTORY)
@@ -3228,7 +3261,7 @@ static bool apply_update(struct app *a, struct cl_update *update)
         a->memory->input_persisted = update->input_persisted;
         if (!update->input_persisted)
         {
-            message(a, "Controller settings could not be saved. Check the card; retry setup.",
+            message(a, CL_TR("Controller settings could not be saved. Check the card; retry setup."),
                     MAIN);
         }
         a->dirty = true;
@@ -3277,7 +3310,7 @@ static void advance_play(struct app *a, struct cl_launch_intent *intent, uint64_
     }
     else if (now >= a->play_deadline)
     {
-        message(a, "Game check timed out. Try again; saved progress is unchanged.", HOME);
+        message(a, CL_TR("Game check timed out. Try again; saved progress is unchanged."), HOME);
     }
 }
 static void mainui_menu_tick(struct app *a,uint64_t now)
@@ -3445,7 +3478,7 @@ enum cl_run_result cl_launcher_run(const struct cl_app_config *config,
     }
     if (a->theme_fallback && (return_error == NULL || return_error[0] == '\0'))
         message(a,
-                "Selected theme could not load. Protected theme is active; choose a working theme.",
+                CL_TR("Selected theme could not load. Protected theme is active; choose a working theme."),
                 MAIN);
     if (config->card_path[0] != '\0' && config->card_uuid[0] != '\0' && a->preferences == NULL)
     {

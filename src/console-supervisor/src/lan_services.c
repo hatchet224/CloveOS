@@ -1,3 +1,4 @@
+#include "launcher/i18n.h"
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
@@ -185,7 +186,7 @@ void sc_lan_request(struct sc_lan_services *s, const char *card, uint64_t now, b
         if (e->ready) {
             if (i == 0) (void)snprintf(row->label, sizeof(row->label), "SMB  \\\\%s\\CloveOS", s->address);
             else (void)snprintf(row->label, sizeof(row->label), "SFTP  %s:%u", s->address, protocols[i].port);
-            (void)snprintf(row->detail, sizeof(row->detail), "User: clove  Password: %s", e->password);
+            (void)snprintf(row->detail, sizeof(row->detail), CL_TR("User: clove  Password: %s"), e->password);
         } else if (e->failed) {
             strcpy(row->detail, "Startup failed. Toggle off, then on to retry. Check Wi-Fi and the SD card.");
         } else {

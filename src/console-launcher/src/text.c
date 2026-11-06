@@ -3,10 +3,11 @@
 #include <string.h>
 
 /* Original compact 5x7 monochrome glyph descriptions, rows encoded as 5 bits.
- * Lowercase renders uppercase. Unsupported UTF-8 codepoints consume one '?' glyph.
+ * Lowercase renders uppercase, including Spanish Latin-1 letters.
+ * Unsupported UTF-8 codepoints consume one '?' glyph.
  * No SDL_ttf, external assets, image decoder, or per-frame allocation is needed. */
 struct glyph {
-    char c;
+    Uint32 c;
     Uint8 rows[7];
 };
 static const struct glyph glyphs[] = {
@@ -36,6 +37,15 @@ static const struct glyph glyphs[] = {
     {')', {8, 4, 2, 2, 2, 4, 8}},        {'%', {17, 2, 4, 4, 8, 16, 17}},
     {'=', {0, 31, 0, 31, 0, 0, 0}},      {'>', {16, 8, 4, 2, 4, 8, 16}},
     {'<', {1, 2, 4, 8, 4, 2, 1}},        {'_', {0, 0, 0, 0, 0, 0, 31}},
+    {0xc1U, {4, 8, 14, 17, 31, 17, 17}}, /* Á */
+    {0xc9U, {2, 4, 31, 16, 30, 16, 31}}, /* É */
+    {0xcdU, {2, 4, 14, 4, 4, 4, 14}},   /* Í */
+    {0xd3U, {4, 8, 14, 17, 17, 17, 14}}, /* Ó */
+    {0xdaU, {4, 8, 17, 17, 17, 17, 14}}, /* Ú */
+    {0xdcU, {10, 0, 17, 17, 17, 17, 14}}, /* Ü */
+    {0xd1U, {10, 21, 17, 25, 21, 19, 17}}, /* Ñ */
+    {0xbfU, {4, 0, 4, 8, 16, 17, 14}},   /* ¿ */
+    {0xa1U, {4, 0, 4, 4, 4, 4, 4}},     /* ¡ */
     {' ', {0, 0, 0, 0, 0, 0, 0}},        {'\'', {4, 4, 8, 0, 0, 0, 0}}};
 void cl_text(SDL_Surface *surface, int x, int y, const char *text, unsigned int scale, Uint32 color,
              size_t max_glyphs)
@@ -46,20 +56,23 @@ void cl_text(SDL_Surface *surface, int x, int y, const char *text, unsigned int 
         return;
     }
     while (*text != '\0' && count++ < max_glyphs && x < surface->w) {
-        unsigned char c = (unsigned char)*text++;
+        Uint32 c = (unsigned char)*text++;
         const Uint8 *rows = NULL;
         size_t i;
         unsigned int row, col;
-        if (c >= 128U) {
-            while (((unsigned char)*text & 0xc0U) == 0x80U) {
+        if (c == 0xc2U || c == 0xc3U) {
+            Uint32 second = (unsigned char)*text;
+            if ((second & 0xc0U) == 0x80U) {
                 ++text;
-            }
+                c = ((c & 0x1fU) << 6U) | (second & 0x3fU);
+                if (c >= 0xe0U && c <= 0xfeU && c != 0xf7U) c -= 0x20U;
+            } else c = '?';
+        } else if (c >= 128U) {
+            while (((unsigned char)*text & 0xc0U) == 0x80U) ++text;
             c = '?';
-        } else {
-            c = (unsigned char)toupper((int)c);
-        }
+        } else c = (Uint32)toupper((int)c);
         for (i = 0U; i < sizeof(glyphs) / sizeof(glyphs[0]); ++i) {
-            if ((unsigned char)glyphs[i].c == c) {
+            if (glyphs[i].c == c) {
                 rows = glyphs[i].rows;
                 break;
             }

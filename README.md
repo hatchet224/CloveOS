@@ -9,9 +9,10 @@ with the RetroArch integration patches, LAN service, capacity helper, tests,
 dependency pins, and image reconstruction records. Third-party components retain
 their existing licenses.
 
-R49's implementation, compatibility-core patches and source build instructions
-are in [the R49 source supplement](releases/r49/README.md). R49 is an experimental full-card pre-release; see
-[Releases](https://github.com/hatchet224/CloveOS/releases) for downloads and status.
+R50 adds saved English/Español selection, PortMaster/Ports integration, and
+initial catalog startup improvements. See [the R50 source supplement](releases/r50/README.md)
+for source pins, build steps and test limits. The R49 compatibility-core patches
+remain in [the R49 supplement](releases/r49/README.md).
 
 [RELEASE_POLICY.md](RELEASE_POLICY.md) requires matching source, build inputs,
 notices, privacy checks, and verified redistribution rights for every future
@@ -19,11 +20,11 @@ update. The current image still has unresolved vendor/component source and
 redistribution questions. Publishing CloveOS's own source does not clear those
 third-party payloads or make every byte of an SD-card image GPL software.
 
-R49 is a development test candidate. It includes a game launcher, GameSwitcher, save and resume integration, an optional app catalog, and networking tools. Virtual-machine checks have passed. Fresh-card boot, controls, display, live battery readings, and two-handheld multiplayer still need device testing.
+R50 is a development test candidate. It includes a game launcher, GameSwitcher, save and resume integration, an optional app catalog, and networking tools. Virtual-machine checks have passed. Fresh-card boot, controls, display, live battery readings, and two-handheld multiplayer still need device testing.
 
 See [Releases](https://github.com/hatchet224/CloveOS/releases) for release status.
 The corresponding-source and redistribution review remains incomplete for
-full-card images, including R48 and R49. Software regression checks do not
+full-card images, including R48, R49 and R50. Software regression checks do not
 replace physical handheld verification. Read the release notes before testing.
 
 The clean image includes:
@@ -32,11 +33,11 @@ The clean image includes:
 - File Explorer, Gallery, Search, Expert access, list filtering and refresh, and Battery Monitor.
 - Cores for GB, GBC, GBA, NES, SNES, N64, Master System, Genesis, Game Gear, PlayStation, PSP, Dreamcast, Atari 2600, TurboGrafx-16, PICO-8, Neo Geo arcade, FBNeo, and MAME 2003-Plus. Compatibility and performance vary by game.
 - PlayStation playlist disc switching and checkpoint restore.
-- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and PokÃ©mon trade/battle verification is pending.
+- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and Pokémon trade/battle verification is pending.
 
 The download contains no ROMs, emulator BIOS files, game saves, downloaded box art, Wi-Fi profiles, or personal account credentials. Users supply their own game content and configure their own accounts on the handheld.
 
-The compressed download is `CloveOS-r49.zip`. Extract it to obtain `CloveOS-r49.img`. The image is 4 GiB and fits cards sold as 8 GB. First boot expands the data volume to use the available card capacity after system and filesystem overhead. Virtual tests covered nominal 8 GB through 1 TB cards, with additional recovery and repeat-boot tests. The data volume is named `CLOVE_DATA`.
+The compressed download is `CloveOS-r50.zip`. Extract it to obtain `CloveOS-r50.img`. The image is 4 GiB and fits cards sold as 8 GB. First boot expands the data volume to use the available card capacity after system and filesystem overhead. Virtual tests covered nominal 8 GB through 1 TB cards, with additional recovery and repeat-boot tests. The data volume is named `CLOVE_DATA`.
 
 Follow [INSTALL.md](INSTALL.md) for installation and [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for current limitations. Flashing an image erases the selected card, so verify the target and back up anything you need first.
 

@@ -11,6 +11,10 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Check source publication boundary
         run: python3 tools/check-source.py
+      - name: Check Spanish catalog and generated source
+        run: |
+          python3 src/console-launcher/tools/generate-i18n.py
+          git diff --exit-code -- src/console-launcher/src/i18n.c
       - name: Build and run portable daemon tests
         run: python3 tools/test-portable.py
       - name: Check ordinary-file packaging

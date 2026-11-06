@@ -1,0 +1,76 @@
+--- a/PortMaster/pylibs/harbourmaster/platform/__init__.py
++++ b/PortMaster/pylibs/harbourmaster/platform/__init__.py
+@@ -2,6 +2,7 @@
+ #
+ # Per CFW hooks. HM_PLATFORMS maps the lowercase CFW name to its Platform class.
+ 
++from .cloveos import PlatformCloveOS
+ from .base import (
+     SPECIAL_GAMELIST_CODE,
+     PlatformBase,
+--- a/PortMaster/pylibs/harbourmaster/platform/__init__.py
++++ b/PortMaster/pylibs/harbourmaster/platform/__init__.py
+@@ -44,6 +44,7 @@
+ 
+ 
+ HM_PLATFORMS = {
++    'cloveos': PlatformCloveOS,
+     'arkos':     PlatformArkOS,
+     'arkos wummle': PlatformArkOS,
+     'arkos aeux': PlatformArkOS,
+--- a/PortMaster/pylibs/pugwash/app.py
++++ b/PortMaster/pylibs/pugwash/app.py
+@@ -175,7 +175,11 @@
+             self.window.show()
+ 
+             # Create a renderer for drawing on the window
+-            renderer = sdl2.ext.Renderer(self.window, flags=sdl2.SDL_RENDERER_ACCELERATED)
++            if capabilities['name'] == 'cloveos':
++                from pugwash.clove_renderer import CloveRenderer
++                renderer = CloveRenderer(self.window)
++            else:
++                renderer = sdl2.ext.Renderer(self.window, flags=sdl2.SDL_RENDERER_ACCELERATED)
+ 
+         sdl2.SDL_SetHint(sdl2.SDL_HINT_RENDER_SCALE_QUALITY, b"2")
+ 
+--- a/PortMaster/utils/pmsplash.txt
++++ b/PortMaster/utils/pmsplash.txt
+@@ -4,6 +4,7 @@
+ #
+ 
+ # Source love2d runtime
++[ "$CFW_NAME" = CloveOS ] && return 0
+ source $controlfolder/runtimes/"love_11.5"/love.txt
+ 
+ # SO IT CAN BE STOPPED, MUAHAHAHAHAHA
+--- a/PortMaster/pugwash
++++ b/PortMaster/pugwash
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/system/portmaster/python/bin/python3.12
+ #
+ # SPDX-License-Identifier: MIT
+ #
+--- a/PortMaster/pugwash
++++ b/PortMaster/pugwash
+@@ -4,7 +4,7 @@
+ #
+ 
+ ## -- BEGIN PORTMASTER INFO --
+-PORTMASTER_VERSION = '2023-01-07-1007'
++PORTMASTER_VERSION = '2026-11-02-0433'
+ PORTMASTER_RELEASE_CHANNEL = 'developer'
+ ## -- END PORTMASTER INFO --
+ 
+--- a/PortMaster/pylibs/harbourmaster/hm_install.py
++++ b/PortMaster/pylibs/harbourmaster/hm_install.py
+@@ -84,6 +84,9 @@
+         """
+         Installs a new version of PortMaster
+         """
++        if self.platform_name == 'cloveos':
++            self.callback.message_box(_("PortMaster is updated with CloveOS. Game ports can still be installed and updated here."))
++            return 255
+         logger.info("Installing PortMaster.zip")
+         # if HM_TESTING:
+         #     logger.error("Unable to install PortMaster.zip in testing environment.")

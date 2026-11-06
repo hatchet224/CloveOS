@@ -22,7 +22,11 @@ enum cl_appearance {
 #define CL_TRIGGER_SWAP_SHIFT 16U
 #define CL_FAST_FORWARD_SHIFT 17U
 #define CL_FAST_FORWARD_MAX 50U
-#define CL_SHORTCUTS_MASK UINT32_C(0xffffff)
+/* Bits 24..25 retain the language in the existing checksummed schema-3 record.
+ * Values 2 and 3 are reserved and display English without rewriting the record. */
+#define CL_LANGUAGE_SHIFT 24U
+#define CL_LANGUAGE_MASK (UINT32_C(3) << CL_LANGUAGE_SHIFT)
+#define CL_SHORTCUTS_MASK UINT32_C(0x3ffffff)
 #define CL_APPS_SORTED (UINT64_C(1)<<16U)
 #define CL_APPS_REVERSE (UINT64_C(1)<<63U)
 #define CL_PREFERENCE_MASK UINT64_MAX

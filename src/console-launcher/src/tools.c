@@ -1,4 +1,5 @@
 #include "launcher/tools.h"
+#include "launcher/i18n.h"
 #include "launcher/input.h"
 #include "launcher/view.h"
 #include "launcher/preferences.h"
@@ -125,7 +126,7 @@ static enum cl_tool_action network_connect(struct cl_tools *t, struct cl_tool_re
             size_t length=strlen(t->password);
             bool valid=length>0U && length<=10U && t->password[0]>='1' && t->password[0]<='9';
             for(size_t i=1U;i<length;++i)if(t->password[i]<'0'||t->password[i]>'9')valid=false;
-            if(!valid){strcpy(t->keyboard_error,"Use a numeric game ID: 1-10 digits. X deletes.");return CL_TOOL_NO_ACTION;}
+            if(!valid){strcpy(t->keyboard_error,CL_TR("Use a numeric game ID: 1-10 digits. X deletes."));return CL_TOOL_NO_ACTION;}
             (void)request(t,r,CL_TOOL_SCRAPE_GAME);
             strcpy(r->id,t->password);memset(t->password,0,sizeof(t->password));t->password_edit=false;
             return CL_TOOL_REQUEST;
@@ -147,7 +148,7 @@ static enum cl_tool_action network_connect(struct cl_tools *t, struct cl_tool_re
         address = (address << 4U) | digit;
     }
     if (t->snapshot.rows[t->network_row].required && strlen(t->password) < 8U) {
-        (void)snprintf(t->keyboard_error, sizeof(t->keyboard_error), "Use at least 8 characters for this network.");
+        (void)snprintf(t->keyboard_error, sizeof(t->keyboard_error), CL_TR("Use at least 8 characters for this network."));
         return CL_TOOL_NO_ACTION;
     }
     (void)request(t, r, CL_TOOL_CONNECT_NETWORK);
@@ -220,7 +221,7 @@ static enum cl_tool_action keyboard_input(struct cl_tools *t, uint32_t keys,
             t->password[length] = c; t->password[length + 1U] = '\0';
             t->keyboard_error[0] = '\0';
         } else {
-            (void)snprintf(t->keyboard_error, sizeof(t->keyboard_error), "Maximum 63 characters. X deletes.");
+            (void)snprintf(t->keyboard_error, sizeof(t->keyboard_error), CL_TR("Maximum 63 characters. X deletes."));
         }
     }
     return CL_TOOL_NO_ACTION;
@@ -497,10 +498,10 @@ static void battery_draw(SDL_Surface *s, const struct cl_view *v, const struct c
     uint32_t end = now > t->battery_back_hours * 3600U ? now - t->battery_back_hours * 3600U : 0U;
     uint32_t start = end > span ? end - span : 0U;
     char text[96];
-    cl_view_frame(s,v,"Battery Monitor");
+    cl_view_frame(s,v,CL_TR("Battery Monitor"));
     if (v->battery >= 0)
-        (void)snprintf(text,sizeof(text),"%d%%  %s",v->battery,v->external_power ? "Charging" : "Current charge");
-    else strcpy(text,"Live battery reading unavailable");
+        (void)snprintf(text,sizeof(text),"%d%%  %s",v->battery,v->external_power ? CL_TR("Charging") : CL_TR("Current charge"));
+    else strcpy(text,CL_TR("Live battery reading unavailable"));
     cl_view_text(s,v->assets,CL_FONT_LIST,24,75,text,color,590);
     if (!t->snapshot.ready || history->count == 0U) {
         const char *status = t->waiting ? "Reading battery history..." : t->snapshot.error ?
@@ -523,17 +524,31 @@ static void battery_draw(SDL_Surface *s, const struct cl_view *v, const struct c
         }
         uint32_t estimate = v->external_power ? 0U : battery_estimate(history, now);
         if (estimate > 0U)
-            (void)snprintf(text,sizeof(text),"Estimated remaining %uh %02um",estimate / 3600U, (estimate / 60U) % 60U);
-        else strcpy(text,"Estimate available after sustained discharge");
+            (void)snprintf(text,sizeof(text),CL_TR("Estimated remaining %uh %02um"),estimate / 3600U, (estimate / 60U) % 60U);
+        else strcpy(text,CL_TR("Estimate available after sustained discharge"));
         cl_view_text(s,v->assets,CL_FONT_DETAIL,24,380,text,color,590);
     }
-    (void)snprintf(text,sizeof(text),"%u hour view  |  %s",span / 3600U,t->battery_back_hours == 0U ? "Latest" : "Earlier");
+    (void)snprintf(text,sizeof(text),"%u hour view  |  %s",span / 3600U,t->battery_back_hours == 0U ? CL_TR("Latest") : CL_TR("Earlier"));
     cl_view_text(s,v->assets,CL_FONT_DETAIL,24,110,text,v->theme->muted,590);
-    cl_view_footer(s,v,"Left/Right Scroll   L/R Zoom   B Back");
+    cl_view_footer(s,v,CL_TR("Left/Right Scroll   L/R Zoom   B Back"));
 }
 
 void cl_tools_draw(SDL_Surface *surface, const struct cl_view *v, const struct cl_tools *t)
 {
+    struct cl_tool_snapshot translated=t->snapshot;
+    struct cl_tools localized=*t;
+    const char *note=CL_TR(t->snapshot.status);
+    cl_copy_utf8(translated.status,sizeof(translated.status),note);
+    bool owned=t->snapshot.kind==CL_TOOL_CLOCK || t->snapshot.kind==CL_TOOL_FILE_TRANSFER ||
+        t->snapshot.kind==CL_TOOL_SCRAPER || t->snapshot.kind==CL_TOOL_DOWNLOADS ||
+        t->snapshot.kind==CL_TOOL_DEVICE || t->snapshot.kind==CL_TOOL_PACKAGES ||
+        t->snapshot.kind==CL_TOOL_LAN_SERVICES;
+    if(owned) for(size_t i=0U;i<translated.count;++i) {
+        cl_copy_utf8(translated.rows[i].label,sizeof(translated.rows[i].label),CL_TR(t->snapshot.rows[i].label));
+        if(strcmp(t->snapshot.rows[i].id,"@user")!=0 && strcmp(t->snapshot.rows[i].id,"@repository")!=0)
+            cl_copy_utf8(translated.rows[i].detail,sizeof(translated.rows[i].detail),CL_TR(t->snapshot.rows[i].detail));
+    }
+    localized.snapshot=translated;t=&localized;
     static const char *const tabs[]={"VERIFIED","APPS","EXPERT"};
     const struct cl_theme *theme=v->theme;
     if (t->snapshot.kind == CL_TOOL_BATTERY) { battery_draw(surface,v,t); return; }
@@ -555,7 +570,7 @@ void cl_tools_draw(SDL_Surface *surface, const struct cl_view *v, const struct c
         (t->snapshot.kind==CL_TOOL_ACTIVITY?"Activity Tracker":
          (t->snapshot.kind==CL_TOOL_NETWORK?"Wi-Fi":(t->snapshot.kind==CL_TOOL_DEVICE?"About device":
           (t->snapshot.kind==CL_TOOL_SCRAPER?"ScreenScraper":(t->snapshot.kind==CL_TOOL_DOWNLOADS?"Downloads":"Themes")))));
-    cl_view_frame(surface,v,title);
+    cl_view_frame(surface,v,CL_TR(title));
     if(t->password_edit){
         char entered[32], detail[96];
         size_t length=strlen(t->password), shown=length>24U?24U:length;
@@ -570,7 +585,7 @@ void cl_tools_draw(SDL_Surface *surface, const struct cl_view *v, const struct c
         cl_view_text(surface,v->assets,CL_FONT_LIST,24,74,t->snapshot.rows[t->network_row].label,theme->fonts[CL_FONT_LIST].color,592);
         cl_round_rect(surface,(SDL_Rect){24,110,592,44},6,theme->panel);
         cl_view_text(surface,v->assets,CL_FONT_LIST,36,119,entered,theme->accent,568);
-        (void)snprintf(detail,sizeof(detail),"%s    %zu / 63 characters",page,length);
+        (void)snprintf(detail,sizeof(detail),"%s    %zu / 63 characters",CL_TR(page),length);
         /* Use the readable list font throughout entry. A decorative hint font
          * may fold letter case or clip the keyboard controls at 640 pixels. */
         cl_view_text(surface,v->assets,CL_FONT_LIST,24,164,detail,theme->muted,592);
@@ -579,21 +594,21 @@ void cl_tools_draw(SDL_Surface *surface, const struct cl_view *v, const struct c
                                     (SDL_Rect){24+(int)(i-30U)*120,345,112,43};
             bool active=i==t->keyboard_cursor;
             char letter[2]={keyboard_character(t,i),'\0'};
-            const char *label=i<30U?letter:action[i-30U];
+            const char *label=i<30U?letter:CL_TR(action[i-30U]);
             cl_round_rect(surface,key,6,active?theme->selected:theme->panel);
             cl_view_text(surface,v->assets,CL_FONT_LIST,key.x+(i<30U?18:8),key.y+7,label,
                          active?theme->selected_text:theme->fonts[CL_FONT_LIST].color,key.w-(i<30U?20:16));
         }
         cl_view_text(surface,v->assets,CL_FONT_LIST,24,402,
-            t->keyboard_error[0]!='\0'?t->keyboard_error:"A Type   X Delete   Y Show/Hide   B Cancel",
+            t->keyboard_error[0]!='\0'?t->keyboard_error:CL_TR("A Type   X Delete   Y Show/Hide   B Cancel"),
             t->keyboard_error[0]!='\0'?theme->warning:theme->muted,592);
         cl_view_text(surface,v->assets,CL_FONT_LIST,24,442,
-            t->snapshot.kind==CL_TOOL_NETWORK?"L1/R1 Page  SELECT Case  START Join":"L1/R1 Page  SELECT Case  START Save",
+            t->snapshot.kind==CL_TOOL_NETWORK?CL_TR("L1/R1 Page  SELECT Case  START Join"):CL_TR("L1/R1 Page  SELECT Case  START Save"),
             theme->fonts[CL_FONT_HINT].color,592);return;
     }
     if(t->snapshot.kind==CL_TOOL_NETWORK && t->confirm_exit){
-        cl_view_text(surface,v->assets,CL_FONT_LIST,24,140,"Forget every saved Wi-Fi network?",theme->warning,592);
-        tool_hint(surface,v,24,440,"A Forget   B Cancel",theme->fonts[CL_FONT_HINT].color,592);return;
+        cl_view_text(surface,v->assets,CL_FONT_LIST,24,140,CL_TR("Forget every saved Wi-Fi network?"),theme->warning,592);
+        tool_hint(surface,v,24,440,CL_TR("A Forget   B Cancel"),theme->fonts[CL_FONT_HINT].color,592);return;
     }
     if(t->snapshot.kind==CL_TOOL_NETWORK)
         cl_view_text(surface,v->assets,CL_FONT_DETAIL,24,72,t->snapshot.status,theme->muted,592);
@@ -602,23 +617,25 @@ void cl_tools_draw(SDL_Surface *surface, const struct cl_view *v, const struct c
             size_t used=0U,length=strlen(t->snapshot.status);int y=110;
             while(used<length&&y<370){char line[49];size_t n=length-used;if(n>44U)n=44U;
                 if(used+n<length)while(n>1U&&t->snapshot.status[used+n]!=' ')--n;
+                while(n>0U && ((unsigned char)t->snapshot.status[used+n]&0xc0U)==0x80U)--n;
+                if(n==0U)break;
                 memcpy(line,t->snapshot.status+used,n);line[n]='\0';
                 cl_view_text(surface,v->assets,CL_FONT_LIST,24,y,line,theme->fonts[CL_FONT_LIST].color,592);
                 used+=n;while(used<length&&t->snapshot.status[used]==' ')++used;y+=36;
             }
-            tool_hint(surface,v,24,440,"SELECT Return   B Back",theme->fonts[CL_FONT_HINT].color,592);return;
+            tool_hint(surface,v,24,440,CL_TR("SELECT Return   B Back"),theme->fonts[CL_FONT_HINT].color,592);return;
         }
-        cl_view_text(surface,v->assets,CL_FONT_DETAIL,24,72,"SELECT Details / setup help",theme->muted,592);
+        cl_view_text(surface,v->assets,CL_FONT_DETAIL,24,72,CL_TR("SELECT Details / setup help"),theme->muted,592);
     }
     if(t->snapshot.kind==CL_TOOL_PACKAGES){
         unsigned int pending=0U;
         uint64_t changes=t->desired^t->snapshot.enabled_mask;
         char label[32];
         while(changes!=0U){changes&=changes-1U;++pending;}
-        (void)snprintf(label,sizeof(label),"%u pending",pending);
+        (void)snprintf(label,sizeof(label),CL_TR("%u pending"),pending);
         cl_view_text(surface,v->assets,CL_FONT_DETAIL,478,72,label,theme->muted,138);
         for(size_t i=0U;i<3U;++i)
-            tool_hint(surface,v,24+(int)i*152,72,tabs[i],i==(size_t)t->group?theme->accent:theme->muted,148);
+            tool_hint(surface,v,24+(int)i*152,72,CL_TR(tabs[i]),i==(size_t)t->group?theme->accent:theme->muted,148);
     }
     if(t->waiting || t->snapshot.error || !t->snapshot.ready){
         const char *message=t->waiting?(t->last_operation==CL_TOOL_STOP_FILE_TRANSFER?"Stopping transfer and flushing the card...":t->committing?"Applying and flushing changes...":
@@ -626,26 +643,26 @@ void cl_tools_draw(SDL_Surface *surface, const struct cl_view *v, const struct c
         cl_view_text(surface,v->assets,CL_FONT_LIST,28,140,message,theme->warning,584);
         if(t->waiting && t->snapshot.kind==CL_TOOL_SCRAPER && t->batch_scrape){
             char progress[160];uint64_t saved=t->snapshot.available_mask>>32U,skipped=t->snapshot.available_mask&UINT32_MAX;
-            (void)snprintf(progress,sizeof(progress),"Saved %llu, skipped %llu. Next position: %llu",(unsigned long long)saved,(unsigned long long)skipped,(unsigned long long)(t->snapshot.revision+1U));
+            (void)snprintf(progress,sizeof(progress),CL_TR("Saved %llu, skipped %llu. Next position: %llu"),(unsigned long long)saved,(unsigned long long)skipped,(unsigned long long)(t->snapshot.revision+1U));
             cl_view_text(surface,v->assets,CL_FONT_DETAIL,28,210,progress,theme->fonts[CL_FONT_DETAIL].color,584);
-            cl_view_text(surface,v->assets,CL_FONT_DETAIL,28,252,"Checking ROM, then requesting artwork...",theme->muted,584);
+            cl_view_text(surface,v->assets,CL_FONT_DETAIL,28,252,CL_TR("Checking ROM, then requesting artwork..."),theme->muted,584);
         }
-        tool_hint(surface,v,28,438,t->snapshot.error?"A Retry     B Back":"Please wait",theme->muted,584);return;}
+        tool_hint(surface,v,28,438,t->snapshot.error?CL_TR("A Retry     B Back"):CL_TR("Please wait"),theme->muted,584);return;}
     if(t->snapshot.kind==CL_TOOL_PACKAGES && t->summary){
         unsigned int installs=0U,removals=0U;char line[96];
         for(size_t i=0U;i<t->snapshot.count;++i){uint64_t bit=UINT64_C(1)<<t->snapshot.rows[i].index;
             if((t->desired&bit)!=0U && (t->snapshot.enabled_mask&bit)==0U)++installs;
             if((t->desired&bit)==0U && (t->snapshot.enabled_mask&bit)!=0U)++removals;}
-        (void)snprintf(line,sizeof(line),"Enable: %u       Disable: %u",installs,removals);
+        (void)snprintf(line,sizeof(line),CL_TR("Enable: %u       Disable: %u"),installs,removals);
         cl_view_text(surface,v->assets,CL_FONT_LIST,28,132,line,theme->fonts[CL_FONT_LIST].color,584);
-        cl_view_text(surface,v->assets,CL_FONT_DETAIL,28,190,"Press START again to apply the pending changes.",theme->muted,584);
-        cl_view_text(surface,v->assets,CL_FONT_DETAIL,28,232,"ROMs, saves and bundled binaries are retained.",theme->muted,584);
-        tool_hint(surface,v,28,438,"START Apply     B Edit     Y Rollback",theme->fonts[CL_FONT_HINT].color,584);return;}
+        cl_view_text(surface,v->assets,CL_FONT_DETAIL,28,190,CL_TR("Press START again to apply the pending changes."),theme->muted,584);
+        cl_view_text(surface,v->assets,CL_FONT_DETAIL,28,232,CL_TR("ROMs, saves and bundled binaries are retained."),theme->muted,584);
+        tool_hint(surface,v,28,438,CL_TR("START Apply     B Edit     Y Rollback"),theme->fonts[CL_FONT_HINT].color,584);return;}
     if(t->snapshot.kind==CL_TOOL_MAINTENANCE){
-        cl_view_footer(surface,v,"B Back");
+        cl_view_footer(surface,v,CL_TR("B Back"));
         return;
     }
-    if(count==0U)cl_view_text(surface,v->assets,CL_FONT_LIST,28,148,"No entries",theme->muted,584);
+    if(count==0U)cl_view_text(surface,v->assets,CL_FONT_LIST,28,148,CL_TR("No entries"),theme->muted,584);
     for(size_t visible_row=t->first;visible_row<count && visible_row<t->first+page_rows(t);++visible_row){
         const struct cl_tool_row *row=&t->snapshot.rows[indices[visible_row]];char label[160];
         bool activity=t->snapshot.kind==CL_TOOL_ACTIVITY || t->snapshot.kind==CL_TOOL_DEVICE;
@@ -657,21 +674,21 @@ void cl_tools_draw(SDL_Surface *surface, const struct cl_view *v, const struct c
             time_t stamp=(time_t)t->desired;struct tm value;int field=0;
             if(localtime_r(&stamp,&value)!=NULL)field=visible_row==0U?value.tm_year+1900:visible_row==1U?value.tm_mon+1:visible_row==2U?value.tm_mday:visible_row==3U?value.tm_hour:value.tm_min;
             (void)snprintf(label,sizeof(label),"%s: %d",row->label,field);
-        }else if(t->snapshot.kind==CL_TOOL_CLOCK && visible_row==7U)(void)snprintf(label,sizeof(label),"Time zone: %s",cl_timezones[t->timezone]);
+        }else if(t->snapshot.kind==CL_TOOL_CLOCK && visible_row==7U)(void)snprintf(label,sizeof(label),CL_TR("Time zone: %s"),cl_timezones[t->timezone]);
         else (void)snprintf(label,sizeof(label),"%s%s",row->enabled?"* ":"",row->label);
         cl_view_text(surface,v->assets,CL_FONT_LIST,30,y,label,selected?theme->selected_text:(row->available?theme->fonts[CL_FONT_LIST].color:theme->muted),580);
         if(activity)cl_view_text(surface,v->assets,CL_FONT_DETAIL,30,y+32,row->detail,selected?theme->selected_text:theme->muted,580);
     }
     if(count>0U && t->snapshot.kind!=CL_TOOL_ACTIVITY && t->snapshot.kind!=CL_TOOL_DEVICE && t->snapshot.kind!=CL_TOOL_THEMES){const struct cl_tool_row *row=&t->snapshot.rows[indices[t->selected]];
         cl_view_text(surface,v->assets,CL_FONT_LIST,28,410,row->detail,theme->muted,584);}
-    tool_hint(surface,v,28,448,t->snapshot.kind==CL_TOOL_LAN_SERVICES?"A Toggle   X Refresh status   B Back":
-        t->snapshot.kind==CL_TOOL_FILES?"A Open   L1/R1 Page   B Back":
-        t->snapshot.kind==CL_TOOL_GALLERY?"MENU Exit   B Back":
-        t->snapshot.kind==CL_TOOL_PACKAGES?"A Toggle  X Bulk  Y Reset  START Review":
-        (t->snapshot.kind==CL_TOOL_ACTIVITY?"Y Raw paths   LEFT/RIGHT Page   B Back":
-         (t->snapshot.kind==CL_TOOL_NETWORK?"A Select   X Refresh   B Back":
-          (t->snapshot.kind==CL_TOOL_DEVICE?"Left/Right Page   B Back":
-           (t->snapshot.kind==CL_TOOL_CLOCK?"LEFT/RIGHT Change   A Select   X Refresh   B Back":t->snapshot.kind==CL_TOOL_FILE_TRANSFER?"A Start/Stop   X Refresh address   B Back":
-            (t->snapshot.kind==CL_TOOL_CORES?"A Set core   B Back":
-             (t->snapshot.kind==CL_TOOL_SCRAPER||t->snapshot.kind==CL_TOOL_DOWNLOADS?"A Select  SELECT Help  B Back":"A Apply   SELECT Preview   B Back")))))),theme->fonts[CL_FONT_HINT].color,584);
+    tool_hint(surface,v,28,448,t->snapshot.kind==CL_TOOL_LAN_SERVICES?CL_TR("A Toggle   X Refresh status   B Back"):
+        t->snapshot.kind==CL_TOOL_FILES?CL_TR("A Open   L1/R1 Page   B Back"):
+        t->snapshot.kind==CL_TOOL_GALLERY?CL_TR("MENU Exit   B Back"):
+        t->snapshot.kind==CL_TOOL_PACKAGES?CL_TR("A Toggle  X Bulk  Y Reset  START Review"):
+        (t->snapshot.kind==CL_TOOL_ACTIVITY?CL_TR("Y Raw paths   LEFT/RIGHT Page   B Back"):
+         (t->snapshot.kind==CL_TOOL_NETWORK?CL_TR("A Select   X Refresh   B Back"):
+          (t->snapshot.kind==CL_TOOL_DEVICE?CL_TR("Left/Right Page   B Back"):
+           (t->snapshot.kind==CL_TOOL_CLOCK?CL_TR("LEFT/RIGHT Change   A Select   X Refresh   B Back"):t->snapshot.kind==CL_TOOL_FILE_TRANSFER?CL_TR("A Start/Stop   X Refresh address   B Back"):
+            (t->snapshot.kind==CL_TOOL_CORES?CL_TR("A Set core   B Back"):
+             (t->snapshot.kind==CL_TOOL_SCRAPER||t->snapshot.kind==CL_TOOL_DOWNLOADS?CL_TR("A Select  SELECT Help  B Back"):CL_TR("A Apply   SELECT Preview   B Back"))))))),theme->fonts[CL_FONT_HINT].color,584);
 }

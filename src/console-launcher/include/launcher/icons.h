@@ -5,7 +5,7 @@
 enum cl_icon_group { CL_ICON_CONSOLE, CL_ICON_APP, CL_ICON_EXPERT, CL_ICON_GROUP_COUNT };
 #define CL_SYSTEM_ICON_COUNT 21U
 #define CL_APP_ICON_SEARCH 12U
-#define CL_APP_ICON_COUNT 15U
+#define CL_APP_ICON_COUNT 16U
 #define CL_EXPERT_ICON_COUNT 3U
 struct cl_icon_slot { const char *id, *stem, *label; };
 static inline const struct cl_icon_slot *cl_icon_slots(enum cl_icon_group group, size_t *count)
@@ -29,6 +29,7 @@ static inline const struct cl_icon_slot *cl_icon_slots(enum cl_icon_group group,
         {"files","commander","File Explorer"}, {"gallery","gallery","Gallery"},
         {"search","search","Search"},
         {"expert","expert","Expert"}, {"battery","battery_monitor","Battery Monitor"},
+        {"portmaster","pacman","PortMaster"},
     };
     static const struct cl_icon_slot expert[] = {
         {"N64","n64","Nintendo 64"}, {"DC","dc","Dreamcast"}, {"PSP","psp","PSP"},

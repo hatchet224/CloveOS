@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+pm_hook_env() {
+    source "$controlfolder/control.txt"
+    # The GUI has its own renderer adapter; the preload is for native games.
+    unset LD_PRELOAD
+    get_controls
+}
+pm_hook_gui_env() {
+    export PYSDL2_DLL_PATH=/system/portmaster/lib:/usr/magicx/lib
+}
+pm_hook_pre_launch() { :; }
+pm_hook_post_launch() { :; }
+pm_hook_frontend_refresh() { :; }
+pm_hook_autoinstall_dirs() {
+    echo "$controlfolder/autoinstall"
+    echo /roms/ports/autoinstall
+}
+pm_hook_run_pugwash() {
+    /system/portmaster/python/bin/python3.12 ./pugwash --no-check $PORTMASTER_CMDS
+}

@@ -173,7 +173,14 @@ static bool level(void *context, bool brightness, int direction)
 }
 static bool display_ready(void *context)
 {
-    return level(context, false, 0);
+    bool queued = level(context, false, 0);
+    uint64_t uptime;
+    /* The launcher invokes this only after its first successful present.
+     * Measure usable UI, rather than treating process creation as boot done. */
+    if (queued && sc_now(&uptime))
+        fprintf(stderr, "ui timing: stage=first-frame uptime_ms=%llu\n",
+                (unsigned long long)uptime);
+    return queued;
 }
 static bool system_request(void *context, bool shutdown)
 {

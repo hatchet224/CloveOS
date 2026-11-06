@@ -51,3 +51,15 @@ References
 - [MAME 2003-Plus license](https://github.com/libretro/mame2003-plus-libretro/blob/master/LICENSE.md)
 - [FBNeo license](https://github.com/libretro/FBNeo/blob/master/src/license.txt)
 - [GNU GPL distribution FAQ](https://www.gnu.org/licenses/gpl-faq.en.html)
+
+## R50 additions
+
+R50 adds original translation/Ports integration source and the associated
+PortMaster patch. Its source supplement records pinned PortMaster, Device-Info,
+SDL_mixer, SDL2_gfx, CPython runtime and Alpine package inputs. Upstream code
+keeps its own terms. CloveOS platform glue is GPL-3.0-or-later; this does not
+relicense the upstream projects or games installed later by users.
+
+The maintainer requested R50 publication. The vendor kernel/bootloader source
+and binary-component review described above remains incomplete; no assertion
+that every byte of the full-card image is open source follows from this release.

@@ -1,0 +1,32 @@
+{
+  "spanish_passed": true,
+  "portmaster_passed": true,
+  "boot_regression_passed": true,
+  "physical_handheld_tested": false,
+  "language_catalog_entries": 548,
+  "combined_fixture_log_sha256": "eb49df8688fe50890997844596aa421852625d728aa3b6bc903b3aed71b93e3a",
+  "markers": [
+    "R50_LANGUAGE_SELECTOR_UTF8_FALLBACK_AND_DATA_BOUNDARIES_PASS",
+    "R50_LANGUAGE_PERSIST_RESTART_RESERVED_FALLBACK_PASS",
+    "R50_PORTMASTER_ACTUAL_INSTALL_LIST_PASS",
+    "R50_PORTMASTER_REAL_GUI_CONTROLLER_NAVIGATION_PASS",
+    "R50_PORTMASTER_480x640_PORTRAIT_COMPLETE_FRAME_PASS",
+    "R50_PORTS_REAL_FAT_BIND_INSTALL_SCAN_LAUNCH_EXIT_CLEANUP_PASS",
+    "R50_NATIVE_PORT_AUDIO_INPUT_RENDER_PASS",
+    "CLEAN_LAUNCHER_EXIT=0"
+  ],
+  "native_vendor_process_check": {
+    "passed": true,
+    "kernel": "Original vendor 4.9.191",
+    "qemu_user_used": false,
+    "subreaper_guard_weakened": false,
+    "exact_production_run_sha256": "5327026b25f4df719d8dd401902b9c1fbe0a145e92d7d91fa12f66f67757d0a3",
+    "physical_handheld": false
+  },
+  "boot_catalog_fixture": {
+    "catalogs_identical": true,
+    "startup_core_bytes_removed": 164598832,
+    "physical_boot_measured": false
+  },
+  "fixture_scope": "AArch64 userspace and generated FAT32; production lifecycle also tested natively under vendor ARM64 Linux 4.9. Physical display/radio/game compatibility not implied."
+}

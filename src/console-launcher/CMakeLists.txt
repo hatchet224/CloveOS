@@ -17,7 +17,7 @@ if(NOT TARGET sessiond_linux)
     add_subdirectory("${SESSIOND_SOURCE}" "${CMAKE_CURRENT_BINARY_DIR}/sessiond" EXCLUDE_FROM_ALL)
 endif()
 
-add_library(console_launcher_history STATIC src/history.c src/qualification.c src/paging.c src/disc_groups.c src/preference_record.c)
+add_library(console_launcher_history STATIC src/history.c src/qualification.c src/paging.c src/disc_groups.c src/preference_record.c src/i18n.c)
 target_include_directories(console_launcher_history PUBLIC include)
 target_compile_definitions(console_launcher_history PUBLIC _GNU_SOURCE _FILE_OFFSET_BITS=64)
 target_link_libraries(console_launcher_history PUBLIC sessiond_linux)

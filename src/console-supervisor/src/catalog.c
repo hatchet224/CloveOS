@@ -29,7 +29,7 @@ struct system_template {
     uint64_t max_rom_bytes;
     struct cs_identity identity;
     char playlist_config[65];
-    bool loaded, verified;
+    bool loaded, core_present;
 };
 static const struct system_template supported[SYSTEM_COUNT] = {
     {.system="GB", .extensions="gb|gbc", .core_path=CORE, .max_rom_bytes=8U * 1024U * 1024U},
@@ -796,10 +796,21 @@ static bool enroll(struct state *s, const char *path, const struct seed *preferr
     if (qualified == NULL) return true;
     {
         struct system_template *t = &s->systems[(size_t)(qualified - s->systems)];
-        if (!t->verified) {
-            if (!sc_hash_path(t->core_path, t->identity.core, UINT64_C(128) * 1024U * 1024U)) return false;
+        if (!t->core_present) {
+            /* Enrollment is a library operation, not permission to execute.
+             * Do not decompress/hash every installed core before Home. START
+             * authenticates the selected core and RetroArch in
+             * sc_game_files_check(..., true), including automatic resume.
+             * Still fail for missing, empty, oversized or redirected cores. */
+            int core_fd = sc_open_absolute(t->core_path, false);
+            struct stat core_stat;
+            bool available = core_fd >= 0 && fstat(core_fd, &core_stat) == 0 &&
+                S_ISREG(core_stat.st_mode) && core_stat.st_size > 0 &&
+                (uint64_t)core_stat.st_size <= UINT64_C(128) * 1024U * 1024U;
+            if (core_fd >= 0 && close(core_fd) != 0) available = false;
+            if (!available) return false;
             for (size_t k = 0U; k < SYSTEM_COUNT; ++k)
-                if (strcmp(s->systems[k].core_path, t->core_path) == 0) s->systems[k].verified = true;
+                if (strcmp(s->systems[k].core_path, t->core_path) == 0) s->systems[k].core_present = true;
         }
     }
     id = qualified->identity;

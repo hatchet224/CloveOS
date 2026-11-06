@@ -42,3 +42,8 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# Checksum-pinned source dependencies fetched for R50 builds
+/src/console-portmaster/source-cache/
+/src/console-portmaster/vendor/SDL_mixer/
+/src/console-portmaster/vendor/SDL2_gfx/
