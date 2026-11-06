@@ -1,4 +1,4 @@
 #ifndef SC_BUILD_H
 #define SC_BUILD_H
-#define SC_BUILD_ID "20261106-cloveos-r52"
+#define SC_BUILD_ID "20261106-cloveos-r53-diag"
 #endif

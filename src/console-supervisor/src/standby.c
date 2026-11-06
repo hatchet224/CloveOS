@@ -19,11 +19,15 @@
 #define LCD_BACKLIGHT_DISABLE 0x105UL
 #define DISP_BLANK 0x0cUL
 #include "../../console-packaging/image/backlight-runtime.h"
+#include "../../console-packaging/image/brightness-trace.h"
 struct display_record { uint32_t magic, brightness; };
 static int display_command(int fd, unsigned long command, unsigned long value)
 {
     unsigned long args[4] = {0UL, value, 0UL, 0UL};
     int result = ioctl(fd, command, args);
+    char probe_stage[80];
+    (void)snprintf(probe_stage,sizeof(probe_stage),"standby-command-%lx-value-%lu",command,value);
+    cl_brightness_trace(probe_stage,fd);
     if (result < 0)
         fprintf(stderr, "standby: display command=%#lx value=%lu failed: %s\n",
                 command, value, strerror(errno));
@@ -49,10 +53,15 @@ static int restore_display(int display, unsigned int saved_level)
      * primitive used by the stock Zero28 compositor's blankCtrl().
      * Attempt every restore step even when another fails: a failed level
      * readback must not leave the panel blank or its backlight disabled. */
+    cl_brightness_trace("standby-before-on",display);
     if (set_level(display, 8U) != 0) failed = 1;
+    cl_brightness_trace("standby-after-prime",display);
     if (display_command(display, LCD_BACKLIGHT_ENABLE, 0UL) != 0) failed = 1;
+    cl_brightness_trace("standby-after-enable",display);
     if (display_command(display, DISP_BLANK, 0UL) != 0) failed = 1;
+    cl_brightness_trace("standby-after-unblank",display);
     if (cl_brightness_reapply(display, saved_level) != 0) failed = 1;
+    cl_brightness_trace("standby-restored",display);
     fprintf(stderr, "standby: wake brightness saved=%u result=%s\n",
             saved_level, failed ? "failed" : "verified");
     return failed ? -1 : 0;
@@ -84,6 +93,7 @@ static int enter(int display)
 {
     unsigned long args[4] = {0UL, 0UL, 0UL, 0UL};
     struct display_record record = {UINT32_C(0x43534259), 0U};
+    cl_brightness_trace("standby-before-off",display);
     int current = ioctl(display, LCD_GET_BRIGHTNESS, args);
     int fd;
     if (cl_brightness_target_read(&record.brightness) != 0) {
@@ -110,6 +120,7 @@ static int enter(int display)
         (void)restore_display(display, record.brightness);
         return -1;
     }
+    cl_brightness_trace("standby-after-off",display);
     return 0;
 }
 static int leave(int display)

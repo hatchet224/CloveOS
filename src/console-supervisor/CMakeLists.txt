@@ -134,6 +134,13 @@ install(FILES config/cards.conf DESTINATION bootstrap/etc/console
 install(FILES config/supervisor.json config/base-profile.json config/bridge-launch.json config/ui.json
         DESTINATION bootstrap/etc/console)
 if(BUILD_TESTING)
+    add_executable(brightness_probe_faults ../console-packaging/tests/test_brightness_probe.c)
+    target_compile_definitions(brightness_probe_faults PRIVATE _GNU_SOURCE _FILE_OFFSET_BITS=64)
+    target_compile_options(brightness_probe_faults PRIVATE -UNDEBUG)
+    add_executable(brightness_transition_repro ../console-packaging/tests/test_brightness_transition.c ../console-packaging/image/level-state.c)
+    target_compile_definitions(brightness_transition_repro PRIVATE _GNU_SOURCE _FILE_OFFSET_BITS=64)
+    target_compile_options(brightness_transition_repro PRIVATE -UNDEBUG)
+    target_link_libraries(brightness_transition_repro PRIVATE sessiond_linux)
     add_executable(r51_brightness_controls ../console-launcher/tests/test_brightness_controls.c)
     target_link_libraries(r51_brightness_controls PRIVATE console_launcher)
     target_compile_options(r51_brightness_controls PRIVATE -UNDEBUG)

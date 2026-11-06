@@ -16,6 +16,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "backlight-runtime.h"
+#include "brightness-trace.h"
 
 /* MinUI zero28 libmsettings uses this exact 64-bit unsigned-long argument ABI.
  * GET is defined beside SET in Allwinner's sunxi_display2.h; the ioctl return
@@ -70,6 +71,7 @@ static int brightness_raw(int direction) {
     goto done;
   if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode))
     goto done;
+  cl_brightness_trace("adjust-before",fd);
   current = ioctl(fd, LCD_GET_BRIGHTNESS, args);
   if (current < 0 || current > 255) {
     fprintf(stderr, "console-level: invalid LCD brightness readback=%d\n", current);
@@ -116,6 +118,7 @@ static int brightness_raw(int direction) {
     errno = EIO;
     goto done;
   }
+  cl_brightness_trace("adjust-after",fd);
   fprintf(stderr, "console-level: LCD brightness direction=%d before=%d requested=%u observed=%d\n",
           direction, previous, requested, current);
 done:
@@ -353,10 +356,13 @@ static int restore_levels(const struct console_levels *levels) {
     else {
       if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode)) result = 1;
       else {
+        cl_brightness_trace("restore-before",fd);
         if(ioctl(fd,LCD_BACKLIGHT_ENABLE,gate)<0)result=1;
+        cl_brightness_trace("restore-after-enable",fd);
         /* Even a gate error cannot leave a successfully opened display at
          * a temporary minimum. Try the final target and retain it for retry. */
         if (cl_brightness_reapply(fd,target) != 0) result = 1;
+        cl_brightness_trace("restore-after-reapply",fd);
       }
       if (close(fd) != 0) result = 1;
       if (read_brightness() != (int)target) result = 1;

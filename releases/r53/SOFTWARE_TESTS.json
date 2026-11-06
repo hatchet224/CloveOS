@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "markers": [
+    "AUDIO_RANGE_PASS",
+    "STANDBY_WAKE_LEVEL_PASS",
+    "R52_STATEFUL_TRANSFER_MODEL_COUNTEREXAMPLE",
+    "BRIGHTNESS_PROBE_FAULT_ISOLATION_PASS",
+    "TRANSITION_DIAGNOSTIC_VM_EXIT=0"
+  ],
+  "actual_aarch64_helper_and_standby_logic": true,
+  "panel_mocked": true,
+  "hardware_transfer_transition_hypothetical": true,
+  "physical_cause_confirmed": false,
+  "physical_r52_acceptance_passed": false,
+  "diagnostic_helpers_built": true,
+  "no_card_writes": true
+}

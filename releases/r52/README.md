@@ -34,3 +34,5 @@ third-party notices and unresolved vendor-source review remain unchanged.
 
 Published R51 downloads remain unchanged. This source supplement does not claim
 that an R52 public binary release has been published.
+
+[R53 diagnostic source](../r53/README.md) adds nonfatal hardware-state capture; it is not a confirmed correction.

@@ -1,0 +1,34 @@
+{
+  "diagnostic_only": true,
+  "files": [
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "2b48864d490654015661509d615d327e0786b9c056ad5b427767e39e648c55c1"
+    },
+    {
+      "path": "src/console-supervisor/src/standby.c",
+      "sha256": "113f92d1b203c63a12fcba7facfd05406e0df2cebdcc43865034cf6d00b830eb"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/build.h",
+      "sha256": "10be291407d093230000d8696af647318bf40805b9db8651fd3d617c106c6fec"
+    },
+    {
+      "path": "src/console-packaging/image/brightness-trace.h",
+      "sha256": "c0af6c1ca6e80f350fbf2247edcc7436fd52fb4fd48287a3aeee1f93b3873935"
+    },
+    {
+      "path": "src/console-packaging/image/console-level.c",
+      "sha256": "78fa77d32379b7d5301077ac958614904ead12008da11f15cf90c4c65dcc9a65"
+    },
+    {
+      "path": "src/console-packaging/tests/test_brightness_probe.c",
+      "sha256": "51352d3d2fb4986919867cb3c326116975486641651b7d7f680347db37af6925"
+    },
+    {
+      "path": "src/console-packaging/tests/test_brightness_transition.c",
+      "sha256": "5a2fae8fb2aa0ed8cd2aebd468f2ba7d6d62f51662c3951760b84fad3b0cbf82"
+    }
+  ],
+  "private_test_log_sha256": "45302c052dd0acecdb8a35458a3c1b17d6958e34ac62df05402b5a2d3b52ff8f"
+}
