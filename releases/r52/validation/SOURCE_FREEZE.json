@@ -1,0 +1,25 @@
+{
+  "source_files": [
+    {
+      "path": "console-supervisor/src/main.c",
+      "original_bytes_sha256": "4dc720abc97c221f40dce17be83925cf4ab46c91955f30827b97c3514a867bc1",
+      "published_lf_sha256": "4dc720abc97c221f40dce17be83925cf4ab46c91955f30827b97c3514a867bc1"
+    },
+    {
+      "path": "console-supervisor/include/supervisor/build.h",
+      "original_bytes_sha256": "803e722269af6ff75a833239a7cc9b97b76951b5b57d9feadca36ec76b28a816",
+      "published_lf_sha256": "e26c716c9c2d1d88fb9c4d74d1a0592ba161264ca76e9cb0f9412957cb7a21de"
+    },
+    {
+      "path": "console-packaging/image/console-level.c",
+      "original_bytes_sha256": "bb0a3e7cb1520cc8be1ba405f247d17791bf4f1ad94da4a8574cf04b2ec826ee",
+      "published_lf_sha256": "bb0a3e7cb1520cc8be1ba405f247d17791bf4f1ad94da4a8574cf04b2ec826ee"
+    },
+    {
+      "path": "console-packaging/tests/test_levels.c",
+      "original_bytes_sha256": "3bc4469b26cecfaaed50342fc4442dba7c3b2e17e68d4b4f81cf4a806bf75b83",
+      "published_lf_sha256": "b2ceeae370af426330bf2bc0c33231111b7fef6f07301a627891be858dbeb1f3"
+    }
+  ],
+  "vm_log_sha256": "d5076c61b166a58477fdf57a78b55b1c552576c9cedcd6ef575410cd2bffa153"
+}

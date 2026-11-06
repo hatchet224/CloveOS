@@ -45,7 +45,9 @@ static unsigned int brightness_menu_level(unsigned int raw) {
     unsigned int delta = step > raw ? step - raw : raw - step;
     if (delta < distance) { best = i; distance = delta; }
   }
-  return 1U + best; /* Native board scale: more PWM means more light. */
+  /* R51 physical acceptance: increasing this panel's native register dims it.
+   * Stored values stay native; only the displayed logical level is reversed. */
+  return (unsigned int)(sizeof(brightness_steps) / sizeof(brightness_steps[0])) - best;
 }
 static void publish_level(const char *path, unsigned int level) {
   char temporary[] = "/run/console/.level-XXXXXX";
@@ -81,13 +83,14 @@ static int brightness_raw(int direction) {
   requested = next_brightness((unsigned int)current, direction);
   /* Some Zero28 revisions need a priming write to recover from the old
    * near-black range. This is also used by the board's wake implementation. */
-  if (direction > 0 && current < 8) {
+  if (current < 8) {
     args[1] = 8UL;
     if (ioctl(fd, LCD_SET_BRIGHTNESS, args) < 0) goto done;
   }
-  if (direction > 0) {
+  {
     /* Enable before the final PWM write: a disabled lamp's enable path can
-     * reset the PWM, just like waking scanout from standby. */
+     * reset the register, just like waking scanout from standby. Either raw
+     * direction can now be logical brightness-up, so both require this gate. */
     unsigned long gate[4] = {0UL};
     if (ioctl(fd, LCD_BACKLIGHT_ENABLE, gate) < 0) goto done;
   }
@@ -122,13 +125,16 @@ done:
     result = 1;
   return result;
 }
-/* The Zero28 native 0..255 scale increases brightness, as in its platform
- * settings adapter. Settings and MENU+volume use this same logical direction.
- * Keep persisted values in that native scale; volume is independent. */
+/* Physical R51 acceptance on this Zero28: Settings Right and MENU+Volume Up
+ * dimmed the screen while ordinary sound direction remained correct. The old
+ * MinUI-source polarity assumption does not describe this panel. Translate
+ * logical brightness at this one board boundary, shared by every UI route.
+ * Persisted and standby/wake targets remain untouched native register values. */
 static int brightness(int direction) {
+  int register_direction = -direction;
   fprintf(stderr, "console-level: brightness logical_direction=%d register_direction=%d\n",
-          direction, direction);
-  return brightness_raw(direction);
+          direction, register_direction);
+  return brightness_raw(register_direction);
 }
 static int mixer(const char *control, const char *value, char *output, size_t capacity) {
   int pipefd[2], status;

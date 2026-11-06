@@ -60,7 +60,7 @@ static int mock_execv(const char *path, char *const args[])
   _exit(0);
 }
 static int mock_brightness=128, enabled=1, alias, fail_set, fail_gate, invalid_get, writes, enables;
-static int reset_on_enable;
+static int reset_on_enable, wrong_motion;
 static char target_path[256];
 static int mock_open(const char *path,int flags,...)
 {return open(strcmp(path,"/dev/disp")==0?"/dev/null":path,flags);}
@@ -74,7 +74,8 @@ static int mock_ioctl(int fd,unsigned long command,...)
     if(reset_on_enable)mock_brightness=8;return 0;}
   assert(command==0x102UL&&args[1]<=255UL);++writes;
   if(fail_set){errno=EIO;return -1;}
-  mock_brightness=alias&&args[1]==32UL?24:(int)args[1];
+  if(wrong_motion)mock_brightness=(int)args[1]<mock_brightness?mock_brightness+1:mock_brightness-1;
+  else mock_brightness=alias&&args[1]==32UL?24:(int)args[1];
   if(mock_brightness<8)enabled=0; /* Increasing PWM alone cannot repair a disabled gate. */
   return 0;
 }
@@ -104,9 +105,9 @@ int main(void) {
   }
   assert(next_brightness(16U, 1) == 32U);
   assert(next_brightness(16U, -1) == 8U);
-  assert(brightness_menu_level(8U)==1U && brightness_menu_level(255U)==10U);
+  assert(brightness_menu_level(8U)==10U && brightness_menu_level(255U)==1U);
   for (level=1U;level<sizeof(brightness_steps)/sizeof(brightness_steps[0]);++level)
-    assert(brightness_menu_level(brightness_steps[level-1U])+1U==brightness_menu_level(brightness_steps[level]));
+    assert(brightness_menu_level(brightness_steps[level-1U])==brightness_menu_level(brightness_steps[level])+1U);
   for(unsigned int i=0U;i<12U;++i)assert(brightness_raw(-1)==0);
   assert(mock_brightness==8&&enabled==1);
   for(unsigned int i=0U;i<12U;++i)assert(brightness_raw(1)==0);
@@ -123,16 +124,36 @@ int main(void) {
   fail_gate=1;assert(brightness_raw(1)==1);fail_gate=0;
   int before=writes;invalid_get=1;
   assert(brightness_raw(1)==1&&writes==before);invalid_get=0;
-  /* User-facing controls must follow the platform's increasing native scale;
-   * exercise both directions and bounds rather than accepting an inversion. */
+  /* Model the inverse register/light ordering reported on physical R51.
+   * This fixture does not measure a real panel. Verify logical direction,
+   * displayed meter, endpoints and unchanged native save/restore semantics. */
   mock_brightness=128;enabled=1;
-  assert(brightness(1)==0&&mock_brightness==160);
+  assert(brightness(1)==0&&mock_brightness==96);
   assert(brightness(-1)==0&&mock_brightness==128);
-  mock_brightness=8;assert(brightness(-1)==0&&mock_brightness==8);
-  assert(brightness(1)==0&&mock_brightness==16);
-  mock_brightness=255;assert(brightness(1)==0&&mock_brightness==255);
-  assert(brightness(-1)==0&&mock_brightness==192);
-  puts("BRIGHTNESS_POLARITY_PASS plus_brightens minus_dims raw_restore_scale_retained");
+  mock_brightness=8;assert(brightness(1)==0&&mock_brightness==8);
+  assert(brightness(-1)==0&&mock_brightness==16);
+  mock_brightness=255;assert(brightness(-1)==0&&mock_brightness==255);
+  assert(brightness(1)==0&&mock_brightness==192);
+  mock_brightness=0;enabled=0;
+  assert(brightness(1)==0&&mock_brightness==8&&enabled==1);
+  mock_brightness=1;enabled=0;
+  assert(brightness(1)==0&&mock_brightness==8&&enabled==1);
+  mock_brightness=128;enabled=0;reset_on_enable=1;
+  assert(brightness(1)==0&&mock_brightness==96&&enabled==1);reset_on_enable=0;
+  mock_brightness=128;fail_gate=1;assert(brightness(1)==1);fail_gate=0;
+  mock_brightness=128;wrong_motion=1;assert(brightness(1)==1);
+  mock_brightness=128;assert(brightness(-1)==1);wrong_motion=0;
+  puts("R52_LOGICAL_UP_ENABLE_LEGACY_ZERO_RECOVERY_AND_WRONG_MOTION_REJECTION_PASS panel_mocked=1");
+  for(unsigned int raw=8U;raw<=255U;++raw){
+    mock_brightness=(int)raw;
+    unsigned int meter=brightness_menu_level(raw);
+    assert(brightness(1)==0 && (unsigned int)mock_brightness<=raw);
+    assert(brightness_menu_level((unsigned int)mock_brightness)>=meter);
+    mock_brightness=(int)raw;
+    assert(brightness(-1)==0 && (unsigned int)mock_brightness>=raw);
+    assert(brightness_menu_level((unsigned int)mock_brightness)<=meter);
+  }
+  puts("R52_INVERSE_LIGHT_MODEL_LOGICAL_BRIGHTNESS_METER_ALL248_NATIVE_VALUES_PASS panel_mocked=1");
   audio=mmap(NULL,sizeof(*audio),PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0);
   assert(audio!=MAP_FAILED);
   audio->left=audio->right=255U;audio->headphone=3U;audio->digital=12U;audio->soft=32U;

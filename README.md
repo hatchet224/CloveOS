@@ -15,6 +15,10 @@ entry. See [the R51 source supplement](releases/r51/README.md). R50's language,
 Ports and startup work remains in [the R50 supplement](releases/r50/README.md),
 with compatibility-core patches in [the R49 supplement](releases/r49/README.md).
 
+**R51 has a confirmed physical brightness-direction bug.** A narrowly scoped
+[R52 source candidate](releases/r52/README.md) corrects the board adapter and
+meter. Its targeted software checks pass; handheld confirmation is pending.
+
 [RELEASE_POLICY.md](RELEASE_POLICY.md) requires matching source, build inputs,
 notices, privacy checks, and verified redistribution rights for every future
 update. The current image still has unresolved vendor/component source and

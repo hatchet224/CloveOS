@@ -1478,6 +1478,15 @@ static void menu_input(struct supervisor *s, uint64_t now) {
                     if (at < s->menu.opened_ms || at > now)
                         continue;
                     event_at = at;
+                    /* Capture actual board keycodes without changing routing.
+                     * Older platform references disagree on volume codes. */
+                    if(events[i].code==KEY_VOLUMEUP || events[i].code==KEY_VOLUMEDOWN ||
+                       events[i].code==128U || events[i].code==129U ||
+                       events[i].code==KEY_BRIGHTNESSUP || events[i].code==KEY_BRIGHTNESSDOWN)
+                        fprintf(stderr,"level input: device=%s code=%u value=%d menu=%u state=%s ui_pid=%ld game_pid=%ld\n",
+                                s->menu.name,(unsigned int)events[i].code,events[i].value,
+                                s->hotkeys.down?1U:0U,cs_state_name(s->status.state),
+                                (long)s->ui_pid,(long)s->ra_pid);
                     if (events[i].code == s->menu.code && at <= s->menu_sampled_at)
                         continue; /* A bitmap observation already delivered this edge. */
                 }

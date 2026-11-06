@@ -1,6 +1,8 @@
-# CloveOS r51 test status
+# CloveOS test status
 
 r51 is a development test candidate. Current evidence includes ARM and original Zero 28 kernel tests in QEMU. A fresh boot of the clean image through the physical handheld's bootloader and display remains to be verified.
+
+- **Confirmed R51 brightness bug:** Settings Right and Menu + Volume Up dim the reported physical panel while ordinary sound controls work correctly. The [R52 source candidate](releases/r52/README.md) corrects the shared brightness mapping and meter; physical confirmation is pending.
 
 - R50 suppressed PortMaster catalog/Featured updates through `--no-check`. R51 removes that restriction while pinning GUI updates. Native-port compatibility remains game-specific.
 - PortMaster compatibility varies by game, runtime, renderer and controls. The CloveOS integration is experimental; software fixtures do not establish every upstream game's compatibility. PortMaster itself updates through CloveOS; game ports can be installed and updated within PortMaster. Commercial games may need user-supplied assets.

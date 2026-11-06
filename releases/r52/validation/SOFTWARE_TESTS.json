@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "markers": [
+    "R51_POSITIVE_REGISTER_DIMMING_WITH_RISING_METER_REPRO",
+    "R52_INVERSE_LIGHT_MODEL_LOGICAL_BRIGHTNESS_METER_ALL248_NATIVE_VALUES_PASS",
+    "AUDIO_RANGE_PASS",
+    "WAKE_OWNER_REPLAY_PASS",
+    "LEVEL_ROUTER_PASS",
+    "R52_HELPER_VOLUME_RAW_RESTORE_LOGICAL_ROUTES_AND_VIRTUAL_INPUT_PASS",
+    "R52_TARGETED_VM_EXIT=0",
+    "R52_LOGICAL_UP_ENABLE_LEGACY_ZERO_RECOVERY_AND_WRONG_MOTION_REJECTION_PASS"
+  ],
+  "actual_aarch64_helper_logic": true,
+  "panel_mocked": true,
+  "light_order_model_based_on_user_physical_r51_report": true,
+  "sdl_events_virtual": true,
+  "evdev_events_fixture": true,
+  "physical_r52_acceptance_passed": false,
+  "saved_raw_restore_unchanged": true,
+  "ordinary_volume_logic_unchanged": true,
+  "helper_sha256": "71592bdd56747de193e9781583c086d7a66840937e3cd4daebdc52084f9533c1"
+}
