@@ -1,0 +1,53 @@
+{
+  "rootfs_sha256": "6e0fa4640ef99145c1a705d673f74d935cf46e99413c996b6c4c74a4fc367ae7",
+  "privacy_passed": true,
+  "counts": {
+    "rootfs_symlinks": 1326,
+    "files": 5153,
+    "rootfs_regular_files": 5153,
+    "nested_files": 563,
+    "gnutls_public_self_test_vectors": 11,
+    "runtime_generated_hotspot_ssid_templates": 1
+  },
+  "nested_archives": [
+    {
+      "path": "./usr/magicx/tina_config.gz",
+      "format": "gzip"
+    },
+    {
+      "path": "./system/share/licenses/umtprd.source.tar.gz",
+      "format": "gzip"
+    },
+    {
+      "path": "./system/share/licenses/umtprd.source.tar[gzip]",
+      "format": "tar"
+    },
+    {
+      "path": "./system/portmaster/template/exlibs/sdl2/test/resources/resources.zip",
+      "format": "zip"
+    },
+    {
+      "path": "./system/portmaster/template/exlibs/sdl2/test/resources/resources.tar.gz",
+      "format": "gzip"
+    },
+    {
+      "path": "./system/portmaster/template/exlibs/sdl2/test/resources/resources.tar[gzip]",
+      "format": "tar"
+    },
+    {
+      "path": "./system/portmaster/python/lib/tcl9.0/cookiejar0.2/public_suffix_list.dat.gz",
+      "format": "gzip"
+    },
+    {
+      "path": "./system/portmaster/python/lib/python3.12/ensurepip/_bundled/pip-26.2.2-py3-none-any.whl",
+      "format": "zip"
+    }
+  ],
+  "failures": [],
+  "registered_hashes_match": true,
+  "no_personal_card_data_used": true,
+  "redistribution_license_audit_complete": false,
+  "user_publication_authorized": true,
+  "release_qualified": false,
+  "rights_cleared": false
+}

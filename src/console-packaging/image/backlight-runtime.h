@@ -43,11 +43,16 @@ static inline int cl_brightness_target_write(unsigned int raw)
     if(ok&&rename(temporary,CL_BRIGHTNESS_TARGET_PATH)==0)return 0;
     (void)unlink(temporary);return -1;
 }
-/* Scanout/backlight enable can finish on a later display frame. Reapply after
+/* GET reports the driver's cached value, not a physical PWM measurement.
+ * Its panel callback is conditional on a changed value. A distinct bounded
+ * priming value makes an unchanged initial target reach that callback too.
+ * Scanout/backlight enable can finish on a later display frame. Reapply after
  * two bounded 25ms settle intervals as well as immediately, then verify. */
 static inline int cl_brightness_reapply(int fd,unsigned int raw)
 {
     if(raw<1U||raw>255U){errno=EINVAL;return -1;}
+    unsigned long prime[4]={0UL,raw==8U?16UL:8UL,0UL,0UL};
+    if(ioctl(fd,0x102UL,prime)<0)return -1;
     int verified=0;
     for(unsigned int attempt=0U;attempt<3U;++attempt){
         unsigned long args[4]={0UL,raw,0UL,0UL};

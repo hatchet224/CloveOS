@@ -5,5 +5,6 @@
 struct cl_ports_config {
     struct cl_file_explorer_config device;
     unsigned int language;
+    bool catalog_only;
 };
 #endif

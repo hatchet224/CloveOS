@@ -14,6 +14,7 @@ static int brightness=128, backlight=1, blanked, fail_zero, fail_restore, writes
 static int fail_disable, fail_enable, fail_blank, fail_unblank;
 static int clamp_zero, reset_on_enable, reset_on_unblank;
 static int deferred_reset;
+static int panel_brightness=128, cached_panel_model;
 struct display_op { unsigned long command, value; };
 static struct display_op operations[1024];
 static int fake_usleep(useconds_t delay){
@@ -37,6 +38,7 @@ static int fake_ioctl(int fd, unsigned long cmd, ...)
     operations[writes].command=cmd;operations[writes].value=values[1];++writes;
     if(cmd==0x102UL){
         if(fail_restore&&values[1]>0UL){errno=EIO;return -1;}
+        if(!cached_panel_model || brightness!=(int)values[1])panel_brightness=(int)values[1];
         brightness=(int)values[1];
         if(clamp_zero&&brightness==0)brightness=1;
         if(fail_zero&&brightness==0){fail_zero=0;errno=EIO;return -1;}
@@ -77,6 +79,28 @@ int main(void)
     struct display_record record;
     assert(unlink(STANDBY_RECORD)==0||errno==ENOENT);
     assert(unlink(CL_BRIGHTNESS_TARGET_PATH)==0||errno==ENOENT);
+    /* Kernel GET returns cached state; its panel callback is change-only.
+     * Model a cold inherited panel with cached minimum but different applied
+     * brightness, then the actual boot-reapply/off/on/repeat sequence. This
+     * is a software counterexample, not a physical PWM measurement. */
+    cached_panel_model=1;
+    static const unsigned int boot_targets[]={8U,96U,255U};
+    for(unsigned int b=0U;b<3U;++b){
+        assert(unlink(CL_BRIGHTNESS_TARGET_PATH)==0||errno==ENOENT);
+        brightness=(int)boot_targets[b];panel_brightness=128;backlight=1;blanked=0;
+        assert(cl_brightness_target_write(boot_targets[b])==0);
+        assert(cl_brightness_reapply(1,boot_targets[b])==0);
+        assert(panel_brightness==(int)boot_targets[b]);
+        for(unsigned int cycle=0U;cycle<3U;++cycle){
+            assert(fixture_standby_main(2,off)==0);
+            assert(fixture_standby_main(2,on)==0);
+            assert(brightness==(int)boot_targets[b]&&panel_brightness==(int)boot_targets[b]);
+            assert(backlight==1&&blanked==0);
+        }
+    }
+    cached_panel_model=0;
+    assert(unlink(CL_BRIGHTNESS_TARGET_PATH)==0);
+    puts("R51_FIRST_AND_REPEATED_WAKE_CACHED_VS_APPLIED_PASS cold_boot_targets8_96_255 cycles3_each");
     assert(set_level(1,0U)==0&&backlight==1&&blanked==0);
     brightness=128;writes=0;
     assert(fixture_standby_main(2,off)==0&&brightness==0&&backlight==0&&blanked==1);
@@ -87,7 +111,7 @@ int main(void)
     assert(read_record(&record)==0);fail_restore=0;
     int wake_start=writes;
     assert(fixture_standby_main(2,on)==0&&brightness==128&&backlight==1&&blanked==0);
-    assert(writes==wake_start+6&&operations[wake_start].value==8UL);
+    assert(writes==wake_start+7&&operations[wake_start].value==8UL);
     backlight=0;blanked=1; /* no record, positive brightness is not proof of wake */
     assert(fixture_standby_main(2,on)==0&&brightness==128&&backlight==1&&blanked==0);
     /* The old ordering verified the saved PWM before enable/unblank, then

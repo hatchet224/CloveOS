@@ -1515,7 +1515,7 @@ static void menu_input(struct supervisor *s, uint64_t now) {
                            (s->status.state == CS_GAME_RUNNING || s->status.state == CS_QUICK_MENU)) {
                     cs_hotkeys_consume(&s->hotkeys);
                     struct sc_level level = {true,
-                        events[i].code == BTN_DPAD_UP || events[i].code == KEY_UP ? -1 : 1};
+                        events[i].code == BTN_DPAD_UP || events[i].code == KEY_UP ? 1 : -1};
                     level_request(s,&level);
                 } else if (!s->menu.dropped && events[i].type == EV_KEY &&
                            (events[i].code == KEY_VOLUMEUP ||
@@ -1750,7 +1750,8 @@ static bool launch_portmaster(struct supervisor *s)
             .portrait_rotation=(enum cl_rotation)s->config.ui_config.portrait_rotation,
             .qualified_software_fallback=s->config.ui_config.software_fallback},
             .input=s->memory.checked_input,.qualified_fat_syncfs=s->config.base.qualified_fat_syncfs},
-        .language=(s->shortcuts & CL_LANGUAGE_MASK) >> CL_LANGUAGE_SHIFT
+        .language=(s->shortcuts & CL_LANGUAGE_MASK) >> CL_LANGUAGE_SHIFT,
+        .catalog_only=strcmp(s->launch.auxiliary,"catalog")==0
     };
     memcpy(config.device.card_uuid,s->config.base.card_uuid,sizeof(config.device.card_uuid));
     if(!sc_spawn_portmaster(&config,&s->level_pid))return false;

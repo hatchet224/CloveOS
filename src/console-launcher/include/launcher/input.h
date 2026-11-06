@@ -22,6 +22,8 @@ struct cl_input {
     int axis_count;
     uint32_t held, pressed;
     uint64_t repeat_at;
+    uint64_t level_repeat_at;
+    uint32_t level_repeat_key;
     int repeat_direction;
     bool armed, focused, builtin_l2, builtin_r2;
 };

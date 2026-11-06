@@ -158,6 +158,7 @@ int main(void)
     if(prctl(PR_SET_CHILD_SUBREAPER,1,0,0,0)!=0)goto done;
     if(SDL_Init(SDL_INIT_TIMER)!=0)goto done;
     if(run("setup","")!=0 || stopping)goto done;
+    if(config.catalog_only){result=run("manager","");SDL_Quit();goto done;}
     struct port *ports=calloc(PORT_LIMIT,sizeof(*ports));
     if(ports==NULL)goto done;
     size_t selected=0U;int last_status=0;

@@ -104,9 +104,9 @@ int main(void) {
   }
   assert(next_brightness(16U, 1) == 32U);
   assert(next_brightness(16U, -1) == 8U);
-  assert(brightness_menu_level(8U)==10U && brightness_menu_level(255U)==1U);
+  assert(brightness_menu_level(8U)==1U && brightness_menu_level(255U)==10U);
   for (level=1U;level<sizeof(brightness_steps)/sizeof(brightness_steps[0]);++level)
-    assert(brightness_menu_level(brightness_steps[level-1U])==brightness_menu_level(brightness_steps[level])+1U);
+    assert(brightness_menu_level(brightness_steps[level-1U])+1U==brightness_menu_level(brightness_steps[level]));
   for(unsigned int i=0U;i<12U;++i)assert(brightness_raw(-1)==0);
   assert(mock_brightness==8&&enabled==1);
   for(unsigned int i=0U;i<12U;++i)assert(brightness_raw(1)==0);

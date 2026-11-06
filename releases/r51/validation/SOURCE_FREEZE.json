@@ -1,0 +1,146 @@
+{
+  "frozen": true,
+  "source_files": [
+    {
+      "path": "console-portmaster/launch_hooks.txt",
+      "original_bytes_sha256": "02fb18d34b3d649feeb234e75f5f4c1204849ccb67d5f5d5236d29c4bbd98c7c",
+      "published_lf_sha256": "02fb18d34b3d649feeb234e75f5f4c1204849ccb67d5f5d5236d29c4bbd98c7c"
+    },
+    {
+      "path": "console-portmaster/upstream.patch",
+      "original_bytes_sha256": "617c451b9942fdf3b1cea8e57d1786006dfe371173c208f51d81df8565185c0c",
+      "published_lf_sha256": "617c451b9942fdf3b1cea8e57d1786006dfe371173c208f51d81df8565185c0c"
+    },
+    {
+      "path": "console-supervisor/CMakeLists.txt",
+      "original_bytes_sha256": "0c18bc08621c6244391be7b308e9b716cb9eb1d78003eef8f070036394b63d0f",
+      "published_lf_sha256": "0c18bc08621c6244391be7b308e9b716cb9eb1d78003eef8f070036394b63d0f"
+    },
+    {
+      "path": "console-supervisor/init/console-portmaster-launch",
+      "original_bytes_sha256": "449e7b7116d2f48d3376ee86f58c90e76b428fabf54504dcc571d0b93d93c9e1",
+      "published_lf_sha256": "449e7b7116d2f48d3376ee86f58c90e76b428fabf54504dcc571d0b93d93c9e1"
+    },
+    {
+      "path": "console-supervisor/src/disk.c",
+      "original_bytes_sha256": "45a0376e964120180e988e414e935d67ffb077b6b35a453ae5991cbe10dc6a15",
+      "published_lf_sha256": "45a0376e964120180e988e414e935d67ffb077b6b35a453ae5991cbe10dc6a15"
+    },
+    {
+      "path": "console-supervisor/src/main.c",
+      "original_bytes_sha256": "950a6bafc6885c34f3985efc96c3a637c8a488c60967fb224896c06a18a67d57",
+      "published_lf_sha256": "950a6bafc6885c34f3985efc96c3a637c8a488c60967fb224896c06a18a67d57"
+    },
+    {
+      "path": "console-supervisor/src/ports.c",
+      "original_bytes_sha256": "57550dbd267d234628fc5ccef16f33318429b11e7cd408bf95d0268718afa619",
+      "published_lf_sha256": "57550dbd267d234628fc5ccef16f33318429b11e7cd408bf95d0268718afa619"
+    },
+    {
+      "path": "console-supervisor/src/ui_host.c",
+      "original_bytes_sha256": "1a8a18ba0b52e4902dbc22ed3278f54a5aed07518ae93b71be1effb4c70aec85",
+      "published_lf_sha256": "1a8a18ba0b52e4902dbc22ed3278f54a5aed07518ae93b71be1effb4c70aec85"
+    },
+    {
+      "path": "console-supervisor/tests/test_five_apps_backend.c",
+      "original_bytes_sha256": "6de70d140f6038589c045c95d74229a277f299b5e79a6e1274f9dc2becaffa75",
+      "published_lf_sha256": "6de70d140f6038589c045c95d74229a277f299b5e79a6e1274f9dc2becaffa75"
+    },
+    {
+      "path": "console-supervisor/tests/test_level_router.c",
+      "original_bytes_sha256": "332127f37bea43c9ced76240faa3c9eea00633edf341034777e188c7a41989a8",
+      "published_lf_sha256": "c0d827eae8730d93f3fdbe191ddd54cd9354fb8fa0f9b0c5eaeb73131e03faf2"
+    },
+    {
+      "path": "console-supervisor/tests/test_standby_display.c",
+      "original_bytes_sha256": "0d79a1753fc852f58b14e6e9f20222742917129f27ca3e69cc3bdadfefed8c98",
+      "published_lf_sha256": "a5a602b5a6743cd11bb4003776b8da1bdf928133258f3adb0dbb68e809639c9e"
+    },
+    {
+      "path": "console-supervisor/include/supervisor/build.h",
+      "original_bytes_sha256": "486e5ed2e71d09ae9e1b4874656f62ad3c758287d1b4fde840283739395fb2fb",
+      "published_lf_sha256": "c902ce2133e7ea188f1240be4b99e215fab5e5b03898442d712100b132b40c3f"
+    },
+    {
+      "path": "console-packaging/image/backlight-runtime.h",
+      "original_bytes_sha256": "a3ed789969a77d224e64ff2672ae5e182ece34b55807bef883eb19a230fdee89",
+      "published_lf_sha256": "a3ed789969a77d224e64ff2672ae5e182ece34b55807bef883eb19a230fdee89"
+    },
+    {
+      "path": "console-packaging/image/console-level.c",
+      "original_bytes_sha256": "881dc5635ae8671270807a102e6f699245eab6a7627bbc5c0e8ec73763e8f50c",
+      "published_lf_sha256": "881dc5635ae8671270807a102e6f699245eab6a7627bbc5c0e8ec73763e8f50c"
+    },
+    {
+      "path": "console-packaging/tests/test_levels.c",
+      "original_bytes_sha256": "7a39c5f1d1bc74d2d4b691446dba81e51a228b42c4d5f757b1b80687c276ced9",
+      "published_lf_sha256": "75b09321de9402414efbe7135eae01885dc09ea62a38fe365af830a279170def"
+    },
+    {
+      "path": "console-launcher/locales/es.json",
+      "original_bytes_sha256": "9b62fc7e2b5de32d9e27ed896b2d26ddd3a636e86460ba2af6616ff7c92452b9",
+      "published_lf_sha256": "e35923d9696b6faeff92ca471afc3d9fe20cabf95ec9f83f219bf379a7802698"
+    },
+    {
+      "path": "console-launcher/src/app.c",
+      "original_bytes_sha256": "610664f7ac65197e7fbd106777d6e3ed9ec83c90033290f74e7a3e0598771167",
+      "published_lf_sha256": "610664f7ac65197e7fbd106777d6e3ed9ec83c90033290f74e7a3e0598771167"
+    },
+    {
+      "path": "console-launcher/src/i18n.c",
+      "original_bytes_sha256": "0c2e8108558976ec31c8757452c62cdac6bfc648cbe192e99c24b6902099289b",
+      "published_lf_sha256": "0c2e8108558976ec31c8757452c62cdac6bfc648cbe192e99c24b6902099289b"
+    },
+    {
+      "path": "console-launcher/src/input.c",
+      "original_bytes_sha256": "bfe663a7221cea752d4b92e81b25494a646483b86e1fc927c646f6ba6475e8fd",
+      "published_lf_sha256": "bfe663a7221cea752d4b92e81b25494a646483b86e1fc927c646f6ba6475e8fd"
+    },
+    {
+      "path": "console-launcher/src/view.c",
+      "original_bytes_sha256": "4f5bb813255b7f00110f4d7b6a4ce5283753b5c3924e937f9781212c51e1b636",
+      "published_lf_sha256": "4f5bb813255b7f00110f4d7b6a4ce5283753b5c3924e937f9781212c51e1b636"
+    },
+    {
+      "path": "console-launcher/tests/test_brightness_controls.c",
+      "original_bytes_sha256": "1787802fd993f874293348d8ae14ea31598a6186551b9dee3278ef61a0d6d8f7",
+      "published_lf_sha256": "1787802fd993f874293348d8ae14ea31598a6186551b9dee3278ef61a0d6d8f7"
+    },
+    {
+      "path": "console-launcher/tests/test_portmaster_entry.c",
+      "original_bytes_sha256": "1b2ff9fd1caa8931f7491928f31c0aa9776a54a109a494754ba29c506efb8ee6",
+      "published_lf_sha256": "1b2ff9fd1caa8931f7491928f31c0aa9776a54a109a494754ba29c506efb8ee6"
+    },
+    {
+      "path": "console-launcher/tests/test_preferences.c",
+      "original_bytes_sha256": "c0cb9da445595e90b7f91ed0216591ae7432b22c37fb25ec5b4b31ca7fd7a1cb",
+      "published_lf_sha256": "c0cb9da445595e90b7f91ed0216591ae7432b22c37fb25ec5b4b31ca7fd7a1cb"
+    },
+    {
+      "path": "console-launcher/include/launcher/history.h",
+      "original_bytes_sha256": "e872e1890e179717309d5548bfee6bb8e4a46a35f4a7f043105cf3338a44ed2d",
+      "published_lf_sha256": "e872e1890e179717309d5548bfee6bb8e4a46a35f4a7f043105cf3338a44ed2d"
+    },
+    {
+      "path": "console-launcher/include/launcher/input.h",
+      "original_bytes_sha256": "b81664045e46c248b64ca4bcddc717c2a4f94ab3589815683081567fc82cdbf6",
+      "published_lf_sha256": "b81664045e46c248b64ca4bcddc717c2a4f94ab3589815683081567fc82cdbf6"
+    },
+    {
+      "path": "console-launcher/include/launcher/model.h",
+      "original_bytes_sha256": "055c72c159edf64a3676c6f91946673169c38c6e315bb86858217a9b7a849930",
+      "published_lf_sha256": "055c72c159edf64a3676c6f91946673169c38c6e315bb86858217a9b7a849930"
+    },
+    {
+      "path": "console-launcher/include/launcher/ports.h",
+      "original_bytes_sha256": "996eef26666039a67438bf1b90292232fe52cd47cda7717eca8585b80a9b7b02",
+      "published_lf_sha256": "996eef26666039a67438bf1b90292232fe52cd47cda7717eca8585b80a9b7b02"
+    },
+    {
+      "path": "console-launcher/include/launcher/preferences.h",
+      "original_bytes_sha256": "01a8c9e9ed7a640164cea749f622ce85e1f0a627a9596d198b35ac930e73e969",
+      "published_lf_sha256": "01a8c9e9ed7a640164cea749f622ce85e1f0a627a9596d198b35ac930e73e969"
+    }
+  ],
+  "line_endings": "Published text normalized to LF"
+}

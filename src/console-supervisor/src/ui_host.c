@@ -148,6 +148,7 @@ static bool library_page(void *context, const struct cl_library_query *query)
     message.data.history.library_mode = query->mode;
     message.data.history.library_expert = query->expert;
     message.data.history.library_search_tile = query->search_tile;
+    message.data.history.library_hide_portmaster = query->hide_portmaster;
     message.data.history.library_search_results = query->search_results;
     message.data.history.library_offset = query->offset;
     message.data.history.library_query_id = query->id;

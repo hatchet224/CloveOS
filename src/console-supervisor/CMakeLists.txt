@@ -134,6 +134,12 @@ install(FILES config/cards.conf DESTINATION bootstrap/etc/console
 install(FILES config/supervisor.json config/base-profile.json config/bridge-launch.json config/ui.json
         DESTINATION bootstrap/etc/console)
 if(BUILD_TESTING)
+    add_executable(r51_brightness_controls ../console-launcher/tests/test_brightness_controls.c)
+    target_link_libraries(r51_brightness_controls PRIVATE console_launcher)
+    target_compile_options(r51_brightness_controls PRIVATE -UNDEBUG)
+    add_executable(r51_portmaster_entry ../console-launcher/tests/test_portmaster_entry.c)
+    target_link_libraries(r51_portmaster_entry PRIVATE console_launcher)
+    target_compile_options(r51_portmaster_entry PRIVATE -UNDEBUG)
     add_executable(r50_ports_tests tests/test_ports.c)
     target_link_libraries(r50_ports_tests PRIVATE console_launcher)
     target_compile_definitions(r50_ports_tests PRIVATE _GNU_SOURCE _FILE_OFFSET_BITS=64)

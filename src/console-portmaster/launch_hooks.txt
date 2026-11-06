@@ -16,5 +16,5 @@ pm_hook_autoinstall_dirs() {
     echo /roms/ports/autoinstall
 }
 pm_hook_run_pugwash() {
-    /system/portmaster/python/bin/python3.12 ./pugwash --no-check $PORTMASTER_CMDS
+    /system/portmaster/python/bin/python3.12 ./pugwash $PORTMASTER_CMDS
 }

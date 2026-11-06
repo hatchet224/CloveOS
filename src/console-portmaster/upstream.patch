@@ -62,6 +62,27 @@
  PORTMASTER_RELEASE_CHANNEL = 'developer'
  ## -- END PORTMASTER INFO --
  
+--- a/PortMaster/pylibs/pugwash/main.py
++++ b/PortMaster/pylibs/pugwash/main.py
+@@ -2,6 +2,7 @@
+ #
+ # Startup: argument parsing, logging, and running the GUI or fifo_control.
+ 
++import os
+ import sys
+ from harbourmaster import console
+ import harbourmaster
+--- a/PortMaster/pylibs/pugwash/main.py
++++ b/PortMaster/pylibs/pugwash/main.py
+@@ -119,7 +119,7 @@
+         pm = PortMasterGUI()
+         pm.hm = None
+ 
+-        if not harbourmaster.HM_TESTING and not config['no-check']:
++        if not harbourmaster.HM_TESTING and not config['no-check'] and os.environ.get('CFW_NAME') != 'CloveOS':
+             if portmaster_check_update(pm, config, temp_dir):
+                 pm.quit()
+                 return 0
 --- a/PortMaster/pylibs/harbourmaster/hm_install.py
 +++ b/PortMaster/pylibs/harbourmaster/hm_install.py
 @@ -84,6 +84,9 @@

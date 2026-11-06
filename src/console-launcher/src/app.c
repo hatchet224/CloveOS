@@ -139,7 +139,8 @@ static bool app_available(const struct app *a, size_t id)
 {
     static const unsigned int flags[APP_COUNT] = {[APP_GALLERY]=CL_APP_GALLERY, [APP_SEARCH]=CL_APP_SEARCH,
         [APP_EXPERT]=CL_APP_EXPERT, [APP_BATTERY]=CL_APP_BATTERY};
-    return id < APP_COUNT && (flags[id] == 0U || (app_features(a) & flags[id]) != 0U);
+    return id < APP_COUNT && id != APP_PORTMASTER &&
+           (flags[id] == 0U || (app_features(a) & flags[id]) != 0U);
 }
 static size_t visible_app_count(const struct app *a)
 {
@@ -304,6 +305,7 @@ static bool request_page(struct app *a, enum cl_library_mode mode, uint64_t offs
     if (restore && offset == 0U && !a->page_waiting[mode] && page->library_query_id != 0U &&
         page->library_page_size == stride && page->library_expert == expert &&
         page->library_search_tile == search_tile && page->library_search_results == search &&
+        page->library_hide_portmaster == ((a->shortcuts & CL_HIDE_PORTMASTER) != 0U) &&
         (mode != CL_LIBRARY_GAMES || strcmp(page->library_system, system) == 0) &&
         strcmp(page->library_keyword, keyword) == 0) {
         cl_history_restore_position(page, p);
@@ -313,6 +315,7 @@ static bool request_page(struct app *a, enum cl_library_mode mode, uint64_t offs
     query.mode = mode;
     query.expert = expert;
     query.search_tile = search_tile;
+    query.hide_portmaster = (a->shortcuts & CL_HIDE_PORTMASTER) != 0U;
     query.search_results = search;
     query.offset = offset;
     query.id = ++a->query_sequence;
@@ -750,7 +753,7 @@ static bool snapshot_safe(const struct cl_history *h)
     for (i = 0U; i < h->count; ++i)
     {
         const struct cl_entry *e = &h->entries[i];
-        if ((unsigned int)e->library_action > CL_LIBRARY_REFRESH ||
+        if ((unsigned int)e->library_action > CL_LIBRARY_PORTS ||
             (e->library_action == CL_LIBRARY_PLAY && !identity_safe(&e->identity)) ||
             (e->library_action != CL_LIBRARY_PLAY && (h->library_query_id == 0U ||
                 !cs_hex_valid(e->identity.game, 64U))) ||
@@ -1013,6 +1016,8 @@ static const struct tweak_row tweak_main_menu[] = {
 static const struct tweak_row tweak_appearance[] = {
     TF("Show recents","Hide Recent on Home while keeping GameSwitcher and history.",CL_HIDE_RECENT,off_on),
     TF("Show expert mode","Show the Expert game browser on Home.",CL_SHOW_EXPERT,on_off),
+    {"Show PortMaster","Show PortMaster in Games to download ports. Hiding it keeps installed ports and settings.",
+     TWEAK_GAME_CONTROL,26U,1U,1U,off_on,TWEAK_NUMBER},
     TV("OSD bar size","Set the width of the level meter shown when adjusting brightness or volume in MainUI and in games.",
        CL_OSD_SHIFT,4,15,NULL,TWEAK_NUMBER),
     TP("Theme overrides...","Adjust theme labels and the battery display.",THEME_OVERRIDES),
@@ -1824,6 +1829,8 @@ static void activate_library_action(struct app *a, enum cl_library_action action
         if (!library_refresh(a, true)) message(a, CL_TR("ROM refresh could not be queued."), HOME);
         break;
     case CL_LIBRARY_PLAY:
+    case CL_LIBRARY_PORTMASTER:
+    case CL_LIBRARY_PORTS:
         break;
     }
 }
@@ -2521,6 +2528,15 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         }
         else if ((keys & CL_KEY(CL_A)) != 0U && selected(a) != NULL)
         {
+            if(selected(a)->library_action==CL_LIBRARY_PORTMASTER || selected(a)->library_action==CL_LIBRARY_PORTS){
+                if(a->busy || (selected(a)->library_action==CL_LIBRARY_PORTMASTER &&
+                   (a->shortcuts&CL_HIDE_PORTMASTER)!=0U))return false;
+                memset(intent,0,sizeof(*intent));intent->kind=CL_LAUNCH_PORTMASTER;
+                if(selected(a)->library_action==CL_LIBRARY_PORTMASTER)strcpy(intent->auxiliary,"catalog");
+                a->memory->systems=a->system_position;
+                a->memory->library_tab=true;a->memory->library_system[0]='\0';
+                return true;
+            }
             if (selected(a)->library_action != CL_LIBRARY_PLAY) {
                 activate_library_action(a, selected(a)->library_action);
                 return false;
@@ -2636,10 +2652,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         {
             a->menu_pending = false;
             cs_hotkeys_consume(&a->menu_gesture);
-            /* The handheld's MainUI MENU+volume chord needs the opposite
-             * direction from its volume control. Keep this local to the SDL
-             * shortcut: Settings and the in-game evdev route already work. */
-            if(brightness) direction = -direction;
+            /* Logical up/down is identical in MainUI and the evdev game route. */
         }
         if (!a->busy && a->services->adjust_level != NULL)
         {
@@ -2654,7 +2667,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         a->menu_pending=false;
         if(!a->busy && a->services->adjust_level!=NULL)
             (void)a->services->adjust_level(a->services->context,true,
-                                           (keys&CL_KEY(CL_UP))!=0U?-1:1);
+                                           (keys&CL_KEY(CL_UP))!=0U?1:-1);
         return false;
     }
     if ((a->screen == MAIN || a->screen == HOME || a->screen == APPS || a->screen == SETTINGS) &&
@@ -2717,7 +2730,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
     if (a->screen==HOME && a->carousel && (keys&(CL_KEY(CL_UP)|CL_KEY(CL_DOWN)))!=0U) {
         if(!a->busy && a->services->adjust_level!=NULL)
             (void)a->services->adjust_level(a->services->context,true,
-                                           (keys&CL_KEY(CL_UP))!=0U?-1:1);
+                                           (keys&CL_KEY(CL_UP))!=0U?1:-1);
         return false;
     }
     if (a->screen == SETTINGS && a->choice < 2U &&
@@ -2727,9 +2740,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         {
             bool brightness = a->choice == 0U;
             int direction = (keys & CL_KEY(CL_RIGHT)) != 0U ? 1 : -1;
-            /* Match the observed panel polarity already used for MENU+volume. */
-            (void)a->services->adjust_level(a->services->context, brightness,
-                                           brightness ? -direction : direction);
+            (void)a->services->adjust_level(a->services->context, brightness, direction);
         }
         a->dirty = true;
         return false;
@@ -2877,6 +2888,8 @@ static bool handle_keys(struct app *a, uint32_t keys, struct cl_launch_intent *i
     uint32_t shortcuts = a->shortcuts;
     uint32_t shortcuts_touched = a->shortcuts_touched;
     bool result = handle_keys_impl(a, keys, intent);
+    if(((shortcuts^a->shortcuts)&CL_HIDE_PORTMASTER)!=0U)
+        a->systems.library_query_id=0U; /* Rebuild visibility, not the ROM catalog. */
     if(((appearance^a->appearance)&CL_MUTE_THEME)!=0U)
         cl_theme_sound_mute(a->theme_sound,(a->appearance&CL_MUTE_THEME)!=0U);
     if((keys&(CL_KEY(CL_A)|CL_KEY(CL_B)|CL_KEY(CL_LEFT)|CL_KEY(CL_RIGHT)|
@@ -2906,6 +2919,7 @@ static void apply_preferences(struct app *a)
         a->preferences_known = true;
         {
             bool changed = !a->grid_touched && a->theme.grid != a->preference_snapshot.grid;
+            uint32_t old_shortcuts=a->shortcuts;
             if (!a->grid_touched)
                 a->theme.grid = a->preference_snapshot.grid;
             if (!a->tab_touched)
@@ -2914,6 +2928,9 @@ static void apply_preferences(struct app *a)
                             (a->preference_snapshot.appearance & ~a->appearance_touched);
             a->shortcuts = (uint32_t)((a->shortcuts & a->shortcuts_touched) |
                                       (a->preference_snapshot.shortcuts & ~a->shortcuts_touched));
+            if(((old_shortcuts^a->shortcuts)&CL_HIDE_PORTMASTER)!=0U){
+                a->systems.library_query_id=0U;changed=true;
+            }
             a->theme_sound=cl_theme_sound_open(a->loaded_theme,(a->appearance&CL_MUTE_THEME)!=0U);
             if (a->startup_pending && !a->tab_touched && a->screen==MAIN) {
                 unsigned int tab=cl_setting_value(a->appearance,CL_START_TAB_SHIFT,3U);
@@ -3140,6 +3157,8 @@ static bool apply_update(struct app *a, struct cl_update *update)
                     if (page->entries[i].library_action == CL_LIBRARY_PLAY)
                         (void)snprintf(page->entries[i].title, sizeof(page->entries[i].title), "%s",
                                        system_title(page->entries[i].system));
+                    else if(page->entries[i].library_action==CL_LIBRARY_PORTS)
+                        (void)snprintf(page->entries[i].title,sizeof(page->entries[i].title),"%s",CL_TR("Installed Ports"));
             }
             if (!a->page_restore[mode] && page->count != 0U)
             {
@@ -3373,6 +3392,7 @@ enum cl_run_result cl_launcher_run(const struct cl_app_config *config,
     a->services = services;
     (void)snprintf(a->loaded_theme, sizeof(a->loaded_theme), "%s", config->theme_path);
     a->memory = memory;
+    a->system_position=memory->systems;
     (void)snprintf(a->system_filter, sizeof(a->system_filter), "%.*s", 32,
                    memory->library_system);
     a->favorite_view = memory->library_tab && memory->main_tab == 0U;

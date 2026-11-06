@@ -1,0 +1,31 @@
+{
+  "sealed": true,
+  "variant": "public",
+  "rootfs_sha256": "6e0fa4640ef99145c1a705d673f74d935cf46e99413c996b6c4c74a4fc367ae7",
+  "rootfs_bytes": 160964608,
+  "baseline_sha256": "9160ebb887310081d21669db384109458379e4352f8ab278d044356210aeb89d",
+  "changed_files": [
+    "./etc/cloveos-release",
+    "./etc/console/BINARY_MANIFEST.json",
+    "./etc/console/BUILD_ID",
+    "./etc/console/PORTMASTER_MANIFEST.json",
+    "./system/bin/GameSwitcher",
+    "./system/bin/console-catalog",
+    "./system/bin/console-launcher",
+    "./system/bin/console-level",
+    "./system/bin/console-portmaster-launch",
+    "./system/bin/console-ports",
+    "./system/bin/console-sessiond",
+    "./system/bin/console-standby",
+    "./system/bin/console-supervisor",
+    "./system/portmaster/template/cloveos/launch_hooks.txt",
+    "./system/portmaster/template/pylibs/pugwash/main.py",
+    "./system/portmaster/template/version"
+  ],
+  "boot_kernel_partition_scripts_unchanged": true,
+  "retroarch_and_emulator_cores_unchanged": true,
+  "personal_card_flashed": false,
+  "rights_cleared": false,
+  "release_qualified": false,
+  "source_first_review_required": true
+}

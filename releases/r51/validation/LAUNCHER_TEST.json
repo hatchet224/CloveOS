@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "rootfs_sha256": "6e0fa4640ef99145c1a705d673f74d935cf46e99413c996b6c4c74a4fc367ae7",
+  "actual_arm64_launcher": true,
+  "empty_fat32_catalog": true,
+  "repeat_starts": 2,
+  "theme": "Clove",
+  "missing_theme_fallback": true,
+  "screenshot": "public-home.bmp",
+  "physical_handheld": false
+}

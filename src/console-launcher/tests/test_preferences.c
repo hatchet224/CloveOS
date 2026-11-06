@@ -146,6 +146,18 @@ int main(int argc,char **argv)
  assert(cl_language_get()==CL_ENGLISH&&strcmp(CL_TR("Settings"),"Settings")==0);
  assert(cl_preferences_stop(w));
  puts("R50_LANGUAGE_PERSIST_RESTART_RESERVED_FALLBACK_PASS");
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ uint32_t original=s.shortcuts;
+ assert((original&CL_HIDE_PORTMASTER)==0U); /* Existing R50 defaults visible. */
+ assert(cl_preferences_submit_ui(w,s.grid,s.main_tab,s.appearance,original|CL_HIDE_PORTMASTER));
+ assert(cl_preferences_stop(w));
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ assert(!s.error&&s.shortcuts==(original|CL_HIDE_PORTMASTER));
+ assert(cl_preferences_submit_ui(w,s.grid,s.main_tab,s.appearance,original));
+ assert(cl_preferences_stop(w));
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ assert(!s.error&&s.shortcuts==original);assert(cl_preferences_stop(w));
+ puts("R51_PORTMASTER_VISIBILITY_PERSIST_RESTART_INDEPENDENT_LANGUAGE_AND_CONTROLS_PASS");
  puts("IN_GAME_PREFERENCES_DURABLE_MERGE_PASS");
  puts("MAINUI_SHORTCUT_PREFERENCES_V2_MIGRATION_AND_MERGE_PASS");
  puts("APPEARANCE_PREFERENCES_V1_MIGRATION_AND_RELOAD_PASS");

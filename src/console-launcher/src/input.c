@@ -116,6 +116,7 @@ static void update(struct cl_input *in, uint64_t now)
         in->held = 0U;
         in->pressed = 0U;
         in->repeat_direction = 0;
+        in->level_repeat_key = 0U;
         if (in->focused && raw == 0U && all_released(in)) {
             in->armed = true;
         }
@@ -123,6 +124,12 @@ static void update(struct cl_input *in, uint64_t now)
     }
     in->pressed |= keys & ~in->held;
     in->held = keys;
+    uint32_t level_key = keys & (CL_KEY(CL_VOL_UP)|CL_KEY(CL_VOL_DOWN));
+    if(level_key==(CL_KEY(CL_VOL_UP)|CL_KEY(CL_VOL_DOWN)))level_key=0U;
+    if(level_key!=in->level_repeat_key){
+        in->level_repeat_key=level_key;
+        in->level_repeat_at=now+300U;
+    }
     direction = (keys & CL_KEY(CL_UP)) != 0U ? -1 : (keys & CL_KEY(CL_DOWN)) != 0U ? 1 : 0;
     if (direction != in->repeat_direction) {
         in->repeat_direction = direction;
@@ -136,6 +143,7 @@ void cl_input_rearm(struct cl_input *in)
     in->held = 0U;
     in->pressed = 0U;
     in->repeat_direction = 0;
+    in->level_repeat_key = 0U;
 }
 bool cl_input_neutral(const struct cl_input *in)
 {
@@ -312,6 +320,10 @@ uint32_t cl_input_take(struct cl_input *in, uint64_t now)
     update(in, now);
     keys = in->pressed;
     in->pressed = 0U;
+    if(in->armed && in->level_repeat_key!=0U && now>=in->level_repeat_at){
+        keys|=in->level_repeat_key;
+        in->level_repeat_at=now+100U;
+    }
     if (in->armed && in->repeat_direction != 0 && now >= in->repeat_at) {
         keys |= CL_KEY(in->repeat_direction < 0 ? CL_UP : CL_DOWN);
         in->repeat_at = now + 100U; /* No replay storm after a delayed event pump. */

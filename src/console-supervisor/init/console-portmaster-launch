@@ -7,17 +7,17 @@ pm=/roms/ports/PortMaster
 runtime=/system/portmaster
 case "${1-}" in
  setup)
-    if [ ! -f "$pm/.clove-template-r50" ]; then
+    if [ ! -f "$pm/.clove-template-r51" ]; then
         mkdir -p "$pm"
         cp -R "$runtime/template/." "$pm/"
-        : > "$pm/.clove-template-r50"
+        : > "$pm/.clove-template-r51"
     fi
     mkdir -p "$pm/home" "$pm/autoinstall"
     exit 0;;
  manager|port) ;;
  *) exit 64;;
 esac
-test -f "$pm/.clove-template-r50"
+test -f "$pm/.clove-template-r51"
 export HOME="$pm/home"
 export XDG_CONFIG_HOME="$HOME/.config" XDG_DATA_HOME="$HOME/.local/share" XDG_CACHE_HOME="$HOME/.cache"
 export PYTHONHOME="$runtime/python" PYTHONDONTWRITEBYTECODE=1 PYTHONNOUSERSITE=1
@@ -26,7 +26,7 @@ export PATH="$runtime/bin:/system/bin:/usr/magicx/bin:/usr/bin:/bin:/sbin"
 export LD_LIBRARY_PATH="/system/portmaster/lib:/system/lib:/usr/magicx/lib:/lib:/usr/lib"
 export HM_TOOLS_DIR=/roms/ports HM_PORTS_DIR=/roms/ports HM_SCRIPTS_DIR=/roms/ports
 export PORTMASTER_HOME="$pm" controlfolder="$pm" directory=roms
-export CFW_NAME=CloveOS CFW_VERSION=r50 CFW_GLIBC=2.29
+export CFW_NAME=CloveOS CFW_VERSION=r51 CFW_GLIBC=2.29
 export DEVICE_NAME='MagicX Mini Zero 28' DEVICE_SLUG=mini-zero28 DEVICE_CPU=Allwinner-A133 DEVICE_ARCH=aarch64
 export DISPLAY_WIDTH=640 DISPLAY_HEIGHT=480 DISPLAY_ORIENTATION=0 ANALOG_STICKS=2 ANALOG_TRIGGERS=N
 export DEVICE_CAPABILITIES='aarch64 640x480 analogue dpad' DEVICE_RAM_MB=1024 DEVICE_HAS_RUMBLE=N
@@ -37,7 +37,7 @@ export PYTHONSAFEPATH=1
 cd /roms/ports
 if [ "$1" = manager ]; then
     cd "$pm"
-    export PORTMASTER_CMDS=--no-check
+    unset PORTMASTER_CMDS
     exec /bin/bash -c 'source "$controlfolder/utils/pm_launch.txt" cloveos'
 fi
 case "$2" in ''|.*|*/*|*\\*) exit 65;; *.sh) ;; *) exit 65;; esac

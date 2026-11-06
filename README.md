@@ -9,10 +9,11 @@ with the RetroArch integration patches, LAN service, capacity helper, tests,
 dependency pins, and image reconstruction records. Third-party components retain
 their existing licenses.
 
-R50 adds saved English/Español selection, PortMaster/Ports integration, and
-initial catalog startup improvements. See [the R50 source supplement](releases/r50/README.md)
-for source pins, build steps and test limits. The R49 compatibility-core patches
-remain in [the R49 supplement](releases/r49/README.md).
+R51 addresses brightness restoration and shortcut direction, restores PortMaster
+online catalog updates, and adds a saved toggle plus a system-selection launch
+entry. See [the R51 source supplement](releases/r51/README.md). R50's language,
+Ports and startup work remains in [the R50 supplement](releases/r50/README.md),
+with compatibility-core patches in [the R49 supplement](releases/r49/README.md).
 
 [RELEASE_POLICY.md](RELEASE_POLICY.md) requires matching source, build inputs,
 notices, privacy checks, and verified redistribution rights for every future
@@ -20,11 +21,11 @@ update. The current image still has unresolved vendor/component source and
 redistribution questions. Publishing CloveOS's own source does not clear those
 third-party payloads or make every byte of an SD-card image GPL software.
 
-R50 is a development test candidate. It includes a game launcher, GameSwitcher, save and resume integration, an optional app catalog, and networking tools. Virtual-machine checks have passed. Fresh-card boot, controls, display, live battery readings, and two-handheld multiplayer still need device testing.
+R51 is a development test candidate. It includes a game launcher, GameSwitcher, save and resume integration, an optional app catalog, and networking tools. Virtual-machine checks have passed. Fresh-card boot, controls, display, live battery readings, and two-handheld multiplayer still need device testing.
 
 See [Releases](https://github.com/hatchet224/CloveOS/releases) for release status.
 The corresponding-source and redistribution review remains incomplete for
-full-card images, including R48, R49 and R50. Software regression checks do not
+full-card images, including R48, R49, R50 and R51. Software regression checks do not
 replace physical handheld verification. Read the release notes before testing.
 
 The clean image includes:

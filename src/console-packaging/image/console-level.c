@@ -45,8 +45,7 @@ static unsigned int brightness_menu_level(unsigned int raw) {
     unsigned int delta = step > raw ? step - raw : raw - step;
     if (delta < distance) { best = i; distance = delta; }
   }
-  /* User-visible scale follows Settings' panel polarity, not raw PWM. */
-  return 10U - best;
+  return 1U + best; /* Native board scale: more PWM means more light. */
 }
 static void publish_level(const char *path, unsigned int level) {
   char temporary[] = "/run/console/.level-XXXXXX";
@@ -87,9 +86,9 @@ static int brightness_raw(int direction) {
     if (ioctl(fd, LCD_SET_BRIGHTNESS, args) < 0) goto done;
   }
   if (direction > 0) {
-    unsigned long gate[4] = {0UL, 0UL, 0UL, 0UL};
     /* Enable before the final PWM write: a disabled lamp's enable path can
      * reset the PWM, just like waking scanout from standby. */
+    unsigned long gate[4] = {0UL};
     if (ioctl(fd, LCD_BACKLIGHT_ENABLE, gate) < 0) goto done;
   }
   for (unsigned int attempt = 0U; attempt < 11U; ++attempt) {
@@ -338,16 +337,19 @@ static int restore_levels(const struct console_levels *levels) {
     if(current>=8)target=(unsigned int)current;
   }
   if (target != 0U) {
-    unsigned long args[4] = {0UL, 8UL, 0UL, 0UL};
     unsigned long gate[4] = {0UL};
     struct stat st;
+    /* Publish desired brightness before any transient priming/enable write.
+     * First suspend must never capture a temporary minimum as the target. */
+    if(cl_brightness_target_write(target)!=0)return 1;
     int fd = open("/dev/disp", O_RDWR | O_CLOEXEC | O_NOFOLLOW);
     if (fd < 0) result = 1;
     else {
-      if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode) ||
-          ioctl(fd, LCD_SET_BRIGHTNESS, args) < 0 || ioctl(fd, LCD_BACKLIGHT_ENABLE, gate) < 0)
-        result = 1;
+      if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode)) result = 1;
       else {
+        if(ioctl(fd,LCD_BACKLIGHT_ENABLE,gate)<0)result=1;
+        /* Even a gate error cannot leave a successfully opened display at
+         * a temporary minimum. Try the final target and retain it for retry. */
         if (cl_brightness_reapply(fd,target) != 0) result = 1;
       }
       if (close(fd) != 0) result = 1;

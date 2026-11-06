@@ -15,7 +15,8 @@ enum cl_app_feature {
 #define CL_APP_DEFAULTS (CL_APP_GALLERY | CL_APP_SEARCH)
 enum cl_library_action {
     CL_LIBRARY_PLAY, CL_LIBRARY_SEARCH_RESULTS, CL_LIBRARY_CLEAR_SEARCH,
-    CL_LIBRARY_FILTER, CL_LIBRARY_CLEAR_FILTER, CL_LIBRARY_REFRESH
+    CL_LIBRARY_FILTER, CL_LIBRARY_CLEAR_FILTER, CL_LIBRARY_REFRESH,
+    CL_LIBRARY_PORTMASTER, CL_LIBRARY_PORTS
 };
 enum cl_library_mode
 {
@@ -33,7 +34,7 @@ struct cl_library_query
     char favorites[CL_HISTORY_MAX][65];
     bool refresh; /* Explicit rescan; navigation reuses the worker's card snapshot. */
     bool expert;
-    bool search_tile, search_results;
+    bool search_tile, search_results, hide_portmaster;
 };
 struct cl_reference
 {
@@ -76,7 +77,7 @@ struct cl_history
     uint64_t library_offset, library_total, library_query_id;
     uint64_t library_page_size;
     bool library_more, library_truncated, library_expert;
-    bool library_search_tile, library_search_results, app_features_known;
+    bool library_search_tile, library_search_results, library_hide_portmaster, app_features_known;
     unsigned int app_features;
 };
 struct cl_position

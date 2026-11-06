@@ -63,7 +63,25 @@ int main(void)
     query->library_mode = CL_LIBRARY_SYSTEMS;
     query->library_search_tile = true; query->library_query_id = 1U;
     assert(library_snapshot(c,history,&selection,query,&cache,&store));
-    assert(history->count == 3U && history->entries[2].library_action == CL_LIBRARY_SEARCH_RESULTS);
+    assert(history->count == 5U && history->entries[2].library_action == CL_LIBRARY_SEARCH_RESULTS);
+    assert(history->entries[3].library_action==CL_LIBRARY_PORTMASTER && history->entries[4].library_action==CL_LIBRARY_PORTS);
+    /* Put PortMaster exactly on a page boundary; hiding it must compact the
+     * complete system list before page totals, anchors and bounds are chosen. */
+    query->library_page_size=3U;query->library_offset=3U;
+    assert(library_snapshot(c,history,&selection,query,&cache,&store));
+    assert(history->library_total==5U && history->library_offset==3U && history->count==2U);
+    query->library_hide_portmaster=true;
+    assert(library_snapshot(c,history,&selection,query,&cache,&store));
+    assert(history->library_total==4U && history->library_offset==3U && history->count==1U && !history->library_more);
+    assert(history->entries[0].library_action==CL_LIBRARY_PORTS);
+    query->library_offset=0U;
+    assert(library_snapshot(c,history,&selection,query,&cache,&store));
+    assert(history->library_total==4U && history->count==3U && history->library_more);
+    query->library_offset=99U;
+    assert(library_snapshot(c,history,&selection,query,&cache,&store));
+    assert(history->library_offset==3U && history->count==1U);
+    query->library_hide_portmaster=false;query->library_page_size=0U;query->library_offset=0U;
+    puts("R51_PORTMASTER_FILTER_BEFORE_PAGINATION_GLOBAL_TOTALS_BOUNDARY_AND_CLAMP_PASS");
     query->library_mode = CL_LIBRARY_GAMES; query->library_search_tile = false; query->library_search_results = true;
     strcpy(query->library_keyword,"metal");
     assert(library_snapshot(c,history,&selection,query,&cache,&store));
@@ -81,7 +99,7 @@ int main(void)
     assert(sc_tools_packages(tools,&store,&selection));
     assert(library_snapshot(c,history,&selection,query,&cache,&store) && history->count == 1U);
     query->library_mode = CL_LIBRARY_SYSTEMS; query->library_search_tile = true;
-    assert(library_snapshot(c,history,&selection,query,&cache,&store) && history->count == 2U);
+    assert(library_snapshot(c,history,&selection,query,&cache,&store) && history->count == 4U);
     puts("OPTIONAL_SEARCH_AND_LIST_ROWS_CROSS_SYSTEM_CATALOG_PASS");
 
     req = (struct cl_tool_request){.operation=CL_TOOL_LOAD_GALLERY};

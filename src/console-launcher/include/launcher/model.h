@@ -68,7 +68,7 @@ struct cl_state_snapshot {
     char compatibility[161];
 };
 struct cl_ui_memory {
-    struct cl_position recent, library, favorites, search;
+    struct cl_position recent, library, favorites, search, systems;
     /* Same-build supervisor memory survives foreground UI replacement. */
     char library_system[33];
     char search_keyword[65];

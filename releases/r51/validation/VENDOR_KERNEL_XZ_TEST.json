@@ -1,0 +1,12 @@
+{
+  "rootfs_sha256": "6e0fa4640ef99145c1a705d673f74d935cf46e99413c996b6c4c74a4fc367ae7",
+  "rootfs_bytes": 160964608,
+  "passed": true,
+  "compression": "xz",
+  "kernel_sha256": "42b56bbb472a4c3686b3e2452bf6499581a67dd0ff7b3022f8e39d493dd8cefc",
+  "kernel": "4.9.191 #177",
+  "candidate_all_hashes_passed": true,
+  "kernel_oops": false,
+  "physical_hardware_boot_pending": true,
+  "boot_image_sha256": "a1738caa5a4f8ba43b97676d020390895a7906ea283c6dcc3b318a47936159f4"
+}

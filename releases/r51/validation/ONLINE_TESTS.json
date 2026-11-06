@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "independent_test_runs": true,
+  "network_mocked": false,
+  "tls_verification_enabled": true,
+  "catalog_ports": 1199,
+  "featured_groups": 2,
+  "ready_to_run_port_downloaded_and_installed": "wordlesdl.zip",
+  "real_gui_with_online_data_rendered": true,
+  "downloaded_native_port_rendered_and_exited": true,
+  "production_shell_hook_python_entrypoint_online": true,
+  "physical_handheld": false,
+  "frozen_runtime_sha256": "17e36c7f1c020981cad4a7efc1a54b06125f5e0268d0ecd6861e0e7635ee7523",
+  "receipts": [
+    {
+      "file": "PREVIOUS_CHAIN_FD_FIXTURE.log",
+      "sha256": "c700aa410c1c34ce6c0f6b1ce4d94ca87688af2de353d8ca308c3b227b3ece24"
+    },
+    {
+      "file": "FOCUSED_CHAIN.json",
+      "sha256": "7fa690618d98ec2ad62963fdb0d9ca0a7b939e9cd14100e9c1ae15f3dd6ba83e"
+    },
+    {
+      "file": "FOCUSED_CHAIN.log",
+      "sha256": "d42e6052c985906eb97a73a6fa5816581f801cbeee93f1710c630dcad8704388"
+    },
+    {
+      "file": "RESULT.json",
+      "sha256": "12ed0b98ea062bb85887e615bceea8144bb22344735a8efe5389f25acd77fa4a"
+    }
+  ],
+  "failed_fixture_stages": [
+    "Early manual-HarbourMaster-first probe used a different GUI initialization order.",
+    "The initial combined VM exhausted its root RAM filesystem with duplicate archives and lost loopback writes; clean offline FAT migration was required separately."
+  ],
+  "native_game_render_observer": "Actual downloaded AArch64 binary copied to executable /tmp; production executable bind mount, launch and cleanup tested separately."
+}

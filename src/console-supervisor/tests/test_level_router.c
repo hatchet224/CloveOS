@@ -179,7 +179,7 @@ int main(void)
         assert(write(fds[1], &ev, sizeof(ev)) == (ssize_t)sizeof(ev));
         test_clock = 11002U; menu_input(s, test_clock);
         assert(spawned == 9U && strcmp(target_kind, "brightness") == 0 &&
-               strcmp(target_step, "down") == 0);
+               strcmp(target_step, "up") == 0);
         cs_hotkeys_menu(&s->hotkeys, false, false, 11003U);
         assert(cs_hotkeys_tick(&s->hotkeys, 11500U) == CS_MENU_NONE);
         assert(close(fds[1]) == 0); cs_evdev_close(&s->menu);
@@ -205,6 +205,34 @@ int main(void)
     test_clock=12100U;service_display_levels(s);
     assert(spawned==11U&&!s->wake_levels_pending&&!s->display_levels_pending);
     puts("WAKE_GAME_RELEASE_REPLAY_PASS waits_for_running_state_and_display_settle=1");
+    /* Real EV_KEY codes and value2 repeat edges in both in-game owners.
+     * MENU modifier must change kind only, never polarity. */
+    for(unsigned int owner=0U;owner<2U;++owner)for(unsigned int modifier=0U;modifier<2U;++modifier)
+    for(unsigned int up=0U;up<2U;++up){
+        int fds[2];assert(pipe2(fds,O_NONBLOCK|O_CLOEXEC)==0);
+        cs_evdev_init(&s->menu);s->menu.fd=fds[0];s->menu.code=KEY_BACK;
+        s->preferences=0U;s->level_pid=0;s->hook_pending=false;s->status.unsettled=false;
+        s->status.state=owner==0U?CS_GAME_RUNNING:CS_QUICK_MENU;
+        s->status.active=true;s->ra_pid=123;cs_hotkeys_reset(&s->hotkeys,false);
+        uint64_t at=30000U+owner*10000U+modifier*3000U+up*1000U;
+        struct input_event e={.type=EV_KEY,.value=1};
+        if(modifier){e.code=KEY_BACK;e.time.tv_sec=(time_t)(at/1000U);
+            assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));}
+        e.code=up?KEY_VOLUMEUP:KEY_VOLUMEDOWN;e.time.tv_sec=(time_t)(at/1000U);
+        assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));
+        unsigned int before=spawned;test_clock=at;menu_input(s,at);
+        assert(spawned==before+1U&&strcmp(target_kind,modifier?"brightness":"volume")==0);
+        assert(strcmp(target_step,up?"up":"down")==0);
+        s->level_pid=0;e.value=2;e.time.tv_usec=100000;
+        assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));test_clock=at+100U;menu_input(s,test_clock);
+        assert(spawned==before+2U&&strcmp(target_step,up?"up":"down")==0);
+        e.value=0;e.time.tv_usec=200000;
+        assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));s->level_pid=0;test_clock=at+200U;menu_input(s,test_clock);
+        e.value=2;e.time.tv_usec=300000;
+        assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));test_clock=at+300U;menu_input(s,test_clock);
+        assert(spawned==before+2U);assert(close(fds[1])==0);cs_evdev_close(&s->menu);
+    }
+    puts("R51_GAME_AND_QUICK_MENU_PHYSICAL_VOLUME_AND_BRIGHTNESS_REPEAT_POLARITY_PASS");
     free(s);
     puts("LEVEL_ROUTER_PASS running-game/native-Quick-Menu/menu allowed; actual raw volume path and brightness chord consumed; checkpoint/shutdown/aux barriers preserved");
     puts("LEVEL_CLOCK_RACE_PASS post-read MENU edge retained; brightness-up routed; future and stale edges rejected");
