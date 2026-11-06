@@ -24,7 +24,11 @@ and physical in-game chord behavior remain pending.
 Build console-supervisor, console-launcher and GameSwitcher using the existing
 AArch64 Linux/glibc2.29 toolchain, pinned SDL2/SDL2_ttf/static online dependencies,
 MinSizeRel, CMAKE_SKIP_RPATH=ON, BUILD_TESTING=ON, LAUNCHER_BUILD_TESTS=ON.
-Tests: netplay_diagnostic_retention, r49_level_router, r51_brightness_controls.
+Tests: netplay_diagnostic_retention, r49_level_router, r51_brightness_controls,
+r50_language_tests. Regenerate the authoritative locales/es.json catalog using
+console-launcher/tools/generate-i18n.py and verify src/i18n.c stays byte-identical.
+All553compiled Spanish lookups and English fallbacks pass, including the new
+Pokemon setup error messages; the catalog remains sorted for binary lookup.
 Build console-onion-peer from onion_peer.go, onion_link.go and onion_lan.go with
 the already pinned Go toolchain, CGO_ENABLED=0, GOOS=linux, GOARCH=arm64,
 -trimpath and -ldflags='-s -w'. For source tests use GOARCH=amd64 and go test -c
@@ -50,6 +54,9 @@ Use existing XZ SquashFS parameters:64KiB blocks, all-root, mkfs-time1793836800,
 noappend, two processors. Verify the entire file inventory and original vendor
 kernel mount/hash test. Any eventual SD update requires fresh identity, verified
 rollback, bounded write/readback, clean FAT and unchanged content inventory.
-The user's Miyoo card is inspected read-only; any personal update targets only
-the identified CloveOS card, following the guarded update checks above.
+The known Clove card may receive an explicitly authorized private update after
+fresh identification and exact verification. The Miyoo card remains read-only.
+A first guarded install completed before a translation-generation CI failure was
+found; the final candidate corrects the catalog and regenerated lookup ordering.
+This does not imply physical pairing/trade acceptance.
 Keep raw logs, photos, cookies, ROMs, BIOS, saves, art and credentials private.

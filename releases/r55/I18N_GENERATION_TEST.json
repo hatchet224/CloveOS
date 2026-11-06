@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "catalog_entries": 553,
+  "root_authoritative_pair_matched": true,
+  "generation_byte_identical": true,
+  "catalog_sha256": "61dbd226ee5b23e9580b95e71d6c761d86b3b31ea1d298df3bcd7ee786360174",
+  "generated_c_sha256": "2c331552a825a801a9a8de228004691dcf81cbbc161b327612a12fc3d2907bef",
+  "all_compiled_catalog_lookups_passed": true,
+  "english_fallback_passed": true,
+  "ARM64_existing_language_UI_test_passed": true,
+  "ARM64_MENU_lifecycle_test_passed": true,
+  "physical_handheld_test": false
+}

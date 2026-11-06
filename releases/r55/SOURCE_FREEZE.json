@@ -1,8 +1,12 @@
 {
   "files": [
     {
+      "path": "src/console-launcher/locales/es.json",
+      "sha256": "61dbd226ee5b23e9580b95e71d6c761d86b3b31ea1d298df3bcd7ee786360174"
+    },
+    {
       "path": "src/console-launcher/src/i18n.c",
-      "sha256": "42b20e5d8a598f765ec17af606ce97c1e82a2c5cec86de92338ff217716dfd1e"
+      "sha256": "2c331552a825a801a9a8de228004691dcf81cbbc161b327612a12fc3d2907bef"
     },
     {
       "path": "src/console-onion-peer/onion_link.go",

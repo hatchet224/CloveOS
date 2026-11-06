@@ -23,5 +23,6 @@
   "updated_ARM64_controls_test": true,
   "R54_brightness_source_byte_identical": true,
   "physical_pair_trade_pending": true,
-  "no_SD_card_writes": true
+  "no_SD_card_writes_during_software_tests": true,
+  "translation_generation_and_all_catalog_lookups_passed": true
 }

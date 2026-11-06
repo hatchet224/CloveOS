@@ -549,5 +549,7 @@
   "PortMaster is updated with CloveOS. Game ports can still be installed and updated here.": "PortMaster se actualiza con CloveOS. Aquí puedes instalar y actualizar juegos.",
   "Show PortMaster": "Mostrar PortMaster",
   "Show PortMaster in Games to download ports. Hiding it keeps installed ports and settings.": "Muestra PortMaster en Juegos para descargar ports. Ocultarlo conserva los ports instalados y los ajustes.",
-  "Installed Ports": "Ports instalados"
+  "Installed Ports": "Ports instalados",
+  "Pokemon link setup failed. The phase and exact error are in .tmp_update/logs/easy-netplay.log.": "Falló la conexión Pokémon. La fase y el error están en .tmp_update/logs/easy-netplay.log.",
+  "Pokemon link setup timed out. MainUI is available; check .tmp_update/logs/easy-netplay.log.": "Se agotó el tiempo de conexión Pokémon. MainUI está disponible; revisa .tmp_update/logs/easy-netplay.log."
 }
