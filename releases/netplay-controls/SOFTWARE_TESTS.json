@@ -15,5 +15,7 @@
   "physical_SD_access": false,
   "flash_hold": true,
   "public_R52_release_hold": true,
-  "revision_frozen": "CloveOS r56"
+  "revision_frozen": "CloveOS r56",
+  "qualified_link_exit": "MENU requests ordinary RetroArch SIGINT and waits for two-save return",
+  "power_or_external_TERM_progress_return_not_qualified": true
 }

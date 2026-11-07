@@ -25,4 +25,8 @@ R52 binary release. The private candidate's existing revision stays frozen.
 No release tag, public firmware download, ROM, save, BIOS, credential or private
 device log is included here.
 
+MENU is the qualified link-session exit. POWER or external termination still uses
+the existing abort cleanup and has not been qualified to return current link
+progress. That exit path must also be resolved before the full release.
+
 See [input and lifecycle design](../../src/console-supervisor/NETPLAY_INPUT.md).
