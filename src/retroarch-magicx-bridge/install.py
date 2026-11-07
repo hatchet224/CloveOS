@@ -7,10 +7,11 @@ import subprocess
 import tempfile
 
 PIN = "0792144fe3a7b59908b0afdb2c01722e79040360"
-TRACKED = ["Makefile.common", "retroarch.c", "runloop.c", "input/input_driver.c", "tasks/task_save.c",
+TRACKED = ["Makefile.common", "configuration.c", "retroarch.c", "runloop.c", "input/input_driver.c", "tasks/task_save.c", "tasks/task_content.c",
            "input/drivers_joypad/sdl_joypad.c", "menu/menu_driver.c", "menu/menu_displaylist.c",
+           "menu/cbs/menu_cbs_ok.c", "menu/cbs/menu_cbs_left.c", "menu/cbs/menu_cbs_right.c",
            "gfx/drivers/gl2.c", "gfx/drivers/sdl2_gfx.c", "gfx/drivers_context/sdl_gl_ctx.c", "audio/drivers/sdl_audio.c", "gfx/video_driver.c", "frontend/drivers/platform_unix.c"]
-MODULE = ["abort.exports", "support/disc_playlist.c", "support/sessiond/disc_playlist.h", "magicx_power.h", "magicx_saturn_policy.h", "magicx_bridge.c", "magicx_bridge.h", "magicx_asset_cache.c", "magicx_asset_cache.h", "magicx_io.c", "magicx_retroarch.c", "magicx_retroarch.h",
+MODULE = ["abort.exports", "support/disc_playlist.c", "support/sessiond/disc_playlist.h", "magicx_power.h", "magicx_saturn_policy.h", "magicx_state_options.h", "magicx_bridge.c", "magicx_bridge.h", "magicx_asset_cache.c", "magicx_asset_cache.h", "magicx_io.c", "magicx_retroarch.c", "magicx_retroarch.h",
           "magicx_controls.c", "magicx_controls.h", "magicx_screenshot.c", "magicx_screenshot.h",
           "magicx_png.c", "vendor/lodepng.c", "vendor/lodepng.h", "support/sessiond/control_protocol.h",
           "support/sessiond/bios_policy.h", "magicx_input_layout.h", "support/json.c", "support/sha256.c", "support/sessiond/durability.h", "support/sessiond/json.h", "support/sessiond/sha256.h", "LICENSE"]
@@ -42,7 +43,7 @@ def main():
     r49_patch = module / "patches" / "0009-r49-psx-power-netplay.patch"
     owned_menu_patch = module / "patches" / "0010-owned-menu-settings-and-slot-hotkeys.patch"
     patches = [patch, video_patch, sdl_patch, texture_patch, diagnostic_patch, audio_state_patch,
-               psp_sampling_patch, meter_patch, r49_patch, owned_menu_patch]
+               psp_sampling_patch, meter_patch, r49_patch, owned_menu_patch, module / "patches/0011-r52-native-menu-panel.patch"]
     # Later patches depend on the preceding hooks. Validate the complete
     # sequence on disposable copies before changing the user's checkout.
     with tempfile.TemporaryDirectory(prefix="magicx-patch-check-") as scratch:

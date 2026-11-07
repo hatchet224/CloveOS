@@ -1,0 +1,326 @@
+--- a/configuration.c
++++ b/configuration.c
+@@ -1,3 +1,6 @@
++#ifdef HAVE_MAGICX_BRIDGE
++#include "magicx/magicx_retroarch.h"
++#endif
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+  *  Copyright (C) 2011-2017 - Daniel De Matteis
+@@ -4172,6 +4175,10 @@
+ 
+    if (!(bool)RHMAP_HAS_STR(conf->entries_map, "user_language"))
+       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
++#ifdef HAVE_MAGICX_BRIDGE
++   /* Resolve the frontend locale before native menu/font construction. */
++   magicx_retroarch_apply_language();
++#endif
+ 
+    if (frontend_driver_has_gamemode() &&
+        !frontend_driver_set_gamemode(settings->bools.gamemode_enable) &&
+--- a/tasks/task_content.c
++++ b/tasks/task_content.c
+@@ -1,3 +1,6 @@
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../magicx/magicx_retroarch.h"
++#endif
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2011-2017 - Daniel De Matteis
+  *  Copyright (C) 2016-2019 - Brad Parker
+@@ -1922,6 +1925,9 @@
+ 
+ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    content_information_ctx_t content_ctx;
+    content_state_t                 *p_content = content_state_get_ptr();
+    bool ret                                   = true;
+@@ -2020,6 +2026,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    content_information_ctx_t content_ctx;
+ 
+    content_state_t                 *p_content = content_state_get_ptr();
+@@ -2172,6 +2181,9 @@
+ 
+ bool task_push_start_current_core(content_ctx_info_t *content_info)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    content_information_ctx_t content_ctx;
+    bool ret                           = true;
+    content_state_t *p_content         = content_state_get_ptr();
+@@ -2288,6 +2300,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    path_set(RARCH_PATH_CORE, core_path);
+ 
+    /* Load core */
+@@ -2310,6 +2325,9 @@
+ bool task_push_load_contentless_core_from_menu(
+       const char *core_path)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+ #if defined(HAVE_DYNAMIC)
+    content_ctx_info_t content_info       = {0};
+ #endif
+@@ -2405,6 +2423,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    content_information_ctx_t content_ctx;
+    content_state_t                 *p_content = content_state_get_ptr();
+    bool ret                                   = true;
+@@ -2682,6 +2703,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    global_t *global            = global_get_ptr();
+    runloop_state_t *runloop_st = runloop_state_get_ptr();
+    content_state_t  *p_content = content_state_get_ptr();
+@@ -2722,6 +2746,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    return task_load_content_internal(content_info, true, true, false);
+ }
+ 
+@@ -2731,6 +2758,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    /* Clear content path */
+    path_clear(RARCH_PATH_CONTENT);
+ 
+@@ -2749,6 +2779,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    path_set(RARCH_PATH_CONTENT, fullpath);
+    return task_load_content_internal_wrap(content_info, type, false);
+ }
+@@ -2760,6 +2793,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    content_state_t  *p_content = content_state_get_ptr();
+ 
+    /* TODO/FIXME: Enable setting of these values
+@@ -2783,6 +2819,9 @@
+       retro_task_callback_t cb,
+       void *user_data)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return false; }
++#endif
+    content_state_t  *p_content = content_state_get_ptr();
+ 
+    p_content->flags |= CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT;
+--- a/menu/menu_driver.c
++++ b/menu/menu_driver.c
+@@ -1,7 +1,7 @@
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2011-2021 - Daniel De Matteis
+- *  Copyright (C) 2014-2017 - Jean-André Santoni
+- *  Copyright (C) 2016-2019 - Andrés Suárez
++ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
++ *  Copyright (C) 2016-2019 - AndrÃ©s SuÃ¡rez
+  *  Copyright (C) 2016-2019 - Brad Parker
+  *
+  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+@@ -237,7 +237,7 @@
+    {RETROK_BREAK,         "Break"},
+    {RETROK_MENU,          "Menu"},
+    {RETROK_POWER,         "Power"},
+-   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
++   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "ï¿½" */
+    {RETROK_UNDO,          "Undo"},
+    {RETROK_OEM_102,       "OEM-102"},
+ 
+@@ -6497,6 +6497,9 @@
+ 
+ void retroarch_menu_running_finished(bool quit)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_menu_finish_requested(quit)) return;
++#endif
+    runloop_state_t *runloop_st     = runloop_state_get_ptr();
+    video_driver_state_t*video_st   = video_state_get_ptr();
+    settings_t *settings            = config_get_ptr();
+--- a/menu/menu_displaylist.c
++++ b/menu/menu_displaylist.c
+@@ -1,7 +1,7 @@
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2011-2017 - Daniel De Matteis
+- *  Copyright (C) 2014-2017 - Jean-André Santoni
+- *  Copyright (C) 2016-2019 - Andrés Suárez
++ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
++ *  Copyright (C) 2016-2019 - AndrÃ©s SuÃ¡rez
+  *  Copyright (C) 2016-2019 - Brad Parker
+  *
+  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+@@ -5232,6 +5232,18 @@
+    if (!disk_control_enabled(&sys_info->disk_control))
+       return 0;
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_playlist_menu())
++   {
++      /* Left/right inserts one of the authenticated playlist discs through
++       * disc_select(), including tray close verification and rollback. */
++      return menu_entries_append(list,
++            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
++            msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
++            MENU_ENUM_LABEL_DISK_INDEX,
++            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0, NULL) ? 1U : 0U;
++   }
++#endif
+    /* Check whether disk is currently ejected */
+    disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
+ 
+@@ -7198,7 +7210,7 @@
+          break;
+       case DISPLAYLIST_CONTENT_SETTINGS:
+ #ifdef HAVE_MAGICX_BRIDGE
+-         if (magicx_retroarch_requested())
++         if (magicx_retroarch_recovery_menu())
+          {
+             /* Native RGUI presents the daemon-owned actions and a bounded
+              * runtime Settings page. The action filter owns every mutation. */
+--- a/menu/cbs/menu_cbs_ok.c
++++ b/menu/cbs/menu_cbs_ok.c
+@@ -1,7 +1,10 @@
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../../magicx/magicx_retroarch.h"
++#endif
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2011-2017 - Daniel De Matteis
+  *  Copyright (C) 2016-2019 - Brad Parker
+- *  Copyright (C) 2016-2019 - Andrés Suárez
++ *  Copyright (C) 2016-2019 - AndrÃ©s SuÃ¡rez
+  *
+  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+  *  of the GNU General Public License as published by the Free Software Found-
+@@ -2218,6 +2221,9 @@
+          }
+          break;
+       case ACTION_OK_LOAD_CONFIG_FILE:
++#ifdef HAVE_MAGICX_BRIDGE
++         if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return -1; }
++#endif
+ #ifdef HAVE_CONFIGFILE
+          {
+             bool config_save_on_exit        = settings->bools.config_save_on_exit;
+@@ -2334,6 +2340,9 @@
+ #endif
+          break;
+       case ACTION_OK_LOAD_OVERRIDE_FILE:
++#ifdef HAVE_MAGICX_BRIDGE
++         if (magicx_retroarch_lifecycle_owned()) { magicx_retroarch_native_owned_notice(); return -1; }
++#endif
+ #ifdef HAVE_CONFIGFILE
+          flush_char = msg_hash_to_str(flush_id);
+          config_unload_override();
+@@ -5578,6 +5587,9 @@
+ 
+ int action_ok_close_content(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_requested()) return generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
++#endif
+    int ret;
+    struct menu_state   *menu_st = menu_state_get_ptr();
+    /* Reset navigation pointer
+--- a/menu/cbs/menu_cbs_left.c
++++ b/menu/cbs/menu_cbs_left.c
+@@ -1,3 +1,6 @@
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../../magicx/magicx_retroarch.h"
++#endif
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2011-2017 - Daniel De Matteis
+  *
+@@ -948,6 +951,9 @@
+ static int action_left_state_slot(unsigned type, const char *label,
+       bool wraparound)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_requested()) { command_event(CMD_EVENT_SAVE_STATE_DECREMENT, NULL); return 0; }
++#endif
+    struct menu_state *menu_st     = menu_state_get_ptr();
+    settings_t           *settings = config_get_ptr();
+ 
+--- a/menu/cbs/menu_cbs_right.c
++++ b/menu/cbs/menu_cbs_right.c
+@@ -1,3 +1,6 @@
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../../magicx/magicx_retroarch.h"
++#endif
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2011-2017 - Daniel De Matteis
+  *
+@@ -951,6 +954,9 @@
+ static int action_right_state_slot(unsigned type, const char *label,
+       bool wraparound)
+ {
++#ifdef HAVE_MAGICX_BRIDGE
++   if (magicx_retroarch_requested()) { command_event(CMD_EVENT_SAVE_STATE_INCREMENT, NULL); return 0; }
++#endif
+    settings_t       *settings = config_get_ptr();
+    struct menu_state *menu_st = menu_state_get_ptr();
+ 
+--- a/gfx/drivers/gl2.c
++++ b/gfx/drivers/gl2.c
+@@ -3376,10 +3376,19 @@
+ 
+    gl->shader->set_coords(gl->shader_data, &gl->coords);
+ #ifdef HAVE_MAGICX_BRIDGE
+-   if (magicx_retroarch_requested())
+-   {
++   if (magicx_retroarch_portrait_menu(gl->video_width, gl->video_height))
++   {
++      /* The LCD is mounted portrait. Native menus use this fixed physical
++       * transform, independent of the game's rotation and aspect settings.
++       * Restore every game matrix immediately after uploading the menu MVP. */
++      unsigned int saved_rotation = gl->rotation;
++      math_matrix_4x4 saved_mvp = gl->mvp, saved_no_rot = gl->mvp_no_rot;
++      gl->rotation = 270U;
+       gl2_set_projection(gl, &default_ortho, true);
+       gl->shader->set_mvp(gl->shader_data, &gl->mvp);
++      gl->rotation = saved_rotation;
++      gl->mvp = saved_mvp;
++      gl->mvp_no_rot = saved_no_rot;
+    }
+    else
+ #endif

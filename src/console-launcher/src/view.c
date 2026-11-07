@@ -34,8 +34,8 @@ void cl_view_text(SDL_Surface *s, struct cl_assets *a, enum cl_theme_role role, 
     if (ascii && a->fonts[role].surface != NULL) {
         cl_atlas_text(&a->fonts[role], s, x, y, text, color, 120U, width);
     } else {
-        cl_text(s, x, y, text, role == CL_FONT_DETAIL ? 1U : 2U, rgb(s, color),
-                (size_t)(width / 12));
+        unsigned int scale=cl_compact_text_scale(a,role);
+        cl_text(s, x, y, text, scale, rgb(s, color), (size_t)width/(6U*scale));
     }
 }
 static void fit(SDL_Surface *target, SDL_Surface *image, SDL_Rect bounds)
@@ -109,7 +109,8 @@ void cl_view_frame(SDL_Surface *s, const struct cl_view *v, const char *title)
         int title_width=clock_fits?right-clock_width-36:380;
         if(title_width>380) title_width=380;
         if(title_width>0)
-            cl_view_text(s,v->assets,CL_FONT_TITLE,24,15,title,t->fonts[CL_FONT_TITLE].color,title_width);
+            fit_label(s,v,CL_FONT_TITLE,(SDL_Rect){24,6,title_width,48},title,
+                      t->fonts[CL_FONT_TITLE].color);
         if(clock_fits)
             cl_view_text(s,v->assets,CL_FONT_DETAIL,right-clock_width,
                          clock_height<60?(60-clock_height)/2:0,clock,
@@ -166,6 +167,13 @@ void cl_view_footer(SDL_Surface *s, const struct cl_view *v, const char *hints)
     image_rect(s, v->assets->footer, footer);
     if (v->theme->hide_hints || (v->appearance & CL_HIDE_HINT_LABELS) != 0U)
         return;
+    /* Long translated hints must retain every action, including Back. */
+    int hint_width=0,hint_height=0;
+    if (cl_text_measure(v->assets,CL_FONT_HINT,hints,&hint_width,&hint_height) && hint_width>500) {
+        fit_label(s,v,CL_FONT_HINT,(SDL_Rect){24,432,592,36},hints,
+                  v->theme->fonts[CL_FONT_HINT].color);
+        return;
+    }
     int x = 24;
     const char *part = hints;
     while (*part != '\0' && x < 616) {

@@ -49,6 +49,29 @@ case "${1-}" in
     test "$#" = 6
     case "$2" in host|join) ;; *) exit 2 ;; esac
     test -r "$4" && test -r "$5" && test -r "$6"
+    runtime=/run/console/netplay-runtime
+    /bin/busybox mkdir "$runtime" || exit 22
+    ra= monitor=
+    netplay_cleanup() {
+        status=$?; trap - EXIT; trap '' INT TERM
+        printf 'finishing\n' >"$runtime/phase"
+        # A tracked frontend must exit and flush normally before its parent
+        # exits or any supervisor writer-drain barrier can be released.
+        if [ -n "$ra" ]; then kill -INT "$ra" 2>/dev/null || :; wait "$ra" 2>/dev/null || :; ra=; fi
+        if [ -n "$monitor" ]; then kill -TERM "$monitor" 2>/dev/null || :; wait "$monitor" 2>/dev/null || :; monitor=; fi
+        /bin/busybox tail -n 48 "$runtime/retroarch.log" >>/run/console/easy-netplay.log 2>/dev/null || :
+        /bin/busybox rm -f "$runtime/controller.map" "$runtime/controls.cfg" "$runtime/audio-ready" "$runtime/exit-request" "$runtime/phase" "$runtime/retroarch.log"
+        /bin/busybox rmdir "$runtime" 2>/dev/null || :
+        exit "$status"
+    }
+    netplay_stop() {
+        trap '' INT TERM
+        status=0
+        if [ -n "$ra" ]; then kill -INT "$ra" 2>/dev/null || :; wait "$ra" || status=$?; ra=; fi
+        exit "$status"
+    }
+    trap netplay_cleanup EXIT
+    trap netplay_stop INT TERM
     saves="$card/Saves/Netplay"
     for path in "$card/Saves" "$saves" "$saves/saves" "$saves/states"; do
         test ! -L "$path"
@@ -77,10 +100,38 @@ case "${1-}" in
         fi
     } >>"$pending"
     /bin/busybox mv -f "$pending" "$config"
+    /system/bin/console-netplay-input --standard >"$runtime/controls.cfg" || exit 29
+    pending=$(/bin/busybox mktemp /run/console/netplay.XXXXXX)
+    /bin/busybox awk 'NR==FNR { key=$0;sub(/[[:space:]]*=.*/,"",key);replace[key]=1;next }
+        { key=$0;sub(/^[[:space:]]*/,"",key);sub(/[[:space:]]*=.*/,"",key);if(!(key in replace))print }' \
+        "$runtime/controls.cfg" "$config" >"$pending"
+    /bin/busybox cat "$runtime/controls.cfg" >>"$pending"
+    /bin/busybox mv "$pending" "$config"
+    SDL_GAMECONTROLLERCONFIG=$(/bin/busybox cat "$runtime/controller.map")
+    export SDL_GAMECONTROLLERCONFIG
+    printf 'starting-emulator\n' >"$runtime/phase"
     if [ "$2" = host ]; then
-        exec /system/bin/retroarch --config "$config" --host -L "$5" "$6"
+        /system/bin/retroarch --verbose --config "$config" --host -L "$5" "$6" >"$runtime/retroarch.log" 2>&1 & ra=$!
+    else
+        /system/bin/retroarch --verbose --config "$config" --connect "$3" -L "$5" "$6" >"$runtime/retroarch.log" 2>&1 & ra=$!
     fi
-    exec /system/bin/retroarch --config "$config" --connect "$3" -L "$5" "$6"
+    printf 'emulator-running\n' >"$runtime/phase"
+    monitor_netplay() {
+        trap 'exit 0' TERM
+        audio_ready= exit_sent=
+        while kill -0 "$ra" 2>/dev/null; do
+            if [ -z "$audio_ready" ] && /bin/busybox grep -q '\[Audio\]: Started .*audio driver' "$runtime/retroarch.log"; then
+                printf 'ready\n' >"$runtime/audio-ready"; audio_ready=1
+            fi
+            if [ -z "$exit_sent" ] && [ -f "$runtime/exit-request" ]; then
+                kill -INT "$ra" 2>/dev/null || :; exit_sent=1
+            fi
+            /bin/busybox sleep 0.1
+        done
+    }
+    monitor_netplay & monitor=$!
+    status=0; wait "$ra" || status=$?; ra=
+    exit "$status"
     ;;
   advance)
     test -x /system/bin/advmenu

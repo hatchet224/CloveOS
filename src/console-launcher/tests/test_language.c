@@ -27,6 +27,12 @@ int main(void)
     assert(strcmp(CL_TR("Not translated yet"),"Not translated yet")==0);
     cl_language_set(3U);assert(cl_language_get()==CL_ENGLISH);
     cl_language_set(CL_SPANISH);
+    a->screen=LANGUAGE;a->choice=1U;
+    assert(!handle_keys(a,CL_KEY(CL_DOWN),&intent)&&a->choice==2U);
+    assert(!handle_keys(a,CL_KEY(CL_A),&intent)&&a->screen==SETTINGS);
+    assert(cl_language_get()==CL_RUSSIAN&&strcmp(CL_TR("Settings"),"Настройки")==0);
+    cl_language_set(CL_SPANISH);
+    a->shortcuts=(a->shortcuts&~CL_LANGUAGE_MASK)|(UINT32_C(1)<<CL_LANGUAGE_SHIFT);
     a->display.surface=SDL_CreateRGBSurfaceWithFormat(0,640,480,32,SDL_PIXELFORMAT_ARGB8888);
     assert(a->display.surface);cl_theme_default(&a->theme);
     assert(cl_theme_read(&a->theme,"/system/share/console/themes/Clove/config.json"));

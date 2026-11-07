@@ -3,7 +3,7 @@
 #define LAUNCHER_I18N_H
 #include <stdint.h>
 #include <stddef.h>
-enum cl_language { CL_ENGLISH, CL_SPANISH };
+enum cl_language { CL_ENGLISH, CL_SPANISH, CL_RUSSIAN, CL_LANGUAGE_COUNT };
 /* Locale is process-local; only UI-owned text is passed here. Game names,
  * paths, SSIDs, protocol identifiers and core option IDs are never translated. */
 void cl_language_set(unsigned int language);

@@ -87,7 +87,8 @@ int main(int argc,char **argv) {
        !theme_allowed(theme_path) || strlen(game)>512U)return 2;
     const char *surface_output=NULL;
     if(argc==8){if(strcmp(argv[6],"--surface-output")!=0 || argv[7][0]!='/')return 2;surface_output=argv[7];}
-    cl_language_set(strcmp(argv[4],"1")==0?CL_SPANISH:CL_ENGLISH);
+    cl_language_set(strcmp(argv[4],"2")==0?CL_RUSSIAN:
+                    (strcmp(argv[4],"1")==0?CL_SPANISH:CL_ENGLISH));
     struct sigaction action={0};action.sa_handler=stop;sigemptyset(&action.sa_mask);
     (void)sigaction(SIGTERM,&action,NULL);(void)sigaction(SIGINT,&action,NULL);
     struct cl_theme theme;struct cl_assets assets={0};struct cl_display display={0};

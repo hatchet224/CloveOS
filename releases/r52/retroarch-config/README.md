@@ -1,0 +1,3 @@
+# Exact native menu build configuration
+
+Copy config.h and expand config.mk.in into the clean patched RetroArch checkout. Set CLOVE_BUILD_ROOT_POSIX to the MSYS or Linux build workspace path and CLOVE_BUILD_ROOT_NATIVE to the compiler-native path used by prefix maps. The two variables may be identical on Linux. They replace private author paths only; all feature and linker options are preserved. Supply the separately pinned SDK, target libraries, SDL2 headers and ANGLE headers described by the base release recipes. Build with the feature flags in ../BUILD_DELTA.md. These templates contain no vendor binary input.

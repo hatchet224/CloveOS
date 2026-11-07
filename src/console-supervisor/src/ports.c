@@ -151,7 +151,8 @@ static bool controls_environment(const struct cl_ports_config *config)
                    "lefttrigger:b6,righttrigger:b7,leftx:a0,lefty:a1,rightx:a2,righty:a3,platform:Linux,");
     return n>0 && (size_t)n<sizeof(mapping)-(size_t)used &&
         setenv("SDL_GAMECONTROLLERCONFIG",mapping,1)==0 &&
-        setenv("CLOVE_LANGUAGE",config->language==CL_SPANISH?"es_ES":"en_US",1)==0;
+        setenv("CLOVE_LANGUAGE",config->language==CL_RUSSIAN?"ru_RU":
+               (config->language==CL_SPANISH?"es_ES":"en_US"),1)==0;
 }
 int main(void)
 {

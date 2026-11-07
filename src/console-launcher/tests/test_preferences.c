@@ -143,9 +143,18 @@ int main(int argc,char **argv)
  w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
  assert(!s.error&&s.shortcuts==(runtime|(UINT32_C(2)<<CL_LANGUAGE_SHIFT)));
  cl_language_set((s.shortcuts&CL_LANGUAGE_MASK)>>CL_LANGUAGE_SHIFT);
- assert(cl_language_get()==CL_ENGLISH&&strcmp(CL_TR("Settings"),"Settings")==0);
+ assert(cl_language_get()==CL_RUSSIAN&&strcmp(CL_TR("Settings"),"Настройки")==0);
  assert(cl_preferences_stop(w));
- puts("R50_LANGUAGE_PERSIST_RESTART_RESERVED_FALLBACK_PASS");
+ /* English confirmation persists as an explicit nonzero field; reserved 3 remains safe. */
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ assert(s.has_record);
+ assert(cl_preferences_submit_ui(w,s.grid,s.main_tab,s.appearance,(s.shortcuts&~CL_LANGUAGE_MASK)|CL_LANGUAGE_CONFIRMED));
+ assert(cl_preferences_stop(w));
+ w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
+ assert(s.has_record && (s.shortcuts&CL_LANGUAGE_CONFIRMED)!=0U && (s.shortcuts&CL_LANGUAGE_MASK)==0U);
+ assert(cl_preferences_stop(w));
+ cl_language_set(3U);assert(cl_language_get()==CL_ENGLISH);
+ puts("R52_RUSSIAN_ENGLISH_CONFIRM_PERSIST_RESTART_AND_RESERVED_FALLBACK_PASS");
  w=cl_preferences_test_start(path,uuid,false,0U);assert(w);s=wait_snapshot(w,0);
  uint32_t original=s.shortcuts;
  assert((original&CL_HIDE_PORTMASTER)==0U); /* Existing R50 defaults visible. */

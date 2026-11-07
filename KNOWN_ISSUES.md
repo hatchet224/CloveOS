@@ -1,39 +1,20 @@
-# CloveOS test status
+# CloveOS R52 test status
 
-- **Pokemon link controls/hosting:** [development correction](releases/netplay-controls/README.md) passes actual-emulator GB/GBC control tests in both roles and separate volume/save-return/lifecycle fixtures. Physical trade/battle, sound, display and standard-mode qualification remain pending; R52 is unreleased.
+Read the release's `AUDIT.json` for the exact source, artifact hashes and validation scope. Software tests and hardware reports are recorded separately.
 
-- **Pokemon link startup and UI:** [the post-ready correction](releases/netplay-post-ready/README.md) fixes duplicate session settings and the stock client cookie check, and adds themed live progress. Actual emulator software tests pass; physical wireless/trade acceptance remains pending.
+- **Pokémon link play:** the maintainer confirmed both Z28 and Miyoo host roles, controls, volume, trade/battle completion and saved progress after exit/reload on the preceding installed candidate. The peer was a Miyoo Mini Plus running Onion 4.3.1-1. This does not establish compatibility with every core, game revision or patched ROM.
+- **Brightness and wake:** the captured PWM mode change was corrected. The maintainer confirmed proper shortcut direction and brightness restoration through two sleep/wake cycles. The R54 [physical acceptance record](releases/r54/PHYSICAL_ACCEPTANCE.json) retains that evidence; the correction is included in R52.
+- **Patched Pokémon Red/Blue:** white menu/naming screens were reported with Pokémon Color and gen2 IPS patches on both CloveOS and Miyoo. A Clove-specific display cause has not been established. An unmodified comparison copy was unavailable; original game files and saves were preserved.
+- **PortMaster:** compatibility varies by game, runtime, renderer and controls. Bananaguy Classic's missing C++ runtime symbols have a targeted correction, with software loader and launcher-cleanup checks. This does not certify every port's physical gameplay. Some commercial ports need assets supplied by the user.
+- **Languages:** untranslated strings fall back to English. Game titles, filenames, paths, Wi-Fi network names and protocol identifiers retain their original values.
+- **Hardware coverage:** fresh boot through the handheld bootloader/display, all games and cores, live battery estimates and sustained performance require further device testing. VM checks do not substitute for these checks. Battery runtime estimates need sustained discharge measurements.
+- **Disc systems:** PlayStation playlist switching and cold checkpoint restore have software coverage. Other disc cores need equivalent qualification.
+- **Performance:** Dreamcast and other demanding systems vary by game. Having an emulator core does not guarantee full-speed gameplay.
+- **Catalog:** the complete OnionOS app/core catalog has not been ported. Neo Geo Pocket and WonderSwan have separate managed launch/save work; inclusion must be checked against the release's actual binary manifest.
+- **Storage:** FAT32 limits individual files to 4 GiB minus one byte. Dirty or error-marked data volumes need repair before capacity expansion. First boot uses available card capacity after system and filesystem overhead.
+- **Online packages:** package sources may need matching clean binaries where build paths were removed from included components.
+- **Licenses and vendor components:** kernel corresponding-source and vendor-component redistribution review remains incomplete; see [REDISTRIBUTION.md](REDISTRIBUTION.md). R52 is an experimental release, not a declaration that the entire card image is GPL software or that this review is complete.
 
-- **Onion Pokemon link startup:** the [compatibility correction](releases/onion-link-compatibility/README.md) addresses stock curl uploads and fallback client addresses. Software tests pass; physical cross-device trade acceptance remains pending.
+Earlier `releases/` supplements describe intermediate failures and private builds. Consult the current release audit for final menu, standard Netplay, POWER-exit, save-compatibility and language validation results.
 
-- **Menu shortcuts and TGB rewind:** the [managed shortcut correction candidate](releases/tgb-shortcuts/README.md) addresses companion-key fallthrough, opens native Quick Menu settings and qualifies normal TGB rewind. GB/GBC TGB/Gambatte software tests pass; physical acceptance remains pending.
-
-- **Bananaguy Classic runtime loader failure:** the official Godot runtime requires newer C++ symbols than the vendor library provides. The [isolated native-runtime correction candidate](releases/portmaster-runtime/README.md) passes software loading and launcher cleanup tests; physical gameplay remains unverified.
-
-- The [R56 candidate](releases/r56/README.md) exposes TGB Dual for normal GB/GBC play with isolated configuration, save/resume and Netplay-save-seeding software tests. Physical normal-core and cross-device trade acceptance remain pending. Ports Collection replaces the earlier duplicate PortMaster launch entries.
-
-r51 is a development test candidate. Current evidence includes ARM and original Zero 28 kernel tests in QEMU. A fresh boot of the clean image through the physical handheld's bootloader and display remains to be verified.
-
-- **Confirmed R54 cross-device Pokemon pairing bug:** testing with a Miyoo Mini Plus on Onion 4.3.1-1 stalled with Z28 hosting and returned a setup error with Miyoo hosting. The actual Miyoo TGB Dual core matches the expected peer build. Its valid `Emu/GBC/../../Roms` cartridge path is rejected by the raw-prefix check before normalization. The [R55 source candidate](releases/r55/README.md) corrects that check and adds recovery/log retention; no successful physical trade is claimed.
-
-- **R52 cold-start success does not establish wake correctness:** physical testing found dim wake brightness and reversed light/meter behavior after sleep. The selected raw value remained unchanged in logs. A lifecycle correction is being investigated; no public R52 binary release is available.
-
-- **Confirmed R51 brightness bug:** Settings Right and Menu + Volume Up dim the reported physical panel while ordinary sound controls work correctly. The [R52 source candidate](releases/r52/README.md) corrects the shared brightness mapping and meter; physical confirmation is pending.
-
-- R50 suppressed PortMaster catalog/Featured updates through `--no-check`. R51 removes that restriction while pinning GUI updates. Native-port compatibility remains game-specific.
-- PortMaster compatibility varies by game, runtime, renderer and controls. The CloveOS integration is experimental; software fixtures do not establish every upstream game's compatibility. PortMaster itself updates through CloveOS; game ports can be installed and updated within PortMaster. Commercial games may need user-supplied assets.
-- Spanish uses English fallback where text is not translated. ROM names, filenames, paths, SSIDs and protocol identities retain their original values.
-- R48 testers reported brightness remaining low after wake. R49 adds a runtime brightness target for restoration after display reopen, including when no persistent brightness setting exists. Software regression checks cover this path; physical wake testing remains pending.
-- Hardware checks remain for boot, controls, audio, sleep/wake, live battery telemetry, and game performance. Battery runtime estimates require sustained discharge readings.
-- Easy Netplay hotspot behavior and actual PokÃ©mon trades and battles need two handhelds. Generated GB/GBC cartridges and two RetroArch processes passed the VM link tests.
-- PlayStation playlist disc switching and cold checkpoint restore passed in the VM. Other disc cores still need equivalent checks.
-- Dreamcast slowdown and fast-forward behavior need a handheld check. Core availability does not guarantee full-speed performance or compatibility for every game.
-- The stock OnionOS app, core, and shortcut catalog is incomplete. Additional ports are planned for later updates.
-- Neo Geo Pocket and WonderSwan passed managed launch and save/restore tests in separate work. They are outside the r51 image.
-- FAT32 limits individual files to 4 GiB minus one byte. Dirty/error-marked data volumes need repair before a new capacity expansion can proceed.
-- The online package sources may need matching clean binaries for components whose build paths were scrubbed in the clean image.
-- Vendor-firmware corresponding source and component redistribution review remains open; see REDISTRIBUTION.md. R51 is an experimental pre-release, not a declaration that the full image is GPL or that this review is complete.
-
-File a bug in [Issues](https://github.com/hatchet224/CloveOS/issues) with the build, device, core, file format, steps to reproduce, and expected and observed behavior. Redact private data from logs before attaching them.
-
-[R54 brightness lifecycle correction source](releases/r54/README.md) addresses the captured PWM mode change. The user confirmed the requested brightness-direction and two-cycle sleep/wake test passed; see the [physical acceptance record](releases/r54/PHYSICAL_ACCEPTANCE.json).
+File a bug in [Issues](https://github.com/hatchet224/CloveOS/issues) with the device, build, core, file format, steps, and expected and observed behavior. Redact private information from logs and do not attach ROMs or BIOS files.

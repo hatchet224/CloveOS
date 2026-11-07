@@ -12,7 +12,7 @@ mkdir "$session" || exit 22
 exec </dev/null >>/run/console/easy-netplay.log 2>&1
 notice= ra=
 cleanup() {
- status=$?; trap - EXIT INT TERM
+ status=$?; trap - EXIT; trap '' INT TERM
  if [ -n "$notice" ]; then kill -TERM "$notice" 2>/dev/null || :; wait "$notice" 2>/dev/null || :; fi
  if [ -n "$ra" ]; then kill -TERM "$ra" 2>/dev/null || :; wait "$ra" 2>/dev/null || :; fi
  rm -f "$session/retroarch.cookie" "$session/export.json" "$session/options.cfg" "$session/retroarch.cfg"
@@ -20,7 +20,13 @@ cleanup() {
  exit "$status"
 }
 trap cleanup EXIT
-trap 'exit 0' INT TERM
+request_stop() {
+ trap '' INT TERM
+ status=0
+ if [ -n "$ra" ]; then kill -TERM "$ra" 2>/dev/null || :; wait "$ra" || status=$?; ra=; fi
+ exit "$status"
+}
+trap request_stop INT TERM
 version=
 case "$core" in
  */fceumm_libretro.so) leaf=fceumm_libretro.so; library=FCEUmm; version='(SVN) f52037a' ;;

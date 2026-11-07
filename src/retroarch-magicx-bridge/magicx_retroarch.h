@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 bool magicx_retroarch_init(void);
+void magicx_retroarch_apply_language(void);
 bool magicx_retroarch_poll(void); /* true: content exited; skip the ordinary runloop */
 void magicx_retroarch_deinit(void);
 bool magicx_retroarch_input_gated(void);
@@ -22,6 +23,8 @@ void magicx_retroarch_frame_begin(void);
 void magicx_retroarch_frame_complete(void);
 bool magicx_retroarch_command_allowed(unsigned int command);
 bool magicx_retroarch_requested(void);
+/* Physical panel orientation is independent of managed checkpoint ownership. */
+bool magicx_retroarch_portrait_menu(unsigned int width, unsigned int height);
 /* Managed PSP uses linear final scaling, including downsampling a 2x image.
  * Every other core retains the configured sampling policy. */
 bool magicx_retroarch_smooth_video(void);
@@ -29,6 +32,11 @@ void magicx_retroarch_hotkey_consumed(void);
 /* Managed RGUI action filter: no mutation escapes into native menu callbacks. */
 unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected);
 void magicx_retroarch_menu_toggle(void);
+bool magicx_retroarch_recovery_menu(void);
+bool magicx_retroarch_playlist_menu(void);
+bool magicx_retroarch_menu_finish_requested(bool quit);
+bool magicx_retroarch_lifecycle_owned(void);
+void magicx_retroarch_native_owned_notice(void);
 const char *magicx_retroarch_menu_label(unsigned int index);
 /* Exported by the pinned task_save.c integration patch, using its private
  * RASTATE serializer. These functions run only on the main thread. */

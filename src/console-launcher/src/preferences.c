@@ -81,6 +81,7 @@ static bool commit(const struct cs_store *store,const struct cl_preference_snaps
        fresh.appearance!=current->appearance||fresh.shortcuts!=current->shortcuts||
        current->revision==UINT64_MAX)goto done;
     desired->revision=current->revision+1U;
+    desired->has_record=true;
     if(!write_record(store,CL_PREFERENCE_PREVIOUS,current)||!write_record(store,CL_PREFERENCE_CURRENT,desired))goto done;
     ok=true;
  done:
@@ -95,7 +96,7 @@ static int worker_main(void *context)
     config.card_path=w->path;config.card_uuid=w->uuid;config.max_state_bytes=1U;
     config.qualified_fat_syncfs=w->qualified_fat_syncfs;config.test_root=w->test_root;
     healthy=cs_store_open_reader(&store,&config)==CS_STORE_OK&&cl_preference_load(&store,&current,&present);
-    current.ready=true;current.error=current.error||!healthy;
+    current.ready=true;current.error=current.error||!healthy;current.has_record=present;
     (void)SDL_LockMutex(w->mutex);current.pending=w->pending;w->snapshot=current;w->changed=true;SDL_UnlockMutex(w->mutex);
     for(;;){struct cl_preference_snapshot desired;uint64_t request;
         (void)SDL_LockMutex(w->mutex);

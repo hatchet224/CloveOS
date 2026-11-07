@@ -1,0 +1,286 @@
+{
+  "base_source_commit": "2e423200dd02a401750fe2092945897917339c22",
+  "files": [
+    {
+      "path": "CREDITS.md",
+      "bytes": 1779,
+      "sha256": "b3a63354abb3d286f637670b01f1aa33acee194fcff014751578499aa87732d1"
+    },
+    {
+      "path": "LICENSES/RetroArch-assets-CC-BY-4.0.txt",
+      "bytes": 18660,
+      "sha256": "469faa8457ffed7428f1c150f4d8682ce25f2d991a694eec544e661f43452f50"
+    },
+    {
+      "path": "LICENSE_SCOPE.md",
+      "bytes": 3469,
+      "sha256": "b2dafade07bcffe79a4bdb2995808c1e2577778e888c3f69a3ca8c3bfad56c70"
+    },
+    {
+      "path": "provenance/rgui-fonts.json",
+      "bytes": 1590,
+      "sha256": "d41edba2f11036619f27e4ae8037011213616f9860dc517b62ebda1de7dcf56f"
+    },
+    {
+      "path": "releases/r52/BUILD_DELTA.md",
+      "bytes": 2847,
+      "sha256": "fe5523175260e4045d9e532da2956923b9aec5f56ae1dbf8bade8a9115426070"
+    },
+    {
+      "path": "releases/r52/retroarch-config/README.md",
+      "bytes": 620,
+      "sha256": "13bc4e1b785d822f4ef3db3fb93df41a7eaaa1f079cb3fc566d814e92171cf21"
+    },
+    {
+      "path": "releases/r52/retroarch-config/config.h",
+      "bytes": 9082,
+      "sha256": "aa2ad37587a67414d70d1ea8c2bfbc1432872c5cb90dd8fce68480b7eda5e9a1"
+    },
+    {
+      "path": "releases/r52/retroarch-config/config.mk.in",
+      "bytes": 7805,
+      "sha256": "8e97c3a0cbc493d3d49eabf449688646ee0d9840ed3620c42f9b7a48055f3ca7"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/assets.h",
+      "bytes": 2624,
+      "sha256": "d6d189c86d3a0627d3ed4242cc054f7093e8d7b30d44a8a3be74dccc063902a0"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/i18n.h",
+      "bytes": 679,
+      "sha256": "15c27b3797959473fcc8dc3f439cc24ea3aec034c193ade1de37b44c14ad362a"
+    },
+    {
+      "path": "src/console-launcher/include/launcher/preferences.h",
+      "bytes": 6139,
+      "sha256": "163ba8e88d1e536c81c0f54d3cb6734bef7c31e723391ef0d4bb5eeb6975f9ab"
+    },
+    {
+      "path": "src/console-launcher/locales/es.json",
+      "bytes": 50587,
+      "sha256": "bf40b6266da59a01644fa5d662e2691f724346ca684ceb4145c22e98bd25ec82"
+    },
+    {
+      "path": "src/console-launcher/locales/ru.json",
+      "bytes": 65040,
+      "sha256": "3717d5b0ca08277a6d9d29ca41f08195a41db554d5b92913b26b980d3eeb367c"
+    },
+    {
+      "path": "src/console-launcher/src/app.c",
+      "bytes": 164544,
+      "sha256": "7a8ba5d33894e92d735724216bf1d94e78dd7b0e1c05f9091c44655bfa8eba8f"
+    },
+    {
+      "path": "src/console-launcher/src/assets.c",
+      "bytes": 29620,
+      "sha256": "edd0888625b8b971d6cb7dff71ad264af4f364a829b04dce126f9556e4cd24b4"
+    },
+    {
+      "path": "src/console-launcher/src/i18n.c",
+      "bytes": 95004,
+      "sha256": "2d1833e4fe38d6964e65c5451b23fb08dddc459d4f830ad409bee833653da47b"
+    },
+    {
+      "path": "src/console-launcher/src/preferences.c",
+      "bytes": 12233,
+      "sha256": "10e0ece456729d7b0db40df449d4e1b1b79f9cdb35252906819adaf5cfcd8627"
+    },
+    {
+      "path": "src/console-launcher/src/text.c",
+      "bytes": 6315,
+      "sha256": "5d4046b3d834af8d72a9535247b5e03d78f973ac6ba31d9e546ea43eca7f5e34"
+    },
+    {
+      "path": "src/console-launcher/src/view.c",
+      "bytes": 24645,
+      "sha256": "77d8d44a8ead88959f35503159b3c2d45691dc439c7b2e60396121655829fa14"
+    },
+    {
+      "path": "src/console-launcher/tests/test_language.c",
+      "bytes": 3984,
+      "sha256": "1bb44bebc95c57994a09737808d623a0c256d7c26803da64018b7a02a072fd07"
+    },
+    {
+      "path": "src/console-launcher/tests/test_language_onboarding.c",
+      "bytes": 6508,
+      "sha256": "5d2c16bda8e1be3905dcf5beba02c85b2ec091902484e397a8180ce43d6cd934"
+    },
+    {
+      "path": "src/console-launcher/tests/test_preferences.c",
+      "bytes": 14422,
+      "sha256": "2796943bd3d59a701f5ec3e5fee6204b856b5063675ca44bba2962ef46571f34"
+    },
+    {
+      "path": "src/console-launcher/tools/generate-i18n.py",
+      "bytes": 2663,
+      "sha256": "821f67e46041458292ec0874d7f14dd7bcd19ccdeea3d7aefc8f1fa3a9f3d2d8"
+    },
+    {
+      "path": "src/console-packaging/install_rgui_fonts.py",
+      "bytes": 3887,
+      "sha256": "272f44605f335a4f12d5e133fa27be15129c4df0ab62163823c6889ce5166b40"
+    },
+    {
+      "path": "src/console-sessiond/include/sessiond/retroarch_compat.h",
+      "bytes": 1261,
+      "sha256": "fad89550f1b075c16836172e3ec8ea2bb3633f81165749ece541e6955e42c3c1"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "bytes": 21266,
+      "sha256": "57e81f459156ceab64798474d976bc25b67044c7d06c588c03475df58ffcf41d"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/build.h",
+      "bytes": 115,
+      "sha256": "8042dbf13f6d99601a99daf494c00196bee2dedfdbee9a90756a6ea117c0753b"
+    },
+    {
+      "path": "src/console-supervisor/init/console-easy-netplay",
+      "bytes": 12622,
+      "sha256": "30ca7e18ff1c34167f2fd5316caf1dbac8f833f22a9ede56b54acab90011894f"
+    },
+    {
+      "path": "src/console-supervisor/init/console-managed-retroarch",
+      "bytes": 4897,
+      "sha256": "bceb3e1032905a19f67a70b6a0a05121bd4a9225b37b3b3f789711d74d2af51e"
+    },
+    {
+      "path": "src/console-supervisor/init/console-onion-easy-netplay",
+      "bytes": 17214,
+      "sha256": "e48cb3a5f73ae7eada2f769071ef358195e5801a653e01b9c1c48c1545e3bbf4"
+    },
+    {
+      "path": "src/console-supervisor/init/console-standard-netplay",
+      "bytes": 3081,
+      "sha256": "d7f18bc301feb61110b2614ac6dc8dea86a503c2440dc01f64afd720456d813e"
+    },
+    {
+      "path": "src/console-supervisor/init/console-startup-app",
+      "bytes": 7794,
+      "sha256": "bcd5c5a4b46669c981edc072d9eacf714b03fa4fca2361ef5f3d5d1638ee4437"
+    },
+    {
+      "path": "src/console-supervisor/src/main.c",
+      "bytes": 115390,
+      "sha256": "6f14e9646c486942982f0faeac254310386675da26e93da27e52d76955dad1b8"
+    },
+    {
+      "path": "src/console-supervisor/src/netplay_input.c",
+      "bytes": 7017,
+      "sha256": "f5cdfdc1b7485e586ae8e7f5dad9538d4597ff4c7cd506fc74b0f8ba2a12d545"
+    },
+    {
+      "path": "src/console-supervisor/src/netplay_status.c",
+      "bytes": 7728,
+      "sha256": "ffbbacb3fc0d334620bfccefd453345f9c1831c1eee7c5069b09f21e94ee1bb7"
+    },
+    {
+      "path": "src/console-supervisor/src/ports.c",
+      "bytes": 12462,
+      "sha256": "0cdde36af252211f7e5f19823acd832c9391f29e3fdbb9e9757710cd99c50d19"
+    },
+    {
+      "path": "src/console-supervisor/src/process.c",
+      "bytes": 8240,
+      "sha256": "ddb220db60bf38ea8f4ad426173bdf95d5b5e614d632722bdd068333cc7b53ab"
+    },
+    {
+      "path": "src/console-supervisor/src/tools_backend.c",
+      "bytes": 62058,
+      "sha256": "907b2a6111e431e19b0fa6ffa29d5eef1ad8ae699bd27aa386b93254cfa697ed"
+    },
+    {
+      "path": "src/console-supervisor/tests/netplay_stop_fixture.sh",
+      "bytes": 7183,
+      "sha256": "3fba5c49af56591170c9411539f1c057bcbd33bbe420e151b3783e0d1f3f0ef3"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_level_router.c",
+      "bytes": 20709,
+      "sha256": "83d7e284f37866859d8dd946966660a6abf47fa0efb2760a263368bd4836fe44"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_r52_native_session.c",
+      "bytes": 15646,
+      "sha256": "b9b900a66d5e0a516732dc455c0b4a81e3ba53990e7019b7ebb926da32761ebe"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_r52_native_settings.c",
+      "bytes": 16500,
+      "sha256": "36835d5dd68af7c3410a48a6f14444ba06c3e52180839d00561688f846897184"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/CMakeLists.txt",
+      "bytes": 6910,
+      "sha256": "bac9af5be1971e620319ccbba246996a08b8aca4ff4dd6ecc6e0db73c10bab4e"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/NATIVE_MENU.md",
+      "bytes": 2705,
+      "sha256": "d5a964995781e5a3a056c4a9e5268ad59d89ea1188c964caf7b41153e7e59fe4"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/README.md",
+      "bytes": 16063,
+      "sha256": "f88de635bb9332d5c05c01a9c94c886551c167701d0cd0c8cada85be18c8ca43"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/install.py",
+      "bytes": 4841,
+      "sha256": "29bc2441ee5749c348bb6a8496914b9df78c2f1bed467c1b8b1edb3c0d3cd993"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_retroarch.c",
+      "bytes": 106652,
+      "sha256": "a9d718bc04ae9a021aeb5cebae9948c6a554a857cdf799ae3eeb0e044d764560"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_retroarch.h",
+      "bytes": 2231,
+      "sha256": "f0907f3833ab993a5b4593cdfb560b024eac6020be0756dfef7e2a40d6b24c37"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_state_options.h",
+      "bytes": 6782,
+      "sha256": "80c29b7ae34f29e33a00e6b4e1544ff2ec2aac1c2927d4d4d31af48bbafaab6a"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0011-r52-native-menu-panel.patch",
+      "bytes": 11689,
+      "sha256": "68c98765485917c410b2135f27bd9cfe5ff5cc242821bfad75b03e57160bcdd3"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/support/sessiond/retroarch_compat.h",
+      "bytes": 1261,
+      "sha256": "fad89550f1b075c16836172e3ec8ea2bb3633f81165749ece541e6955e42c3c1"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/native_menu_capture.c",
+      "bytes": 1470,
+      "sha256": "51fdfeda626ae5f82b0929d5785b47dd42834cf04a83bd1da6e66ff9d68ab4a6"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_native_disc.py",
+      "bytes": 4955,
+      "sha256": "312e2c92a1da4573bcf909f6a1eb9f03bfd24e4a66670fb2bc2826c11c2b00c4"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_native_options.c",
+      "bytes": 4804,
+      "sha256": "719d4f51e9f94dbbf8debaa9b36c346f85e8dffa617007a94c5c1d23519770a0"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_native_projection.py",
+      "bytes": 5576,
+      "sha256": "08b7edcfd0799fd70dfb20c9e0b8b442788d1dc01c466846792dbc09fd7aa7a1"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_retroarch.c",
+      "bytes": 27173,
+      "sha256": "f9eda15374d06c1e6d14c21b93ba30f8b3a005862eb80b9efad65df59fa836aa"
+    }
+  ],
+  "private_inputs_excluded": true
+}

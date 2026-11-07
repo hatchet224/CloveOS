@@ -16,8 +16,12 @@
 
 static int fail(const char *message)
 { fprintf(stderr,"netplay-input: %s\n",message); return 1; }
-int main(void)
+int main(int argc, char **argv)
 {
+    const char *mapping_path = "/run/console/easy-netplay/controller.map";
+    if (argc == 2 && strcmp(argv[1], "--standard") == 0)
+        mapping_path = "/run/console/netplay-runtime/controller.map";
+    else if (argc != 1) return fail("invalid session mode");
     static const char *const keys[]={"schema","coverage","guid","hat","up","down","left","right","a","b","x","y","l1","r1","menu","volume_down","volume_up","start","select"};
     static const char *const names[]={"up","down","left","right","a","b","x","y","l1","r1","menu","volume_down","volume_up","start","select"};
     static const char *const binds[]={"up","down","left","right","a","b","x","y","l","r",NULL,NULL,NULL,"start","select"};
@@ -59,7 +63,7 @@ int main(void)
     /* Unmanaged RetroArch opens SDL's GameController API, unlike managed
      * games' raw joystick path. Supply an explicit semantic mapping from the
      * verified raw indices, then use semantic button IDs in this config. */
-    int mapping_fd=open("/run/console/easy-netplay/controller.map",O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,0600);
+    int mapping_fd=open(mapping_path,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,0600);
     if(mapping_fd<0)return fail("cannot create session controller map");
     FILE *mapping=fdopen(mapping_fd,"w");if(mapping==NULL){close(mapping_fd);return 1;}
     /* SDL 2.26 lookup clears the name CRC in bytes 2/3 before matching.

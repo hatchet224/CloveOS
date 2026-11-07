@@ -138,6 +138,36 @@ restore_station() {
         if [ "$prior_state" = COMPLETED ]; then wait_until 40 prior_associated || return 1; fi
     fi
 }
+finish_emulator() {
+    local status=$1
+    ra=
+    # Once the frontend has exited, TERM must not interrupt save return or
+    # its wait() and turn a live writer into an apparently finished session.
+    trap '' INT TERM
+    stop_child "$monitor";monitor=
+    if [ "$mode" = link ] && [ "$status" = 0 ]; then
+        "$bb" grep -Eq '\[Netplay\].*joined as player 2|\[Netplay\].*joined with input devices' "$session/retroarch.log" || exit 20
+        mark_phase returning-saves
+        show_notice
+        link_task link-finish "$session"
+    fi
+    exit "$status"
+}
+request_stop() {
+    if [ -n "$ra" ]; then
+        # POWER and external termination use the same ordinary frontend exit
+        # as MENU. Wait for the real child, flush and save return; no timeout
+        # or forced kill may impersonate successful completion.
+        trap '' INT TERM
+        signal=TERM; [ "$mode" != link ] || signal=INT
+        kill -"$signal" "$ra" 2>/dev/null || :
+        local status=0
+        wait "$ra" || status=$?
+        finish_emulator "$status"
+    fi
+    # Before frontend launch there is no new emulated progress to publish.
+    exit 0
+}
 cleanup() {
     result=$?
     final_phase=$phase
@@ -153,7 +183,7 @@ cleanup() {
     stop_child "$ready_peer"
     stop_child "$pairing"
     stop_child "$monitor"
-    stop_child "$ra"
+    if [ -n "$ra" ]; then signal=TERM; [ "$mode" != link ] || signal=INT; kill -"$signal" "$ra" 2>/dev/null || :; wait "$ra" 2>/dev/null || :; ra=; fi
     stop_child "$station"
     stop_child "$ap"
     if [ -n "$recover" ]; then
@@ -180,7 +210,7 @@ cleanup() {
     exit "$result"
 }
 trap cleanup EXIT
-trap 'exit 0' INT TERM
+trap request_stop INT TERM
 
 # Verify peer builds/content before changing the radio. Never execute a core
 # received from a Miyoo: the peer is ARM32 while this frontend is ARM64.
@@ -327,12 +357,4 @@ fi
 mark_phase emulator-running
 status=0
 wait "$ra" || status=$?
-ra=
-stop_child "$monitor";monitor=
-if [ "$mode" = link ] && [ "$status" = 0 ]; then
-    "$bb" grep -Eq '\[Netplay\].*joined as player 2|\[Netplay\].*joined with input devices' "$session/retroarch.log" || exit 20
-    mark_phase returning-saves
-    show_notice
-    link_task link-finish "$session"
-fi
-exit "$status"
+finish_emulator "$status"

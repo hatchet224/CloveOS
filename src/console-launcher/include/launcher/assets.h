@@ -35,6 +35,7 @@ struct cl_art_worker;
 bool cl_assets_open(struct cl_assets *assets, const struct cl_theme *theme, const char *root);
 void cl_assets_apply_icon_pack(struct cl_assets *assets, const char *theme, const char *pack, const char *card);
 void cl_assets_close(struct cl_assets *assets);
+unsigned int cl_compact_text_scale(const struct cl_assets *assets, enum cl_theme_role role);
 /* Measure the actual runtime/atlas font; output is unchanged on failure. */
 bool cl_text_measure(const struct cl_assets *assets, enum cl_theme_role role, const char *text,
                      int *width, int *height);

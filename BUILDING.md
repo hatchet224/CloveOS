@@ -2,7 +2,11 @@
 
 This repository publishes the privacy-clean native application source, pinned
 RetroArch integration, LAN service, capacity helper, and build/provenance records.
-R49 and R50 supplements record their implementation and software validation.
+For R52, start with the [build delta](releases/r52/BUILD_DELTA.md) and
+[native menu and checkpoint design](src/retroarch-magicx-bridge/NATIVE_MENU.md).
+These cover Russian/first-boot setup, native profiles, the new RetroArch patch,
+font installation and the required feature flags. Earlier supplements retain
+their implementation and validation history, including private revision labels.
 This is not a claim of a complete rebuild of every vendor component in the image.
 
 ## Portable daemon tests
@@ -46,6 +50,7 @@ python3 src/console-portmaster/fetch_sources.py
 cmake -S src/console-supervisor -B build/appliance \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/matching-toolchain.cmake \
   -DCMAKE_BUILD_TYPE=MinSizeRel \
+  -DCLOVE_BUILD_ID=20261107-cloveos-r52 \
   -DCONSOLE_ONLINE_PREFIX=/path/to/target-curl-mbedtls-prefix \
   -DCMAKE_PREFIX_PATH=/path/to/target-sdl-prefix \
   -DBUILD_TESTING=OFF

@@ -267,19 +267,31 @@ int main(void)
      * level_pid remains occupied for the whole session. Exercise real raw
      * volume edges in that state, including delayed audio initialization. */
     assert(mkdir("/run/console/easy-netplay",0700)==0||errno==EEXIST);
-    for(unsigned int role=0U;role<2U;++role){
-        s->netplay_running=true;s->easy_netplay=true;s->startup_child=true;s->link_running=true;
-        s->launch.kind=role==0U?CL_LAUNCH_LINK_HOST:CL_LAUNCH_LINK_JOIN;
+    assert(mkdir("/run/console/netplay-runtime",0700)==0||errno==EEXIST);
+    for(unsigned int route=0U;route<5U;++route)for(unsigned int role=0U;role<2U;++role){
+        const char *phase_path=route==0U?"/run/console/easy-netplay.phase":"/run/console/netplay-runtime/phase";
+        const char *ready_path=route==0U?"/run/console/easy-netplay/audio-ready":"/run/console/netplay-runtime/audio-ready";
+        const char *exit_path=route==0U?"/run/console/easy-netplay/exit-request":"/run/console/netplay-runtime/exit-request";
+        s->netplay_running=true;s->easy_netplay=route<=2U;s->startup_child=true;s->link_running=route==0U;
+        strcpy(s->launch.auxiliary,route<=1U?"onion4":(route==4U?"auto":""));
+        s->launch.kind=route==0U?(role==0U?CL_LAUNCH_LINK_HOST:CL_LAUNCH_LINK_JOIN):(route<=2U?(role==0U?CL_LAUNCH_EASY_HOST:CL_LAUNCH_EASY_JOIN):(role==0U?CL_LAUNCH_NETPLAY_HOST:CL_LAUNCH_NETPLAY_JOIN));
         s->status.state=CS_MENU_READY;s->status.active=false;s->status.unsettled=false;
         s->ra_pid=0;s->level_pid=456;s->netplay_level_pid=0;s->netplay_levels_restored=false;
         s->netplay_level_restore=false;s->netplay_level_restore_attempted=false;s->hook_pending=false;s->stopping=false;
         s->standby_active=false;s->standby_transition=false;s->preferences=0U;
-        int phase=open("/run/console/easy-netplay.phase",O_WRONLY|O_CREAT|O_TRUNC,0600);assert(phase>=0);
+        int stale=open(phase_path,O_WRONLY|O_CREAT|O_TRUNC,0600);assert(stale>=0);
+        assert(write(stale,"emulator-running\n",17U)==17&&close(stale)==0);
+        stale=open(ready_path,O_WRONLY|O_CREAT|O_TRUNC,0600);assert(stale>=0);
+        assert(write(stale,"ready\n",6U)==6&&close(stale)==0);
+        assert(netplay_reset_runtime());
+        unsigned int stale_before=spawned;service_netplay_levels(s);
+        assert(!netplay_game(s)&&!s->netplay_level_restore_attempted&&spawned==stale_before);
+        int phase=open(phase_path,O_WRONLY|O_CREAT|O_TRUNC,0600);assert(phase>=0);
         assert(write(phase,"emulator-running\n",17U)==17&&close(phase)==0);
-        assert(unlink("/run/console/easy-netplay/audio-ready")==0||errno==ENOENT);
+        assert(unlink(ready_path)==0||errno==ENOENT);
         unsigned int before=spawned;
         service_netplay_levels(s);assert(spawned==before); /* No guessed timer. */
-        int ready=open("/run/console/easy-netplay/audio-ready",O_WRONLY|O_CREAT|O_EXCL,0600);assert(ready>=0);
+        int ready=open(ready_path,O_WRONLY|O_CREAT|O_EXCL,0600);assert(ready>=0);
         assert(write(ready,"ready\n",6U)==6&&close(ready)==0);
         service_netplay_levels(s);
         assert(spawned==before+1U&&strcmp(target_kind,"restore")==0);
@@ -319,15 +331,16 @@ int main(void)
         press.value=0;press.time.tv_usec=100000;assert(write(taps[1],&press,sizeof(press))==(ssize_t)sizeof(press));
         test_clock=tap+100U;menu_input(s,test_clock);test_clock=tap+301U;menu_input(s,test_clock);
         assert(terminated==term_before&&s->level_pid==456);
-        assert(netplay_runtime_file("/run/console/easy-netplay/exit-request","exit\n"));
-        assert(unlink("/run/console/easy-netplay/exit-request")==0);
+        assert(netplay_runtime_file(exit_path,"exit\n"));
+        assert(unlink(exit_path)==0);
         s->netplay_level_pid=999;assert(!spawn_ui(s));s->netplay_level_pid=0;
         close(taps[1]);cs_evdev_close(&s->menu);
         puts(role==0U?"NETPLAY_HOST_WRAPPER_ALIVE_AUDIO_READY_VOLUME_REPEAT_RELEASE_AND_BRIGHTNESS_PASS":"NETPLAY_JOIN_WRAPPER_ALIVE_AUDIO_READY_VOLUME_REPEAT_RELEASE_AND_BRIGHTNESS_PASS");
         puts("NETPLAY_MENU_TAP_REQUESTS_EMULATOR_EXIT_NOT_WRAPPER_TERMINATION_PASS");
+        printf("R52_ALL_NETPLAY_ROUTES_REAL_EVDEV_LEVEL_RESTORE_REPEAT_RELEASE_AND_MENU_PASS route=%u role=%u\n",route,role);
+        assert(unlink(ready_path)==0);
+        assert(unlink(phase_path)==0);
     }
-    assert(unlink("/run/console/easy-netplay/audio-ready")==0);
-    assert(unlink("/run/console/easy-netplay.phase")==0);
     free(s);
     puts("LEVEL_ROUTER_PASS running-game/native-Quick-Menu/menu allowed; actual raw volume path and brightness chord consumed; checkpoint/shutdown/aux barriers preserved");
     puts("LEVEL_CLOCK_RACE_PASS post-read MENU edge retained; brightness-up routed; future and stale edges rejected");

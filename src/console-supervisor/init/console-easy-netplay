@@ -118,7 +118,7 @@ cleanup() {
     stop_child "$peer"
     stop_child "$ready_peer"
     stop_child "$pairing"
-    stop_child "$ra"
+    if [ -n "$ra" ]; then signal=TERM; [ "$mode" != link ] || signal=INT; kill -"$signal" "$ra" 2>/dev/null || :; wait "$ra" 2>/dev/null || :; ra=; fi
     stop_child "$station"
     stop_child "$ap"
     if [ -n "$recover" ]; then
@@ -134,7 +134,13 @@ cleanup() {
     exit "$result"
 }
 trap cleanup EXIT
-trap 'exit 0' INT TERM
+request_stop() {
+    trap '' INT TERM
+    status=0
+    if [ -n "$ra" ]; then signal=TERM; [ "$mode" != link ] || signal=INT; kill -"$signal" "$ra" 2>/dev/null || :; wait "$ra" || status=$?; ra=; fi
+    exit "$status"
+}
+trap request_stop INT TERM
 
 # Check the backend binaries before touching the radio.
 for program in hostapd hostapd_cli wpa_cli wpa_supplicant console-netplay-peer; do

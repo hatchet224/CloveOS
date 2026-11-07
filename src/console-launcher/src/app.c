@@ -100,6 +100,7 @@ struct app
     uint64_t appearance, appearance_touched;
     uint32_t shortcuts, shortcuts_touched;
     bool startup_pending, advance_available;
+    bool language_onboarding, language_confirm_pending;
     uint64_t osd_until;
     bool osd_brightness;
     size_t reset_row;
@@ -1059,7 +1060,7 @@ static const struct tweak_row tweak_reset[] = {
     TA("Reset theme overrides","Restore the active theme's original appearance settings.",TWEAK_RESET_THEME),
     TA("Reset system tweaks","Restore startup, shortcuts, battery and service policy defaults.",TWEAK_RESET_SYSTEM),
     TA("Reset MainUI settings","Restore list layout, tab selection and appearance defaults.",TWEAK_RESET_UI),
-    { "Reset RetroArch", "Restore standalone RetroArch settings.", TWEAK_RESET_ALL, CL_RESET_RETROARCH, 0U, 0U, NULL, TWEAK_NUMBER },
+    { "Reset RetroArch", "Restore native RetroArch settings for all games and standalone mode.", TWEAK_RESET_ALL, CL_RESET_RETROARCH, 0U, 0U, NULL, TWEAK_NUMBER },
     { "Reset core overrides", "Clear standalone core options, overrides and remaps.", TWEAK_RESET_ALL, CL_RESET_CORE_OVERRIDES, 0U, 0U, NULL, TWEAK_NUMBER },
     { "Reset AdvanceMENU", "Restore the AdvanceMENU configuration.", TWEAK_RESET_ALL, CL_RESET_ADVANCE, 0U, 0U, NULL, TWEAK_NUMBER },
     { "Reset everything", "Restore preferences and all supported configuration groups.", TWEAK_RESET_ALL, CL_RESET_ALL, 0U, 0U, NULL, TWEAK_NUMBER }
@@ -1259,8 +1260,18 @@ static void draw(struct app *a)
         return;
     }
     if (a->screen == LANGUAGE) {
-        const char *names[] = {"English", "Español"};
-        cl_options_draw(surface, &view, CL_TR("Language"), names, 2U, a->choice);
+        const char *names[] = {"English", "Español", "Русский"};
+        cl_options_draw(surface, &view,
+                        CL_TR(a->language_onboarding ? "Choose your language" : "Language"),
+                        names, CL_LANGUAGE_COUNT, a->choice);
+        if (a->language_onboarding) {
+            cl_view_footer(surface, &view, CL_TR("A Confirm"));
+            if (a->language_confirm_pending || a->preference_snapshot.error)
+                cl_view_text(surface, &a->assets, CL_FONT_DETAIL, 24, 410,
+                    CL_TR(a->preference_snapshot.error ?
+                        "Language not saved. Check the card and restart." : "Saving language..."),
+                    a->preference_snapshot.error ? a->theme.warning : a->theme.muted, 592);
+        }
         return;
     }
     if (a->screen == SETTINGS)
@@ -1938,12 +1949,20 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
         return activate_app(a,app_at(a,a->choice),intent);
     }
     if (a->screen == LANGUAGE) {
+        if (a->choice >= CL_LANGUAGE_COUNT) return false;
         a->shortcuts = (a->shortcuts & ~CL_LANGUAGE_MASK) |
                       ((uint32_t)a->choice << CL_LANGUAGE_SHIFT);
         a->shortcuts_touched |= CL_LANGUAGE_MASK;
+        if (a->language_onboarding) {
+            a->shortcuts |= CL_LANGUAGE_CONFIRMED;
+            a->shortcuts_touched |= CL_LANGUAGE_CONFIRMED;
+            a->language_confirm_pending = true;
+        }
         cl_language_set((unsigned int)a->choice);
-        set_screen(a, SETTINGS);
-        a->choice = 9U;
+        if (!a->language_onboarding) {
+            set_screen(a, SETTINGS);
+            a->choice = 9U;
+        }
         return false;
     }
     if (a->screen == SETTINGS)
@@ -2300,6 +2319,15 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
     if (a->screen == INPUT_CHECK)
     {
         input_check(a, keys);
+        return false;
+    }
+    if (a->screen == LANGUAGE && a->language_onboarding) {
+        /* No MENU/X/Y/B shortcut can bypass first-boot acceptance. Power is
+         * handled by the supervisor and remains available during failures. */
+        if (a->language_confirm_pending || a->preference_snapshot.error) return false;
+        if ((keys & CL_KEY(CL_UP)) != 0U) choose_move(a, -1, CL_LANGUAGE_COUNT);
+        else if ((keys & CL_KEY(CL_DOWN)) != 0U) choose_move(a, 1, CL_LANGUAGE_COUNT);
+        else if ((keys & CL_KEY(CL_A)) != 0U) return activate(a, intent);
         return false;
     }
     if (a->screen == NETPLAY_ADDRESS) {
@@ -2822,7 +2850,7 @@ static bool handle_keys_impl(struct app *a, uint32_t keys, struct cl_launch_inte
         }
         else if (a->screen == APPS || a->screen == SETTINGS || a->screen == LANGUAGE)
         {
-            choose_move(a, delta, a->screen == LANGUAGE ? 2U : (a->screen == SETTINGS ? 11U : visible_app_count(a)));
+            choose_move(a, delta, a->screen == LANGUAGE ? CL_LANGUAGE_COUNT : (a->screen == SETTINGS ? 11U : visible_app_count(a)));
         }
         else if (page != NULL)
             choose_move(a, delta, page->count);
@@ -2902,7 +2930,8 @@ static bool handle_keys(struct app *a, uint32_t keys, struct cl_launch_intent *i
         if ((a->appearance_touched & CL_BATTERY_PERCENTAGE_MASK) != 0U)
             a->appearance_touched |= CL_BATTERY_PERCENTAGE_MASK;
         a->preferences_waiting = true;
-        if (a->preferences != NULL && a->preferences_known && !a->preference_snapshot.error &&
+        if ((!a->language_onboarding || a->language_confirm_pending) &&
+            a->preferences != NULL && a->preferences_known && !a->preference_snapshot.error &&
             cl_preferences_submit_ui(a->preferences, a->theme.grid, a->memory->main_tab,
                                      a->appearance,a->shortcuts))
             a->preferences_waiting = false;
@@ -2914,6 +2943,7 @@ static void apply_preferences(struct app *a)
     if (a->preference_snapshot.ready && !a->preferences_known)
     {
         a->preferences_known = true;
+        a->language_onboarding = !a->preference_snapshot.has_record && !a->preference_snapshot.error;
         {
             bool changed = !a->grid_touched && a->theme.grid != a->preference_snapshot.grid;
             uint32_t old_shortcuts=a->shortcuts;
@@ -2947,7 +2977,8 @@ static void apply_preferences(struct app *a)
                 (void)request_page(a, page_mode(a), 0U, 0U, true);
         }
     }
-    if (a->preferences_waiting && a->preferences_known && !a->preference_snapshot.error &&
+    if ((!a->language_onboarding || a->language_confirm_pending) &&
+        a->preferences_waiting && a->preferences_known && !a->preference_snapshot.error &&
         cl_preferences_submit_ui(a->preferences, a->theme.grid, a->memory->main_tab,
                                  a->appearance,a->shortcuts))
         a->preferences_waiting = false;
@@ -2958,6 +2989,23 @@ static void apply_preferences(struct app *a)
                         "persistence warning, gameplay checks remain independent\n");
     }
     a->dirty = true;
+}
+static void language_onboarding_tick(struct app *a)
+{
+    if (!a->language_onboarding) return;
+    if (a->language_confirm_pending && a->preference_snapshot.has_record &&
+        !a->preferences_waiting && !a->preference_snapshot.pending &&
+        !a->preference_snapshot.error &&
+        (a->preference_snapshot.shortcuts & (CL_LANGUAGE_CONFIRMED | CL_LANGUAGE_MASK)) ==
+        (a->shortcuts & (CL_LANGUAGE_CONFIRMED | CL_LANGUAGE_MASK))) {
+        a->language_onboarding = a->language_confirm_pending = false;
+        a->carousel = a->memory->library_tab = false;
+        set_screen(a, MAIN);
+    } else if (a->screen == MAIN || a->screen == HOME || a->screen == SYSTEMS) {
+        set_screen(a, LANGUAGE);
+        a->choice = (size_t)((a->shortcuts & CL_LANGUAGE_MASK) >> CL_LANGUAGE_SHIFT);
+        if (a->choice >= CL_LANGUAGE_COUNT) a->choice=CL_ENGLISH;
+    }
 }
 static bool apply_update(struct app *a, struct cl_update *update)
 {
@@ -3550,6 +3598,7 @@ enum cl_run_result cl_launcher_run(const struct cl_app_config *config,
         }
         if (cl_preferences_take(a->preferences, &a->preference_snapshot))
             apply_preferences(a);
+        language_onboarding_tick(a);
 
         advance_play(a, intent, now);
 
@@ -3681,12 +3730,15 @@ done:
     cl_favorites_stop(a->favorite_worker);
     if (a->preferences != NULL)
     {
+        /* Quitting before first-boot confirmation must not create an apparently
+         * configured legacy record and suppress the next boot's chooser. */
+        bool persist = !a->language_onboarding || a->language_confirm_pending;
         if (!cl_preferences_finish_ui(a->preferences,
-                                         a->preferences_waiting && a->grid_touched, a->theme.grid,
-                                         a->preferences_waiting && a->tab_touched, memory->main_tab,
-                                         a->preferences_waiting ? a->appearance_touched : 0U,
+                                         persist && a->preferences_waiting && a->grid_touched, a->theme.grid,
+                                         persist && a->preferences_waiting && a->tab_touched, memory->main_tab,
+                                         persist && a->preferences_waiting ? a->appearance_touched : 0U,
                                          a->appearance,
-                                         a->preferences_waiting ? a->shortcuts_touched : 0U,
+                                         persist && a->preferences_waiting ? a->shortcuts_touched : 0U,
                                          a->shortcuts))
             fprintf(stderr, "launcher: optional display settings not durable; writer joined, "
                             "handoff result retained (%d)\n", (int)result);

@@ -21,6 +21,8 @@
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+#include "../msg_hash.h"
+#include "../verbosity.h"
 #include "../state_manager.h"
 #include "../tasks/tasks_internal.h"
 #include "magicx_bridge.h"
@@ -352,6 +354,7 @@ static void poll_control_status(uint64_t now)
             } else if (ra.feedback.phase == MX_FEEDBACK_FAILED) message = "Session command failed";
             else if (ra.feedback.phase == MX_FEEDBACK_BUSY) message = "Session command in progress";
         }
+        config_get_ptr()->ints.state_slot = (int)ra.feedback.observed.slot;
         if (changed || !had_status || prior_slot != ra.feedback.observed.slot) feedback_refresh(message);
         recovery_status();
     } else if (result < 0) {
@@ -367,6 +370,8 @@ void magicx_retroarch_hotkey_consumed(void)
     }
 }
 static bool safe_rastate(const struct magicx_blob *state);
+static uint32_t little_u32(const unsigned char *p);
+#include "magicx_state_options.h"
 static bool error_text(char error[MAGICX_ERROR_MAX], const char *message)
 {
     (void)snprintf(error, MAGICX_ERROR_MAX, "%s", message);
@@ -545,7 +550,7 @@ static int option_compare(const void *a, const void *b)
     const struct core_option *const *one = a, *const *two = b;
     return strcmp((*one)->key, (*two)->key);
 }
-static bool config_identity(char digest[65])
+static bool config_identity_effective(char digest[65])
 {
     struct cs_sha256 hash;
     char file_hash[65];
@@ -553,7 +558,8 @@ static bool config_identity(char digest[65])
     const struct core_option *sorted[512];
     size_t i, count = options != NULL ? options->size : 0U;
     static const char prefix[] = "magicx-effective-config-v1";
-    if (count > 512U || !hash_path(path_get(RARCH_PATH_CONFIG), file_hash)) {
+    const char *factory = getenv("MAGICX_FACTORY_CONFIG");
+    if (count > 512U || !hash_path(factory != NULL ? factory : path_get(RARCH_PATH_CONFIG), file_hash)) {
         return false;
     }
     const char *core_name = strrchr(path_get(RARCH_PATH_CORE), '/');
@@ -565,7 +571,9 @@ static bool config_identity(char digest[65])
          * files; the separate ROM/core identities bind those driver defaults.
          * Never accept a changed runtime option merely because the files match. */
         char options_hash[65];
-        if (options == NULL || strcmp(options->conf_path,"/etc/console/retroarch-core-options.cfg") != 0 ||
+        const char *frozen_options = getenv("MAGICX_FACTORY_OPTIONS");
+        if (frozen_options == NULL) frozen_options = "/etc/console/retroarch-core-options.cfg";
+        if (options == NULL || strcmp(options->conf_path,frozen_options) != 0 ||
             !hash_path(options->conf_path,options_hash)) return false;
         for (i=0U;i<count;++i) {
             const struct core_option *option=&options->opts[i];char frozen[513];
@@ -600,6 +608,43 @@ static bool config_identity(char digest[65])
     cs_sha256_final(&hash, digest);
     return true;
 }
+static bool config_identity(char digest[65])
+{
+    /* The immutable factory profile is the checkpoint namespace. User-native
+     * option changes are carried by the authenticated state payload, rather
+     * than making the next checkpoint fail its original catalog identity. */
+    if (ra.managed && cs_hex_valid(ra.identity.config, 64U)) {
+        memmove(digest, ra.identity.config, 65U);
+        return true;
+    }
+    const char *factory = getenv("MAGICX_FACTORY_OPTIONS");
+    if (factory == NULL) return config_identity_effective(digest);
+    core_option_manager_t *options = runloop_state_get_ptr()->core_options;
+    config_file_t *conf = factory_options();
+    if (options == NULL) { if (conf != NULL) config_file_free(conf); return config_identity_effective(digest); }
+    if (conf == NULL || options->size > 512U || strlen(factory) >= sizeof(options->conf_path)) {
+        if (conf != NULL) config_file_free(conf);
+        return false;
+    }
+    size_t prior[512], frozen[512]; bool valid = true;
+    for (size_t i = 0U; i < options->size; ++i) {
+        prior[i] = options->opts[i].index;
+        if (!factory_option_index(&options->opts[i], conf, &frozen[i])) valid = false;
+    }
+    if (!valid) { config_file_free(conf); return false; }
+    config_file_t *saved_conf = options->conf;
+    char saved_path[sizeof(options->conf_path)];
+    memcpy(saved_path, options->conf_path, sizeof(saved_path));
+    options->conf = conf;
+    strcpy(options->conf_path, factory);
+    for (size_t i = 0U; i < options->size; ++i) options->opts[i].index = frozen[i];
+    bool ok = config_identity_effective(digest);
+    for (size_t i = 0U; i < options->size; ++i) options->opts[i].index = prior[i];
+    options->conf = saved_conf;
+    memcpy(options->conf_path, saved_path, sizeof(saved_path));
+    config_file_free(conf);
+    return ok;
+}
 static bool loaded_single_content(void)
 {
     const runloop_state_t *r = runloop_state_get_ptr();
@@ -610,6 +655,21 @@ static bool loaded_single_content(void)
     return !ra.content_closed && r->current_core_type == CORE_TYPE_PLAIN &&
         (r->flags & RUNLOOP_FLAG_IS_INITED) != 0U && path_is_empty(RARCH_PATH_SUBSYSTEM) &&
         content != NULL && content[0] == '/' && strchr(content, '#') == NULL;
+}
+static void native_owned_options(void)
+{
+    core_option_manager_t *options = runloop_state_get_ptr()->core_options;
+    if (!magicx_core_basename(path_get(RARCH_PATH_CORE), "tgbdual_libretro.so") ||
+        !loaded_single_content() || options == NULL) return;
+    for (size_t i = 0U; i < options->size; ++i) {
+        struct core_option *option = &options->opts[i];
+        if (option->key == NULL || strcmp(option->key, "tgbdual_gblink_enable") != 0 || option->vals == NULL) continue;
+        for (size_t value = 0U; value < option->vals->size; ++value)
+            if (strcmp(option->vals->elems[value].data, "disabled") == 0 && option->index != value) {
+                core_option_manager_set_val(options, option->opt_idx, value, false);
+                feedback_refresh("Link cable is selected by CloveOS Trade/Battle, not normal play");
+            }
+    }
 }
 /* Rewind is an explicitly owned, bounded RAM feature for the pinned normal
  * single-player TGB core. It creates no independent on-card save writer. */
@@ -713,8 +773,9 @@ static bool qualified_settings(char error[MAGICX_ERROR_MAX])
         s->bools.savestate_auto_index || s->uints.autosave_interval != 0U ||
         s->bools.block_sram_overwrite || s->bools.cheevos_enable ||
         s->bools.cheevos_hardcore_mode_enable || s->bools.network_cmd_enable ||
-        s->bools.stdin_cmd_enable || s->bools.ui_companion_enable || s->bools.config_save_on_exit ||
-        s->bools.auto_overrides_enable || s->bools.auto_remaps_enable ||
+        s->bools.stdin_cmd_enable || s->bools.ui_companion_enable ||
+        ((s->bools.config_save_on_exit || s->bools.auto_remaps_enable) && getenv("MAGICX_FACTORY_CONFIG") == NULL) ||
+        s->bools.auto_overrides_enable ||
         s->bools.apply_cheats_after_load || s->bools.apply_cheats_after_toggle ||
         !s->bools.threaded_data_runloop_enable || !task_queue_is_threaded() ||
         !path_is_empty(RARCH_PATH_CONFIG_APPEND) ||
@@ -837,7 +898,7 @@ static bool ra_quick_menu(void *context, bool open, char error[MAGICX_ERROR_MAX]
         settings_t *settings = config_get_ptr();
         struct menu_state *menu = menu_state_get_ptr();
         if (settings == NULL || menu == NULL || menu->driver_data == NULL ||
-            strcmp(settings->arrays.menu_driver, "rgui") != 0 || !ra_paused(NULL)) return error_text(error, "restricted Quick Menu requires RGUI and pause");
+            strcmp(settings->arrays.menu_driver, "rgui") != 0 || !ra_paused(NULL)) return error_text(error, "native Quick Menu requires RGUI and pause");
         ra.quick_menu = true;
         ra.settings_page = false;
         fprintf(stderr,"Clove Quick Menu: opened through authenticated paused session\n");
@@ -845,14 +906,18 @@ static bool ra_quick_menu(void *context, bool open, char error[MAGICX_ERROR_MAX]
         if ((menu->flags & MENU_ST_FLAG_ALIVE) == 0U ||
             !menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL)) {
             ra.quick_menu = false;
+            ra.internal_command = true;
             retroarch_menu_running_finished(false);
+            ra.internal_command = false;
             (void)ra_set_paused(NULL, true);
             return error_text(error, "native Quick Menu could not be opened");
         }
     } else {
         /* RetroArch's normal close may UNPAUSE. Keep our command guard active;
          * only daemon RELEASE is authorized to resume the frozen core. */
+        ra.internal_command = true;
         retroarch_menu_running_finished(false);
+        ra.internal_command = false;
         ra.quick_menu = false;
         ra.settings_page = false;
         fprintf(stderr,"Clove Quick Menu: closed; awaiting authenticated release\n");
@@ -870,7 +935,9 @@ static void recovery_hide(void)
 #ifdef HAVE_MENU
     if (ra.recovery_panel) {
         bool paused = ra_paused(NULL);
+        ra.internal_command = true;
         retroarch_menu_running_finished(false);
+        ra.internal_command = false;
         ra.quick_menu = false;
         ra.recovery_panel = false;
         ra.recovery_confirm = 0U;
@@ -955,7 +1022,7 @@ static unsigned int recovery_menu_action(unsigned int action, size_t selected)
     return action;
 #endif
 }
-unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
+static unsigned int legacy_recovery_menu_action(unsigned int action, size_t selected)
 {
 #ifdef HAVE_MENU
     if (!ra.managed) return action;
@@ -1027,6 +1094,108 @@ unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
     return action;
 #endif
 }
+bool magicx_retroarch_recovery_menu(void) { return ra.managed && ra.recovery_panel; }
+bool magicx_retroarch_playlist_menu(void)
+{ return ra.managed && ra.quick_menu && !ra.recovery_panel && ra.disc_count != 0U; }
+bool magicx_retroarch_lifecycle_owned(void)
+{ return ra.managed && !ra.content_closed && !ra.internal_command; }
+void magicx_retroarch_native_owned_notice(void)
+{ feedback_refresh("Use CloveOS to change content or replace the session configuration"); }
+bool magicx_retroarch_menu_finish_requested(bool quit)
+{
+    if (!ra.managed || ra.internal_command || ra.content_closed || !ra.quick_menu) return false;
+    if (ra.recovery_panel) feedback_refresh("Recovery remains paused; choose an explicit action");
+    else control_request(quit ? CS_CONTROL_MENU : CS_CONTROL_QUICK_MENU_CLOSE);
+    return true;
+}
+unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
+{
+#ifdef HAVE_MENU
+    if (!ra.managed) return action;
+    if (ra.recovery_panel) return legacy_recovery_menu_action(action, selected);
+    if (!ra.quick_menu) return MENU_ACTION_NOOP;
+    file_list_t *list = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_state_get_ptr(), 0U);
+    if (list == NULL || selected >= list->size) return MENU_ACTION_NOOP;
+    menu_entry_t entry;
+    MENU_ENTRY_INITIALIZE(entry);
+    entry.flags = MENU_ENTRY_FLAG_LABEL_ENABLED;
+    menu_entry_get(&entry, 0U, selected, NULL, false);
+    const char *trace_label = entry.label;
+    if (entry.type >= MENU_SETTINGS_CORE_OPTION_START) {
+        core_option_manager_t *options = runloop_state_get_ptr()->core_options;
+        size_t index = entry.type - MENU_SETTINGS_CORE_OPTION_START;
+        if (options != NULL && index < options->size && options->opts[index].key != NULL)
+            trace_label = options->opts[index].key;
+    }
+    static char last_label[256];
+    static size_t last_selected = SIZE_MAX;
+    if (last_selected != selected || strcmp(last_label, trace_label) != 0) {
+        RARCH_LOG("Clove native entry: %s\n", trace_label);
+        (void)snprintf(last_label, sizeof(last_label), "%s", trace_label);
+        last_selected = selected;
+    }
+    if (action == MENU_ACTION_NOOP || action == MENU_ACTION_UP || action == MENU_ACTION_DOWN ||
+        action == MENU_ACTION_CANCEL || action == MENU_ACTION_INFO || action == MENU_ACTION_SEARCH)
+        return action;
+    if (ra.controls.fd >= 0 || magicx_bridge_busy(ra.bridge) ||
+        ra.feedback.phase == MX_FEEDBACK_QUEUED || ra.feedback.phase == MX_FEEDBACK_BUSY) {
+        feedback_refresh("Session command in progress"); return MENU_ACTION_NOOP;
+    }
+    rarch_setting_t *setting = menu_setting_find_enum(entry.enum_idx);
+    const char *name = setting != NULL ? setting->name : NULL;
+    if (entry.enum_idx == MENU_ENUM_LABEL_DISK_INDEX && magicx_retroarch_playlist_menu()) {
+        if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
+            (void)command_event(action==MENU_ACTION_LEFT ? CMD_EVENT_DISK_PREV : CMD_EVENT_DISK_NEXT, NULL);
+        return MENU_ACTION_NOOP;
+    }
+    if (entry.type >= MENU_SETTINGS_CORE_OPTION_START) {
+        core_option_manager_t *options = runloop_state_get_ptr()->core_options;
+        size_t index = entry.type - MENU_SETTINGS_CORE_OPTION_START;
+        if (options != NULL && index < options->size && options->opts[index].key != NULL &&
+            strcmp(options->opts[index].key, "tgbdual_gblink_enable") == 0 &&
+            magicx_core_basename(path_get(RARCH_PATH_CORE), "tgbdual_libretro.so")) {
+            feedback_refresh("Link cable is selected by CloveOS Trade/Battle, not normal play");
+            return MENU_ACTION_NOOP;
+        }
+    }
+    if (name != NULL && strcmp(name, "state_slot") == 0) {
+        if (action == MENU_ACTION_LEFT) control_request(CS_CONTROL_SLOT_DOWN);
+        else if (action == MENU_ACTION_RIGHT) control_request(CS_CONTROL_SLOT_UP);
+        else feedback_refresh("Left/Right selects the CloveOS state slot");
+        return MENU_ACTION_NOOP;
+    }
+    /* These settings have an independent owner, not an independent RA writer.
+     * All other compiled native settings, core options and remaps retain their
+     * upstream callbacks and submenus. Do not filter by numerical row index. */
+    static const char *const owned[] = {
+        "autosave_interval", "savestate_auto_save", "savestate_auto_load",
+        "savestate_auto_index", "savestate_file_compression", "save_file_compression",
+        "block_sram_overwrite", "savefile_directory", "savestate_directory",
+        "savefiles_in_content_dir", "savestates_in_content_dir", "system_directory",
+        "core_options_path", "config_save_on_exit", "auto_overrides_enable",
+        "auto_remaps_enable", "game_specific_options", "global_core_options",
+        "threaded_data_runloop_enable", "run_ahead_enabled", "preemptive_frames_enable",
+        "cheevos_enable", "cheevos_hardcore_mode_enable", "network_cmd_enable",
+        "stdin_cmd_enable", "ui_companion_enable", "menu_driver", "input_driver",
+        "input_joypad_driver", "input_player1_joypad_index", "input_remapping_directory",
+        "rgui_config_directory", "apply_cheats_after_load", "apply_cheats_after_toggle"
+    };
+    if (name != NULL) {
+        for (size_t i = 0U; i < sizeof(owned)/sizeof(owned[0]); ++i)
+            if (strcmp(name, owned[i]) == 0) {
+                feedback_refresh("Controlled by CloveOS session/settings policy"); return MENU_ACTION_NOOP;
+            }
+        if (strncmp(name,"input_enable_hotkey",19U)==0 ||
+            strncmp(name,"input_menu_toggle",17U)==0 ||
+            strncmp(name,"input_exit_emulator",19U)==0) {
+            feedback_refresh("Use CloveOS Button shortcuts for the global controls"); return MENU_ACTION_NOOP;
+        }
+    }
+    return action;
+#else
+    (void)selected; (void)legacy_recovery_menu_action; return action;
+#endif
+}
 void magicx_retroarch_menu_toggle(void)
 {
     if (ra.managed && ra.recovery_panel) {
@@ -1080,6 +1249,8 @@ static bool ra_snapshot(void *context, struct magicx_blob blobs[MAGICX_ARTIFACT_
     }
     if (!safe_rastate(&blobs[0]))
         return error_text(error, "serialized state has an unsupported RASTATE container");
+    if (!options_snapshot(&blobs[0], capacity))
+        return error_text(error, "checkpoint could not capture the current core options within its bound");
     if (ra.disc_count != 0U) {
         unsigned char *wrapped = realloc(blobs[0].data, blobs[0].size + CS_DISC_STATE_TRAILER);
         if (wrapped == NULL) return error_text(error, "could not store the active playlist disc");
@@ -1226,7 +1397,7 @@ static bool ra_restore(void *context, const struct magicx_blob blobs[MAGICX_ARTI
         if (!cs_disc_state_decode((const unsigned char *)state.data + state.size, ra.disc_count, &target))
             return error_text(error, "playlist checkpoint active disc record is invalid");
     }
-    if (!ra_paused(NULL) || !safe_rastate(&state))
+    if (!ra_paused(NULL) || !options_restore(&state))
         return error_text(error, "restore requires a paused core and verified RASTATE");
     if (ra.disc_count != 0U && !disc_select(target))
         return error_text(error, "could not insert the checkpoint's playlist disc");
@@ -1325,6 +1496,14 @@ static bool ra_close(void *context, char error[MAGICX_ERROR_MAX])
     if (magicx_bridge_busy(ra.bridge)) {
         return error_text(error, "checkpoint task still owns artifacts");
     }
+    /* Owned MAIN_DEINIT bypasses upstream's outer QUIT configuration save.
+     * Save the writable native profile synchronously before closing drivers;
+     * this writes no SRAM/state and leaves no auxiliary writer to outlive EXIT. */
+#ifdef HAVE_CONFIGFILE
+    if (getenv("MAGICX_FACTORY_CONFIG") != NULL && config_get_ptr()->bools.config_save_on_exit &&
+        !config_save_file(path_get(RARCH_PATH_CONFIG)))
+        return error_text(error, "native configuration save failed");
+#endif
     managed_rewind_clear();
     config_get_ptr()->bools.rewind_enable=false;ra.rewind_owned=false;
     ra.internal_command = true;
@@ -1650,6 +1829,12 @@ bool magicx_retroarch_requested(void)
     const char *path = getenv("MAGICX_BRIDGE_LAUNCH");
     return path != NULL && path[0] != '\0';
 }
+bool magicx_retroarch_portrait_menu(unsigned int width, unsigned int height)
+{
+    const char *panel=getenv("CLOVE_DISPLAY_PANEL");
+    return width==480U && height==640U && (magicx_retroarch_requested() ||
+        (panel!=NULL && strcmp(panel,"magicx-mini-zero28")==0));
+}
 bool magicx_retroarch_saturn(void)
 {
     return magicx_retroarch_requested() &&
@@ -1691,10 +1876,45 @@ int magicx_retroarch_swap_interval(int requested)
         return 0;
     return requested;
 }
+void magicx_retroarch_apply_language(void)
+{
+    const char *language=getenv("CLOVE_UI_LANGUAGE");
+    if (language!=NULL && language[0]>='0' && language[0]<='2' && language[1]=='\0') {
+        /* Frontend enum 0/1/2 is not libretro's enum 0/3/9. */
+        static const unsigned int native_languages[]={RETRO_LANGUAGE_ENGLISH,
+            RETRO_LANGUAGE_SPANISH,RETRO_LANGUAGE_RUSSIAN};
+        if (language[0]=='2') {
+            settings_t *settings=config_get_ptr();
+            const char *panel=getenv("CLOVE_DISPLAY_PANEL");
+            if (settings!=NULL && (magicx_retroarch_requested() ||
+                (panel!=NULL && strcmp(panel,"magicx-mini-zero28")==0))) {
+                /* The board image has no desktop asset installation. Keep a
+                 * complete custom font directory when supplied; otherwise
+                 * use the pinned packaged raw fonts before RGUI is created. */
+                const char *const names[]={"bitmap10x10_eng.bin","bitmap10x10_rus.bin"};
+                const off_t sizes[]={3328,1248};
+                bool complete=true;
+                for(size_t i=0U;i<2U;++i){
+                    char path[MAGICX_PATH_MAX];struct stat st;
+                    int n=snprintf(path,sizeof(path),"%s/rgui/font/%s",settings->paths.directory_assets,names[i]);
+                    if(n<0||(size_t)n>=sizeof(path)||stat(path,&st)!=0||!S_ISREG(st.st_mode)||st.st_size!=sizes[i])complete=false;
+                }
+                if(!complete)(void)snprintf(settings->paths.directory_assets,
+                    sizeof(settings->paths.directory_assets),"%s","/opt/console/share/retroarch/assets");
+            }
+        }
+        msg_hash_set_uint(MSG_HASH_USER_LANGUAGE,native_languages[(unsigned int)(language[0]-'0')]);
+#ifdef HAVE_MENU
+        menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+#endif
+        RARCH_LOG("Clove native language: enum=%u\n", native_languages[(unsigned int)(language[0]-'0')]);
+    }
+}
 bool magicx_retroarch_init(void)
 {
     struct magicx_host host;
     char error[MAGICX_ERROR_MAX] = "invalid launch description";
+    magicx_retroarch_apply_language();
     if (!magicx_retroarch_requested()) {
         return true;
     }
@@ -1703,6 +1923,7 @@ bool magicx_retroarch_init(void)
     magicx_controls_init(&ra.controls);
     magicx_controls_init(&ra.status_controls);
     if (!load_launch(getenv("MAGICX_BRIDGE_LAUNCH")) || !game_tweaks()) return false;
+    native_owned_options();
     magicx_asset_cache_init(&ra.assets, ra.config.qualified_fat_syncfs);
     if (!apply_verified_input(error) || !ra_identify(NULL, &ra.identity, error)) {
         fprintf(stderr, "MagicX endpoint initialization failed: %s\n", error);
@@ -1770,6 +1991,7 @@ bool magicx_retroarch_init(void)
 }
 bool magicx_retroarch_poll(void)
 {
+    if (ra.managed) native_owned_options();
     uint64_t now = controls_now();
     if (magicx_controls_poll(&ra.controls, now) < 0) {
         /* ACK loss does not prove the queued command failed. The status token
@@ -1914,7 +2136,8 @@ bool magicx_retroarch_command_allowed(unsigned int command)
     case CMD_EVENT_SAVE_STATE:
     case CMD_EVENT_LOAD_STATE:
     case CMD_EVENT_QUIT:
-        if (magicx_bridge_core_allowed(ra.bridge)) {
+    case CMD_EVENT_UNLOAD_CORE:
+        if (magicx_bridge_core_allowed(ra.bridge) || (ra.quick_menu && !ra.recovery_panel && ra_paused(NULL))) {
             control_request(cmd == CMD_EVENT_SAVE_STATE   ? CS_CONTROL_SAVE_SLOT
                             : cmd == CMD_EVENT_LOAD_STATE ? CS_CONTROL_LOAD_SLOT
                                                           : CS_CONTROL_MENU);
@@ -1928,6 +2151,67 @@ bool magicx_retroarch_command_allowed(unsigned int command)
         return false;
     case CMD_EVENT_TAKE_SCREENSHOT:
         control_request(CS_CONTROL_SCREENSHOT);
+        return false;
+    case CMD_EVENT_RESUME:
+        control_request(CS_CONTROL_QUICK_MENU_CLOSE);
+        return false;
+    case CMD_EVENT_UNPAUSE:
+    case CMD_EVENT_PAUSE_TOGGLE:
+    case CMD_EVENT_MENU_PAUSE_LIBRETRO:
+        /* Focus/menu-driver housekeeping is not an explicit Resume action. */
+        return false;
+    case CMD_EVENT_RESET:
+        if (ra.quick_menu && !ra.recovery_panel && ra_paused(NULL) && !magicx_bridge_busy(ra.bridge)) {
+            managed_rewind_clear();
+            core_reset();
+            if (ra.rewind_owned && !managed_rewind_reseed()) {
+                config_get_ptr()->bools.rewind_enable=false; ra.rewind_owned=false;
+            }
+            feedback_refresh("Game restarted; paused until Resume");
+        }
+        return false;
+    case CMD_EVENT_LOAD_CORE:
+    case CMD_EVENT_LOAD_CORE_PERSIST:
+#if HAVE_RUNAHEAD
+    case CMD_EVENT_LOAD_SECOND_CORE:
+#endif
+    case CMD_EVENT_CORE_INIT:
+    case CMD_EVENT_CORE_DEINIT:
+    case CMD_EVENT_SAVE_STATE_TO_RAM:
+    case CMD_EVENT_LOAD_STATE_FROM_RAM:
+    case CMD_EVENT_UNDO_LOAD_STATE:
+    case CMD_EVENT_UNDO_SAVE_STATE:
+    case CMD_EVENT_AUTOSAVE_INIT:
+    case CMD_EVENT_NETPLAY_INIT:
+    case CMD_EVENT_NETPLAY_INIT_DIRECT:
+    case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
+    case CMD_EVENT_SHUTDOWN:
+    case CMD_EVENT_REBOOT:
+    case CMD_EVENT_RESTART_RETROARCH:
+    case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
+        feedback_refresh("Use CloveOS for content, power and session transitions");
+        return false;
+    case CMD_EVENT_DISK_NEXT:
+    case CMD_EVENT_DISK_PREV:
+        if (ra.quick_menu && !ra.recovery_panel && ra_paused(NULL) && ra.disc_count != 0U) {
+            unsigned int active;
+            if (disc_index(&active)) (void)disc_select((active + (cmd==CMD_EVENT_DISK_PREV ? ra.disc_count-1U : 1U)) % ra.disc_count);
+        }
+        return false;
+    case CMD_EVENT_DISK_EJECT_TOGGLE:
+    case CMD_EVENT_DISK_INDEX:
+    case CMD_EVENT_DISK_APPEND_IMAGE:
+        feedback_refresh("Use the playlist disc selector; checkpoint media stays inserted");
+        return false;
+    case CMD_EVENT_REWIND_REINIT:
+    case CMD_EVENT_REWIND_INIT:
+    case CMD_EVENT_REWIND_DEINIT:
+        if (config_get_ptr()->bools.rewind_enable && managed_rewind_supported()) {
+            config_get_ptr()->bools.rewind_enable=false;
+            (void)managed_rewind_toggle();
+        } else {
+            managed_rewind_clear(); config_get_ptr()->bools.rewind_enable=false; ra.rewind_owned=false;
+        }
         return false;
     case CMD_EVENT_MENU_TOGGLE:
         magicx_retroarch_menu_toggle();
@@ -1953,8 +2237,11 @@ bool magicx_retroarch_command_allowed(unsigned int command)
         magicx_retroarch_hotkey_consumed();
         return true;
     default:
-        return false; /* State, reset, menu, disk, rewind, autosave, and core mutation are owned
-                         here. */
+        /* Native driver/overlay/video/audio/remap/config callbacks execute on
+         * this paused runloop. The lifecycle and save writers above retain
+         * their protocol owner; a generic deny-all must not swallow settings. */
+        return ra.quick_menu && !ra.recovery_panel;
+
     }
 }
 

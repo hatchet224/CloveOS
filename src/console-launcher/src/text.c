@@ -3,7 +3,7 @@
 #include <string.h>
 
 /* Original compact 5x7 monochrome glyph descriptions, rows encoded as 5 bits.
- * Lowercase renders uppercase, including Spanish Latin-1 letters.
+ * Lowercase renders uppercase, including Spanish Latin-1 and Russian letters.
  * Unsupported UTF-8 codepoints consume one '?' glyph.
  * No SDL_ttf, external assets, image decoder, or per-frame allocation is needed. */
 struct glyph {
@@ -46,6 +46,40 @@ static const struct glyph glyphs[] = {
     {0xd1U, {10, 21, 17, 25, 21, 19, 17}}, /* Ñ */
     {0xbfU, {4, 0, 4, 8, 16, 17, 14}},   /* ¿ */
     {0xa1U, {4, 0, 4, 4, 4, 4, 4}},     /* ¡ */
+    /* Original Cyrillic fallback; no theme font or external asset required. */
+    {0x410U,{14,17,17,31,17,17,17}}, /* А */
+    {0x411U,{31,16,16,30,17,17,30}}, /* Б */
+    {0x412U,{30,17,17,30,17,17,30}}, /* В */
+    {0x413U,{31,16,16,16,16,16,16}}, /* Г */
+    {0x414U,{6,10,10,10,10,31,17}}, /* Д */
+    {0x415U,{31,16,16,30,16,16,31}}, /* Е */
+    {0x401U,{10,0,31,16,30,16,31}}, /* Ё */
+    {0x416U,{21,21,14,4,14,21,21}}, /* Ж */
+    {0x417U,{14,17,1,6,1,17,14}}, /* З */
+    {0x418U,{17,17,19,21,25,17,17}}, /* И */
+    {0x419U,{10,4,17,19,21,25,17}}, /* Й */
+    {0x41aU,{17,18,20,24,20,18,17}}, /* К */
+    {0x41bU,{7,9,9,9,9,9,17}}, /* Л */
+    {0x41cU,{17,27,21,21,17,17,17}}, /* М */
+    {0x41dU,{17,17,17,31,17,17,17}}, /* Н */
+    {0x41eU,{14,17,17,17,17,17,14}}, /* О */
+    {0x41fU,{31,17,17,17,17,17,17}}, /* П */
+    {0x420U,{30,17,17,30,16,16,16}}, /* Р */
+    {0x421U,{14,17,16,16,16,17,14}}, /* С */
+    {0x422U,{31,4,4,4,4,4,4}}, /* Т */
+    {0x423U,{17,17,17,15,1,17,14}}, /* У */
+    {0x424U,{4,14,21,21,21,14,4}}, /* Ф */
+    {0x425U,{17,17,10,4,10,17,17}}, /* Х */
+    {0x426U,{18,18,18,18,18,31,1}}, /* Ц */
+    {0x427U,{17,17,17,15,1,1,1}}, /* Ч */
+    {0x428U,{21,21,21,21,21,21,31}}, /* Ш */
+    {0x429U,{21,21,21,21,21,31,1}}, /* Щ */
+    {0x42aU,{24,8,8,14,9,9,14}}, /* Ъ */
+    {0x42bU,{17,17,17,25,21,21,25}}, /* Ы */
+    {0x42cU,{16,16,16,30,17,17,30}}, /* Ь */
+    {0x42dU,{14,17,1,7,1,17,14}}, /* Э */
+    {0x42eU,{18,21,21,29,21,21,18}}, /* Ю */
+    {0x42fU,{15,17,17,15,5,9,17}}, /* Я */
     {' ', {0, 0, 0, 0, 0, 0, 0}},        {'\'', {4, 4, 8, 0, 0, 0, 0}}};
 void cl_text(SDL_Surface *surface, int x, int y, const char *text, unsigned int scale, Uint32 color,
              size_t max_glyphs)
@@ -60,12 +94,14 @@ void cl_text(SDL_Surface *surface, int x, int y, const char *text, unsigned int 
         const Uint8 *rows = NULL;
         size_t i;
         unsigned int row, col;
-        if (c == 0xc2U || c == 0xc3U) {
+        if (c >= 0xc2U && c <= 0xdfU) {
             Uint32 second = (unsigned char)*text;
             if ((second & 0xc0U) == 0x80U) {
                 ++text;
                 c = ((c & 0x1fU) << 6U) | (second & 0x3fU);
                 if (c >= 0xe0U && c <= 0xfeU && c != 0xf7U) c -= 0x20U;
+                if (c >= 0x430U && c <= 0x44fU) c -= 0x20U;
+                if (c == 0x451U) c = 0x401U;
             } else c = '?';
         } else if (c >= 128U) {
             while (((unsigned char)*text & 0xc0U) == 0x80U) ++text;

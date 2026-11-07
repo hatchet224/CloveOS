@@ -6,6 +6,8 @@ set(CMAKE_C_EXTENSIONS OFF)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(FATAL_ERROR "This endpoint targets Linux AF_UNIX and RetroArch Linux builds")
 endif()
+
+
 set_source_files_properties(magicx_png.c vendor/lodepng.c PROPERTIES COMPILE_OPTIONS "-w")
 set(BRIDGE_SOURCES magicx_bridge.c magicx_asset_cache.c magicx_io.c magicx_controls.c magicx_screenshot.c magicx_png.c support/json.c support/sha256.c)
 function(configure_bridge target)
@@ -95,4 +97,16 @@ if(BUILD_TESTING)
             set_tests_properties(magicx_retroarch_tasks PROPERTIES TIMEOUT 30)
         endif()
     endif()
+endif()
+
+# Fixture setup and checks must execute in release/size builds too.
+foreach(test magicx_exit_signal_tests magicx_screenshot_tests magicx_control_tests magicx_bridge_tests magicx_retroarch_tests)
+    if(TARGET ${test})
+        target_compile_options(${test} PRIVATE -UNDEBUG)
+    endif()
+endforeach()
+
+if(BUILD_TESTING)
+ add_executable(magicx_native_options_tests tests/test_native_options.c)
+ target_compile_options(magicx_native_options_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 endif()

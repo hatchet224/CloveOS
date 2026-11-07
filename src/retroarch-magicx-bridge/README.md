@@ -26,13 +26,13 @@ git clone https://github.com/libretro/RetroArch.git RetroArch-magicx
 cd RetroArch-magicx
 git checkout --detach 0792144fe3a7b59908b0afdb2c01722e79040360
 python3 /path/to/retroarch-magicx-bridge/install.py --retroarch "$PWD"
-./configure --enable-threads --enable-dynamic --enable-rewind
-make -j2 HAVE_MAGICX_BRIDGE=1 HAVE_REWIND=1
+./configure --enable-threads --enable-dynamic --enable-rewind --enable-langextra --enable-overlay --enable-cheats
+make -j2 HAVE_MAGICX_BRIDGE=1 HAVE_REWIND=1 HAVE_LANGEXTRA=1 HAVE_NO_LANGEXTRA=0 HAVE_OVERLAY=1 HAVE_CHEATS=1
 ```
 
 After changing rewind build support, clean and rebuild all objects: its compile flag changes the runloop structure layout. `rewind_enable` remains off by default; only the qualified runtime control may enable it.
 
-Add the existing board's video/audio/input/build options to configure. Keep the normal menu-capable Linux build; the managed profile suppresses gameplay menu commands while the endpoint owns the session. `HAVE_MAGICX_BRIDGE=1` is a make option, not a new configure switch. Without it, the upstream changes compile out. The installer copies the module/support sources as RetroArch/magicx/ and applies the diff; it does not commit anything.
+Add the existing board's video/audio/input/build options to configure. Keep the normal menu-capable Linux build; the managed profile exposes native Quick Menu and settings while sessiond owns checkpoints, lifecycle transitions, SRAM and RTC. See NATIVE_MENU.md for writable profiles and option-bearing state compatibility. `HAVE_MAGICX_BRIDGE=1` is a make option, not a new configure switch. Without it, the upstream changes compile out. The installer copies the module/support sources as RetroArch/magicx/ and applies the diff; it does not commit anything.
 
 For Tina, use the actual matching GCC 7.4/glibc 2.29 SDK and its normal sysroot/build environment. The upstream configure script supports `--host=<vendor-triplet>` and standard CC/CXX/CFLAGS/LDFLAGS. Enable threads/dynamic loading and retain the AArch64 Cortex-A53 flags from the board build. No substituted host sysroot or completed vendor image is supplied here.
 
@@ -133,7 +133,7 @@ Cancel is the default. Power off and return to MainUI require a second explicit
 confirmation and do not promise a fresh checkpoint. Disabled actions cannot
 queue commands. Closing this panel preserves the actual pre-close pause state;
 only an authorized bridge RELEASE can resume a gated core. The local status reply
-is64 bytes and recovery actions42–45 require the exact live emulator PID and UID.
+is64 bytes and recovery actions42â€“45 require the exact live emulator PID and UID.
 
 The r9 renderer integration also requires `patches/0002-magicx-portrait-gl-handoff.patch`. `install.py` applies both patches. Managed GLES screenshot capture redraws the cached frame before synchronous readback; it does not advance the core. Managed RGUI uses the same portrait-scanout rotation as gameplay, and SDL GL startup clears its initial swap buffers. These changes require physical display verification.
 

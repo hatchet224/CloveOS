@@ -16,6 +16,7 @@ their existing terms, including these exceptions:
 | `src/console-supervisor/vendor/stb_image.h` | Dual MIT/public-domain notice in the file; the MIT option is available. |
 | Onion-derived ScreenScraper integration | GNU GPL version 3; upstream license and provenance are in `src/console-supervisor/third_party/onion-scraper`. |
 | RetroArch integration patches | Derived from RetroArch v1.19.1, which retains its upstream GPL terms; the pinned commit and local module license are included. |
+| RGUI English and Cyrillic bitmap fonts | Separate build inputs, losslessly decoded from RZIP with unchanged glyph bits, from `libretro/retroarch-assets`, pinned in `provenance/rgui-fonts.json`; CC-BY-4.0, with the upstream notice in `LICENSES/RetroArch-assets-CC-BY-4.0.txt`. |
 | Go dependencies | Their own licenses; exact module versions/checksums and collected license texts are included. They are fetched by the Go toolchain, not vendored here. |
 | Musl declaration used by the capacity helper | The original `MUSL-COPYRIGHT` notice is retained in `src/console-grow`. |
 | R49 emulator compatibility patches | Each patch retains the upstream core's terms; exact source pins and license texts are under `releases/r49/compatibility`. The CloveOS GPL grant does not replace Snes9x, FinalBurn or other core restrictions. |

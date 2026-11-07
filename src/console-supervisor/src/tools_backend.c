@@ -1108,6 +1108,43 @@ static bool reset_profile(const struct cs_store *store, const char *name,
     return ok;
 }
 
+static bool reset_native_profiles(const struct cs_store *store, uint64_t scope)
+{
+    int fd=openat(store->data_fd,"retroarch-profiles",O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+    if(fd<0)return errno==ENOENT;
+    DIR *games=fdopendir(fd);if(games==NULL){close(fd);return false;}
+    bool ok=true;size_t visited=0U;
+    for(;;){
+        errno=0;struct dirent *game=readdir(games);
+        if(game==NULL){if(errno!=0)ok=false;break;}
+        if(strcmp(game->d_name,".")==0||strcmp(game->d_name,"..")==0)continue;
+        if(!cs_hex_valid(game->d_name,64U)){ok=false;break;}
+        int gamefd=openat(fd,game->d_name,O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+        if(gamefd<0){ok=false;break;}
+        DIR *cores=fdopendir(gamefd);if(cores==NULL){close(gamefd);ok=false;break;}
+        for(;;){
+            errno=0;struct dirent *core=readdir(cores);
+            if(core==NULL){if(errno!=0)ok=false;break;}
+            if(strcmp(core->d_name,".")==0||strcmp(core->d_name,"..")==0)continue;
+            if(!cs_hex_valid(core->d_name,64U)||++visited>16384U){ok=false;break;}
+            int profile=openat(gamefd,core->d_name,O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+            if(profile<0){ok=false;break;}
+            if(scope==CL_RESET_RETROARCH||scope==CL_RESET_ALL)
+                ok=clear_setting(store,profile,"retroarch.cfg",0U)&&ok;
+            if(scope==CL_RESET_CORE_OVERRIDES||scope==CL_RESET_ALL){
+                const char *const names[]={"core-options.cfg","config","remaps"};
+                for(size_t i=0U;i<sizeof(names)/sizeof(names[0]);++i)
+                    ok=clear_setting(store,profile,names[i],4U)&&ok;
+            }
+            if(cs_flush_directory(profile,store->fat,store->qualified_fat_syncfs)!=0)ok=false;
+            close(profile);if(!ok)break;
+        }
+        closedir(cores);if(!ok)break;
+    }
+    closedir(games);
+    return ok&&cs_store_check_media(store)==CS_STORE_OK;
+}
+
 static void reset_config(const struct sc_config *c, const struct cs_store *store,
                          uint64_t scope, struct cl_tool_snapshot *s)
 {
@@ -1126,6 +1163,8 @@ static void reset_config(const struct sc_config *c, const struct cs_store *store
         ok = reset_profile(store, "standalone-retroarch", retroarch, 1U, 0U);
     if (scope == CL_RESET_CORE_OVERRIDES || scope == CL_RESET_ALL)
         ok = reset_profile(store, "standalone-retroarch", cores, 3U, 4U) && ok;
+    if (scope == CL_RESET_RETROARCH || scope == CL_RESET_CORE_OVERRIDES || scope == CL_RESET_ALL)
+        ok = reset_native_profiles(store,scope) && ok;
     if (scope == CL_RESET_ADVANCE || scope == CL_RESET_ALL)
         ok = reset_profile(store, "standalone-advance", advance, 3U, 0U) && ok;
     if (scope == CL_RESET_ALL) {

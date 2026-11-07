@@ -2,6 +2,7 @@
 #include "launcher/file_explorer.h"
 #include "launcher/ports.h"
 #include "launcher/preferences.h"
+#include "launcher/i18n.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -21,7 +22,7 @@ static bool spawn(const char *path, char *const argv[], int control, int hook,
     sigset_t empty, defaults;
     int saved_control = -1, saved_hook = -1, result;
     char **environment = NULL;
-    char setting[1024];
+    char setting[1024], language[32];
     size_t count = 0U, i, used = 0U;
     bool actions_ready = false, attributes_ready = false, ok = false;
     if (control >= 0 && (saved_control = fcntl(control, F_DUPFD_CLOEXEC, 10)) < 0) {
@@ -33,14 +34,16 @@ static bool spawn(const char *path, char *const argv[], int control, int hook,
     while (environ[count] != NULL) {
         ++count;
     }
-    environment = calloc(count + 4U, sizeof(*environment));
+    environment = calloc(count + 6U, sizeof(*environment));
     if (environment == NULL) {
         goto done;
     }
     for (i = 0U; i < count; ++i) {
         if (strncmp(environ[i], "MAGICX_BRIDGE_LAUNCH=", 21U) != 0 &&
             strncmp(environ[i], "MAGICX_INPUT_PROFILE=", 21U) != 0 &&
-            strncmp(environ[i], "MAGICX_GAME_TWEAKS=", sizeof("MAGICX_GAME_TWEAKS=") - 1U) != 0) {
+            strncmp(environ[i], "MAGICX_GAME_TWEAKS=", sizeof("MAGICX_GAME_TWEAKS=") - 1U) != 0 &&
+            strncmp(environ[i], "CLOVE_UI_LANGUAGE=", sizeof("CLOVE_UI_LANGUAGE=") - 1U) != 0 &&
+            strncmp(environ[i], "CLOVE_DISPLAY_PANEL=", sizeof("CLOVE_DISPLAY_PANEL=") - 1U) != 0) {
             environment[used++] = environ[i];
         }
     }
@@ -53,6 +56,10 @@ static bool spawn(const char *path, char *const argv[], int control, int hook,
         environment[used++] = "MAGICX_INPUT_PROFILE=/run/console/config/verified-input.json";
     }
     if (game_settings != NULL) environment[used++] = game_settings;
+    result=snprintf(language,sizeof(language),"CLOVE_UI_LANGUAGE=%u",(unsigned int)cl_language_get());
+    if(result<0 || (size_t)result>=sizeof(language))goto done;
+    environment[used++]=language;
+    environment[used++]="CLOVE_DISPLAY_PANEL=magicx-mini-zero28";
     environment[used] = NULL;
     if (posix_spawn_file_actions_init(&actions) != 0) {
         goto done;

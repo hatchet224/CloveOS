@@ -279,7 +279,12 @@ static SDL_Surface *skin_image(const char *root, const char *name)
     }
     /* Protected bundled artwork keeps an unavailable/removable default pack
      * from turning unrelated theme omissions into an empty interface. */
-    if (image==NULL && strcmp(root,"/system/share/console/themes/Silky")!=0)
+    /* The original light Clove theme intentionally has no skin. Importing a
+     * dark fallback background makes its dark text unreadable in every locale. */
+    bool original_skin = strcmp(root,"/system/share/console/themes/Clove")==0 &&
+        (strstr(name,"bg-")!=NULL || strcmp(name,"skin/background.png")==0 ||
+         strcmp(name,"skin/tips-bar-bg.png")==0 || strcmp(name,"skin/pop-bg.png")==0);
+    if (image==NULL && !original_skin && strcmp(root,"/system/share/console/themes/Silky")!=0)
         image=image_under("/system/share/console/themes/Silky",name);
     return image;
 }
@@ -436,6 +441,30 @@ void cl_assets_close(struct cl_assets *a)
     }
     memset(a, 0, sizeof(*a));
 }
+static uint32_t next_code(const char **text);
+static bool runtime_covers(const struct cl_assets *a, enum cl_theme_role role, const char *text)
+{
+    if (a->runtime_fonts[role].font == NULL) return false;
+    while (*text != '\0') {
+        uint32_t code = next_code(&text);
+        if (code > 0xffffU || (code >= 128U &&
+            TTF_GlyphIsProvided(a->runtime_fonts[role].font, (Uint16)code) == 0)) return false;
+    }
+    return true;
+}
+static bool ascii_text(const char *text)
+{
+    while (*text != '\0') if ((unsigned char)*text++ >= 128U) return false;
+    return true;
+}
+unsigned int cl_compact_text_scale(const struct cl_assets *a, enum cl_theme_role role)
+{
+    if (a!=NULL && (unsigned int)role<CL_FONT_COUNT && a->runtime_fonts[role].font!=NULL) {
+        int scale=TTF_FontHeight(a->runtime_fonts[role].font)/8;
+        return (unsigned int)(scale<1?1:(scale>4?4:scale));
+    }
+    return role==CL_FONT_DETAIL?1U:2U;
+}
 bool cl_runtime_text(struct cl_assets *a, enum cl_theme_role role, SDL_Surface *target, int x,
                      int y, const char *text, uint32_t color, int width)
 {
@@ -445,7 +474,7 @@ bool cl_runtime_text(struct cl_assets *a, enum cl_theme_role role, SDL_Surface *
     size_t bytes;
     int measured_width, measured_height;
     SDL_Color ink = {(Uint8)(color >> 16U), (Uint8)(color >> 8U), (Uint8)color, 255U};
-    if (role < 0 || role >= CL_FONT_COUNT || a->runtime_fonts[role].font == NULL || width < 1) {
+    if (role < 0 || role >= CL_FONT_COUNT || width < 1 || !runtime_covers(a,role,text)) {
         return false;
     }
     bytes = strnlen(text, sizeof(bounded));
@@ -508,10 +537,10 @@ bool cl_text_measure(const struct cl_assets *a, enum cl_theme_role role, const c
         (unsigned int)role>=CL_FONT_COUNT) return false;
     bytes=strnlen(text,512U);
     if (bytes>=512U) return false;
-    if (a->runtime_fonts[role].font!=NULL) {
+    if (runtime_covers(a,role,text)) {
         if (TTF_SizeUTF8(a->runtime_fonts[role].font,text,&w,&h)!=0 ||
             w<0 || w>8192 || h<1 || h>72) return false;
-    } else if (a->fonts[role].surface!=NULL) {
+    } else if (a->fonts[role].surface!=NULL && ascii_text(text)) {
         const struct cl_atlas *font=&a->fonts[role];
         const char *p=text;
         h=font->height;
@@ -528,8 +557,10 @@ bool cl_text_measure(const struct cl_assets *a, enum cl_theme_role role, const c
         }
         if(h<1 || h>72) return false;
     } else {
-        w=(int)bytes*(role==CL_FONT_DETAIL?6:12);
-        h=role==CL_FONT_DETAIL?8:16;
+        const char *p=text;
+        unsigned int scale=cl_compact_text_scale(a,role);
+        while (*p!='\0') { (void)next_code(&p);w+=(int)(6U*scale); }
+        h=(int)(8U*scale);
     }
     *width=w;*height=h;return true;
 }

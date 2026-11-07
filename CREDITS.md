@@ -7,6 +7,7 @@ CloveOS is an independent community project for the MagicX Mini Zero 28. Its int
 - [oakMOSS](https://github.com/spruceUI/oakMOSS) provides the matched kernel and runtime components used by the test image.
 - [MinUI](https://github.com/shauninman/MinUI) informed the handheld architecture and supplied upstream build inputs.
 - [RetroArch](https://github.com/libretro/RetroArch) and the [libretro projects](https://github.com/libretro) provide emulator infrastructure and cores.
+- The RetroArch assets contributors provide the English/Cyrillic RGUI glyphs, losslessly decoded from upstream RZIP containers, under CC-BY-4.0; exact inputs, upstream links and notices are recorded in `provenance/rgui-fonts.json` and `LICENSES/RetroArch-assets-CC-BY-4.0.txt`.
 - Silky is by DiMo and is sourced from [OnionUI / Themes](https://github.com/OnionUI/Themes).
 - Additional components include SDL, uMTP-Responder, and the SMB/SFTP libraries recorded in the build's provenance and notices.
 

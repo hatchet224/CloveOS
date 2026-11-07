@@ -1,0 +1,185 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Real RA/core/SDL/bridge/store integration. The small local control server is
+ * a test fixture, not a replacement for production supervisor authorization. */
+#include "sessiond/bridge.h"
+#include "sessiond/control_protocol.h"
+#include "sessiond/json.h"
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <poll.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <time.h>
+#include <unistd.h>
+#define CHECK(x) do{if(!(x)){fprintf(stderr,"HOTKEY_TEST_FAIL line=%d %s errno=%d\n",__LINE__,#x,errno);exit(1);}}while(0)
+static struct cs_store store;static struct cs_bridge bridge;static uint64_t serial;
+static pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
+static struct cs_session_status status={.active=1,.session=1,.sequence=1};
+static unsigned counts[64],pending;static uint64_t pending_token;static int stopping,server;
+static char saved_directory[256];static struct cs_record saved_record;static unsigned saved_counter;
+static struct cs_bridge_reply call(enum cs_operation op,uint64_t generation,const char *directory){
+ struct cs_request request={op,1,++serial,generation};
+ struct cs_bridge_reply reply=cs_bridge_exchange(&bridge,&request,directory,NULL,30000);
+ fprintf(stderr,"HOTKEY_BRIDGE %s status=%u frame=%" PRIu64 "\n",cs_operation_name(op),(unsigned)reply.status,reply.frame);
+ CHECK(reply.status==CS_BRIDGE_OK && reply.writers_closed);return reply;
+}
+static void *controls(void *unused){
+ (void)unused;
+ for(;;){pthread_mutex_lock(&mutex);int done=stopping;pthread_mutex_unlock(&mutex);if(done)break;
+  struct pollfd pollfd={server,POLLIN,0};if(poll(&pollfd,1,30)<=0)continue;
+  int fd=accept4(server,NULL,NULL,SOCK_CLOEXEC);if(fd<0)continue;
+  struct cs_control_header q={0};ssize_t n=recv(fd,&q,sizeof(q),0);
+  if(n!=(ssize_t)sizeof(q) || q.magic!=CS_CONTROL_MAGIC || q.version!=CS_CONTROL_VERSION){close(fd);continue;}
+  struct {struct cs_control_header header;union{int32_t result;struct cs_session_status state;}data;} reply={0};
+  reply.header.magic=CS_CONTROL_MAGIC;reply.header.version=CS_CONTROL_VERSION;reply.header.token=q.token;
+  pthread_mutex_lock(&mutex);
+  if(q.type==CS_CONTROL_SESSION_STATUS){reply.header.type=CS_CONTROL_SESSION_STATUS_REPLY;reply.header.length=sizeof(status);reply.data.state=status;}
+  else{CHECK(q.type<64);++counts[q.type];if(q.type!=CS_CONTROL_HOTKEY_CONSUMED){CHECK(pending==0);pending=q.type;pending_token=q.token;}
+   reply.header.type=CS_CONTROL_ACK;reply.header.length=sizeof(int32_t);reply.data.result=0;}
+  pthread_mutex_unlock(&mutex);
+  CHECK(send(fd,&reply,sizeof(reply.header)+reply.header.length,MSG_NOSIGNAL)==(ssize_t)(sizeof(reply.header)+reply.header.length));close(fd);
+ }
+ return NULL;
+}
+static unsigned capture(char relative[256]){
+ uint64_t g=store.highwater+1;call(CS_OP_QUIESCE,g,"");CHECK(cs_store_stage(&store,g,relative)==CS_STORE_OK);
+ struct cs_bridge_reply reply=call(CS_OP_WRITE,g,relative);CHECK(cs_store_commit(&store,reply.frame)==CS_STORE_OK);
+ CHECK(cs_store_verify_selected(&store,g,relative)==CS_STORE_OK);
+ char path[512];snprintf(path,sizeof(path),"/mnt/SDCARD/.console/%s/sram.bin",relative);
+ int fd=open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);unsigned char bytes[3];CHECK(fd>=0 && read(fd,bytes,3)==3 && close(fd)==0 && bytes[2]==0x5a);
+ pthread_mutex_lock(&mutex);status.generation=g;++status.sequence;status.quick_menu=0;pthread_mutex_unlock(&mutex);
+ unsigned word=(unsigned)bytes[0]+256U*(unsigned)bytes[1];fprintf(stderr,"HOTKEY_CAPTURE generation=%" PRIu64 " counter=%u\n",g,word);return word;
+}
+static void service(void){
+ pthread_mutex_lock(&mutex);unsigned op=pending;uint64_t token=pending_token;pending=0;pthread_mutex_unlock(&mutex);if(!op)return;
+ if(op==CS_CONTROL_QUICK_MENU){call(CS_OP_QUICK_MENU,store.has_selected?store.selected.generation:0,"");pthread_mutex_lock(&mutex);status.quick_menu=1;++status.sequence;pthread_mutex_unlock(&mutex);}
+ else if(op==CS_CONTROL_QUICK_MENU_CLOSE){call(CS_OP_QUICK_MENU_CLOSE,0,"");call(CS_OP_RELEASE,store.has_selected?store.selected.generation:0,"");pthread_mutex_lock(&mutex);status.quick_menu=0;++status.sequence;pthread_mutex_unlock(&mutex);}
+ else if(op==CS_CONTROL_SAVE_SLOT){char directory[256];saved_counter=capture(directory);CHECK(cs_store_slot_save(&store,status.slot)==CS_STORE_OK);strcpy(saved_directory,directory);saved_record=store.selected;call(CS_OP_RELEASE,store.selected.generation,"");}
+ else if(op==CS_CONTROL_LOAD_SLOT){CHECK(saved_directory[0]);struct cs_record record;CHECK(cs_store_read_checkpoint(&store,&saved_record.identity,saved_record.generation,saved_record.manifest,&record)==CS_STORE_OK);call(CS_OP_QUIESCE,store.highwater+1,"");call(CS_OP_LOAD,saved_record.generation,saved_directory);call(CS_OP_RELEASE,saved_record.generation,"");}
+ else if(op==CS_CONTROL_MENU){char directory[256];(void)capture(directory);puts("R52_NATIVE_CLOSE_REQUESTS_OWNER_AND_CORE_REMAINS_CAPTUREABLE_PASS");}
+ else if(op==CS_CONTROL_SLOT_UP || op==CS_CONTROL_SLOT_DOWN){pthread_mutex_lock(&mutex);status.slot=op==CS_CONTROL_SLOT_UP?(status.slot+1)%16:(status.slot+15)%16;pthread_mutex_unlock(&mutex);}
+ else {fprintf(stderr,"UNEXPECTED_CONTROL op=%u\n",op);CHECK(0);}
+ if(op>=CS_CONTROL_SAVE_SLOT && op<=CS_CONTROL_SCREENSHOT){pthread_mutex_lock(&mutex);status.operation=op;status.operation_token=token;++status.sequence;pthread_mutex_unlock(&mutex);}
+}
+static void wait_ms(unsigned duration){
+ struct timespec t;CHECK(clock_gettime(CLOCK_MONOTONIC,&t)==0);uint64_t until=(uint64_t)t.tv_sec*1000+(uint64_t)t.tv_nsec/1000000+duration;
+ do{service();usleep(10000);CHECK(clock_gettime(CLOCK_MONOTONIC,&t)==0);}while((uint64_t)t.tv_sec*1000+(uint64_t)t.tv_nsec/1000000<until);
+ service();
+}
+static void buttons(unsigned mask){char text[32];int n=snprintf(text,sizeof(text),"%u\n",mask);int fd=open("/tmp/test-buttons.new",O_WRONLY|O_CREAT|O_TRUNC,0600);CHECK(fd>=0&&write(fd,text,(size_t)n)==n&&close(fd)==0&&rename("/tmp/test-buttons.new","/tmp/test-buttons")==0);}
+/* Emulation under nested QEMU runs slower than wall clock. Hold long enough
+ * for the unchanged production hotkey-block delay to expire in core frames. */
+static void pulse(unsigned mask){buttons(mask);wait_ms(1300);buttons(0);wait_ms(600);}
+static void menu_press(unsigned raw){buttons(1U<<raw);wait_ms(150);buttons(0);wait_ms(300);}
+static unsigned observed(unsigned op){pthread_mutex_lock(&mutex);unsigned n=counts[op];pthread_mutex_unlock(&mutex);return n;}
+static void expect_chord(unsigned raw,unsigned op){unsigned before=observed(op);fprintf(stderr,"HOTKEY_EXPECT raw=%u op=%u before=%u\n",raw,op,before);pulse((1U<<19)|(1U<<raw));CHECK(observed(op)>before);}
+static void option_suffix(const char *directory,int expected){
+ char path[512];snprintf(path,sizeof(path),"/mnt/SDCARD/.console/%s/state.bin",directory);
+ int fd=open(path,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);CHECK(fd>=0);struct stat st;CHECK(fstat(fd,&st)==0&&st.st_size>=16);
+ char tail[16];CHECK(pread(fd,tail,16,st.st_size-16)==16&&close(fd)==0);
+ CHECK((memcmp(tail,"CLOVEOPT",8)==0)==expected);
+}
+static void current_entry(char value[256]) {
+ FILE *f=fopen("/tmp/ra.log","r");CHECK(f!=NULL);char line[4096];value[0]=0;
+ while(fgets(line,sizeof(line),f)) {char *p=strstr(line,"Clove native entry: ");if(p){p+=strlen("Clove native entry: ");snprintf(value,256,"%s",p);value[strcspn(value,"\r\n")]=0;}}
+ fclose(f);
+}
+static void find_entry(const char *name) {
+ for(unsigned step=0;step<90;++step){char value[256];wait_ms(80);current_entry(value);
+  fprintf(stderr,"NATIVE_NAVIGATING wanted=%s observed=%s\n",name,value);
+  if(strcmp(value,name)==0)return;menu_press(16);}
+ CHECK(0);
+}
+static void native_walk(int plain) {
+ expect_chord(8,CS_CONTROL_QUICK_MENU);
+ find_entry("core_options");menu_press(0);
+ find_entry(plain?"gambatte_gb_colorization":"tgbdual_gblink_enable");menu_press(15);
+ menu_press(1);
+ find_entry("core_input_remapping_options");menu_press(0);
+ find_entry("remap_file_manager_list");menu_press(0);find_entry("remap_file_save_core");menu_press(0);menu_press(1);menu_press(1);
+ find_entry("latency_settings");menu_press(0);find_entry("video_frame_delay");menu_press(15);menu_press(1);
+ find_entry("onscreen_overlay_settings");menu_press(0);find_entry("input_overlay_enable");menu_press(15);menu_press(1);
+ find_entry("resume_content");unsigned before=observed(CS_CONTROL_QUICK_MENU_CLOSE);menu_press(0);
+ CHECK(observed(CS_CONTROL_QUICK_MENU_CLOSE)>before);
+ expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("savestate_list");menu_press(0);find_entry("state_slot");before=observed(CS_CONTROL_SLOT_UP);menu_press(15);CHECK(observed(CS_CONTROL_SLOT_UP)>before&&status.slot==1);find_entry("savestate");before=observed(CS_CONTROL_SAVE_SLOT);menu_press(0);
+ CHECK(observed(CS_CONTROL_SAVE_SLOT)>before); option_suffix(saved_directory,plain);struct cs_record native_slot;CHECK(cs_store_slot_read(&store,&saved_record.identity,1,&native_slot)==CS_STORE_OK&&native_slot.generation==saved_record.generation);
+ expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("savestate_list");menu_press(0);find_entry("loadstate");before=observed(CS_CONTROL_LOAD_SLOT);menu_press(0);
+ CHECK(observed(CS_CONTROL_LOAD_SLOT)>before);
+ puts("R52_ACTUAL_NATIVE_CORE_OPTIONS_CONTROLS_SAVE_LOAD_AND_RESUME_PASS");
+}
+static void same_battery(const char *one,const char *two,const char *name,uint64_t advanced){
+ char p[512],q[512];snprintf(p,sizeof(p),"/mnt/SDCARD/.console/%s/%s",one,name);if(two==NULL)snprintf(q,sizeof(q),"/tmp/test-core-%s",name);else snprintf(q,sizeof(q),"/mnt/SDCARD/.console/%s/%s",two,name);
+ int a=open(p,O_RDONLY|O_CLOEXEC|O_NOFOLLOW),b=open(q,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);CHECK(a>=0&&b>=0);
+ unsigned char x[4096],y[4096];ssize_t n,m;int first=1;do{n=read(a,x,sizeof(x));m=read(b,y,sizeof(y));CHECK(n>=0&&m==n);if(first&&advanced!=0){CHECK(n>=3&&strcmp(name,"sram.bin")==0);unsigned count=((unsigned)x[0]+256U*(unsigned)x[1]+(unsigned)advanced)&65535U;x[0]=(unsigned char)count;x[1]=(unsigned char)(count>>8);}if(n>0&&memcmp(x,y,(size_t)n)!=0)fprintf(stderr,"BATTERY_MISMATCH artifact=%s advanced=%" PRIu64 "\n",name,advanced);CHECK(n==0||memcmp(x,y,(size_t)n)==0);first=0;}while(n>0);CHECK(close(a)==0&&close(b)==0);
+}
+static void inspect_paused(void){
+ int fd=open("/tmp/test-inspect-request",O_WRONLY|O_CREAT|O_TRUNC,0600);CHECK(fd>=0&&write(fd,"1\n",2)==2&&close(fd)==0);unsigned ack=0;
+ for(unsigned tries=0;tries<100&&ack!=1;++tries){wait_ms(30);FILE *f=fopen("/tmp/test-inspect-ack","r");if(f){(void)fscanf(f,"%u",&ack);fclose(f);}}CHECK(ack==1);
+}
+int main(int argc,char **argv){
+ CHECK(argc==2);const int old=strcmp(argv[1],"old")==0,plain=strcmp(argv[1],"plain")==0;
+ const char *names[]={"game","content","core","config","bios","retroarch","disc","policy"};
+ struct cs_store_config cfg={0};char *fields[]={cfg.identity.game,cfg.identity.content,cfg.identity.core,cfg.identity.config,cfg.identity.bios,cfg.identity.retroarch,cfg.identity.disc,cfg.identity.policy};
+ char bytes[2048];int fd=open("/run/console/retroarch.sock.identity.json",O_RDONLY|O_CLOEXEC);CHECK(fd>=0);ssize_t n=read(fd,bytes,sizeof(bytes));CHECK(n>0&&close(fd)==0);struct cs_json identity;CHECK(cs_json_parse(&identity,bytes,(size_t)n));
+ for(unsigned i=0;i<8;++i){const char *s=cs_json_string(&identity,names[i]);CHECK(cs_hex_valid(s,64));memcpy(fields[i],s,65);}
+ cfg.card_path="/mnt/SDCARD";cfg.card_uuid="C028-0002";cfg.instance="0123456789abcdef0123456789abcdef";cfg.qualified_fat_syncfs=true;cfg.max_state_bytes=64U*1024*1024;
+ CHECK(cs_store_open(&store,&cfg)==CS_STORE_OK && cs_bridge_init(&bridge,"/run/console/retroarch.sock",0,cfg.instance,"/mnt/SDCARD/.console",&cfg.identity));
+ server=socket(AF_UNIX,SOCK_SEQPACKET|SOCK_CLOEXEC,0);CHECK(server>=0);struct sockaddr_un addr={.sun_family=AF_UNIX};strcpy(addr.sun_path,"/run/console/control.sock");unlink(addr.sun_path);CHECK(bind(server,(struct sockaddr*)&addr,sizeof(addr))==0&&chmod(addr.sun_path,0600)==0&&listen(server,8)==0);pthread_t thread;CHECK(pthread_create(&thread,NULL,controls,NULL)==0);
+ call(CS_OP_START,0,"");
+ if(strcmp(argv[1],"reload")==0){
+  call(CS_OP_RELEASE,0,"");wait_ms(1500);unsigned delay=0,remap=0;char remap_path[512];FILE *probe=fopen("/tmp/profile-probe-result","r");
+  CHECK(probe&&fscanf(probe,"%u %u %511s",&delay,&remap,remap_path)==3&&fclose(probe)==0);
+  CHECK(delay==1&&remap==1&&strstr(remap_path,"/remaps/Gambatte/Gambatte.rmp")!=NULL);
+  puts("R52_ACTUAL_RESTART_LOADED_EFFECTIVE_FRAME_DELAY_AND_CORE_REMAP_PASS");
+  call(CS_OP_QUIESCE,store.highwater+1,"");goto session_done;
+ }
+ char directory[256];
+ if(old){call(CS_OP_RELEASE,0,"");wait_ms(600);unsigned first=capture(directory);CHECK(cs_store_slot_save(&store,0)==CS_STORE_OK&&cs_store_slot_save(&store,15)==CS_STORE_OK);fprintf(stderr,"OLD_RA_BATTERY_COUNTER=%u\n",first);}
+ else{
+  CHECK(cs_store_load(&store)==CS_STORE_OK&&store.has_selected);uint64_t prior=store.selected.generation;CHECK(cs_store_verify_selected(&store,prior,directory)==CS_STORE_OK);saved_record=store.selected;strcpy(saved_directory,directory);
+  struct cs_record slot;CHECK(cs_store_slot_read(&store,&cfg.identity,0,&slot)==CS_STORE_OK&&slot.generation==prior);
+  char original[256];strcpy(original,directory);
+  call(CS_OP_LOAD,prior,directory);inspect_paused();same_battery(original,NULL,"sram.bin",0);same_battery(original,NULL,"rtc.bin",0);
+  puts("ACTUAL_OLD_TO_NEW_RA_PAUSED_EXACT_SRAM_RTC_RESTORE_PASS");
+  call(CS_OP_RELEASE,prior,"");(void)capture(directory);
+  /* RELEASE necessarily renders healthy frames before a coherent capture.
+   * The original cartridge increments exactly once per emulated frame. */
+  CHECK(store.selected.frame>=saved_record.frame);
+  same_battery(original,directory,"sram.bin",store.selected.frame-saved_record.frame);
+  CHECK(cs_store_slot_read(&store,&cfg.identity,15,&slot)==CS_STORE_OK&&slot.generation==prior);
+  call(CS_OP_RELEASE,store.selected.generation,"");
+  puts("ACTUAL_OLD_TO_NEW_RA_SRAM_EXPECTED_FRAME_DELTA_RTC_AND_PRESERVED_OLD_SLOT_15_PASS");
+  expect_chord(2,CS_CONTROL_HOTKEY_CONSUMED);expect_chord(9,CS_CONTROL_HOTKEY_CONSUMED);
+  expect_chord(5,CS_CONTROL_HOTKEY_CONSUMED);expect_chord(5,CS_CONTROL_HOTKEY_CONSUMED);
+  expect_chord(15,CS_CONTROL_SLOT_UP);expect_chord(14,CS_CONTROL_SLOT_DOWN);
+  expect_chord(7,CS_CONTROL_SAVE_SLOT);expect_chord(6,CS_CONTROL_LOAD_SLOT);
+  /* Unmapped physical combinations must not become an exit operation. */
+  pulse((1U<<19)|1U);pulse((1U<<19)|(1U<<1));pulse((1U<<19)|(1U<<3));CHECK(observed(CS_CONTROL_MENU)==0);
+  native_walk(plain);
+  if(plain){
+   char changed[256],restored[256],factory[256];strcpy(changed,saved_directory);uint64_t changed_generation=saved_record.generation;
+   call(CS_OP_QUIESCE,store.highwater+1,"");call(CS_OP_LOAD,prior,original);
+   (void)capture(factory);option_suffix(factory,0);
+   call(CS_OP_LOAD,changed_generation,changed);(void)capture(restored);option_suffix(restored,1);
+   same_battery(changed,restored,"sram.bin",0);same_battery(changed,restored,"rtc.bin",0);
+   call(CS_OP_RELEASE,store.selected.generation,"");
+   puts("R52_ACTUAL_NATIVE_CHANGED_OPTIONS_CHECKPOINT_OLD_FACTORY_AND_NEW_OPTION_RESTORE_PASS");
+  }
+  expect_chord(8,CS_CONTROL_QUICK_MENU);expect_chord(8,CS_CONTROL_QUICK_MENU_CLOSE);
+  CHECK(cs_store_slot_read(&store,&cfg.identity,15,&slot)==CS_STORE_OK&&slot.generation==prior);
+  CHECK(cs_store_read_checkpoint(&store,&saved_record.identity,prior,slot.manifest,&slot)==CS_STORE_OK);
+  puts("R52_ACTUAL_NATIVE_MENU_AND_OLD_CHECKPOINT_PRESERVATION_PASS");
+  expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("unload_core");unsigned closing=observed(CS_CONTROL_MENU);menu_press(0);CHECK(observed(CS_CONTROL_MENU)>closing);
+ }
+ if(store.has_selected){int out=open("/tmp/latest-battery-path",O_WRONLY|O_CREAT|O_TRUNC,0600);char path[512];CHECK(cs_store_verify_selected(&store,store.selected.generation,directory)==CS_STORE_OK);int size=snprintf(path,sizeof(path),"/mnt/SDCARD/.console/%s/sram.bin\n",directory);CHECK(out>=0&&write(out,path,(size_t)size)==size&&close(out)==0);}
+session_done:
+ call(CS_OP_EXIT,store.selected.generation,"");CHECK(cs_store_sync(&store)==CS_STORE_OK);
+ pthread_mutex_lock(&mutex);stopping=1;pthread_mutex_unlock(&mutex);CHECK(pthread_join(thread,NULL)==0);close(server);unlink("/run/console/control.sock");cs_bridge_close(&bridge);cs_store_close(&store);puts("REAL_HOTKEY_SESSION_CLIENT_PASS");return 0;
+}

@@ -6,7 +6,10 @@
 #include <unistd.h>
 
 #define CS_RETROARCH_COMPAT_PATH "/etc/console/retroarch-compatible.sha256"
-/* r30 and the control-only successor have identical state serialization.
+/* Qualified default-option checkpoints retain the r30 state serialization.
+ * Native non-factory core options use a versioned CLOVEOPT suffix: these
+ * checkpoints require this binding or a compatible newer one. They must not
+ * be offered as backward-compatible with older frontends.
  * First authenticate the executable bytes. Only this root-owned release
  * record can map the new digest to the existing checkpoint identity. */
 static inline void cs_retroarch_checkpoint_hash(int fd, char hash[65])

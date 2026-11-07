@@ -1,0 +1,194 @@
+{
+  "stage": "R52 implementation and software qualification; clean binary release pending",
+  "base_source_commit": "2e423200dd02a401750fe2092945897917339c22",
+  "frontend_sha256": "de4e75bdb2b8a0b389a5dea2a0740642c1433b93924f433b17769d53de60b0b5",
+  "prior_physical_report": "Maintainer confirmed both Pokemon host roles, controls and volume, completed trade/battle, exit and saved-progress reload on the preceding installed candidate.",
+  "new_tests_are_software_not_physical": true,
+  "source_files_independently_compared": 372,
+  "privacy_blockers": 0,
+  "matching_source_CI_pending": true,
+  "reports": {
+    "language-test": {
+      "passed": true,
+      "markers": [
+        "R52_RUSSIAN_FRESH_DURABLE_LEGACY_UPGRADE_ERROR_UTF8_AND_CYRILLIC_RENDER_PASS",
+        "R52_RUSSIAN_ENGLISH_CONFIRM_PERSIST_RESTART_AND_RESERVED_FALLBACK_PASS",
+        "R50_LANGUAGE_SELECTOR_UTF8_FALLBACK_AND_DATA_BOUNDARIES_PASS",
+        "R52_LANGUAGE_AND_FIRSTBOOT_SOFTWARE_PASS",
+        "R52_LANGUAGE_VM_EXIT=0"
+      ],
+      "original_ARM64_application_code": true,
+      "disposable_FAT32": true,
+      "SDL_device_substitution": true,
+      "physical_SD_writes": false,
+      "physical_device_qualification": false,
+      "executable_hashes": {
+        "qemu-aarch64-static": "dce64b2dc6b005485c7aa735a7ea39cb0006bf7e5badc28b324b2cd0c73d883f",
+        "headless-sdl": "f5b6075101e8f2adf65d02737fb572322d619a55debae350d824da14f7beaed2",
+        "r50_language_tests": "793086b7df7b2503615e26ac2ad8446b338e500c9bdde1dfe3c9c416f8ee778c",
+        "r52_language_tests": "e4261ff1c5ad5bfd8762f7f46678242f3c2b632592c3b1c936814c3892d58973",
+        "launcher_preferences_tests": "90eabeb1f5e6e7a2b1baa979753c41460c2923e970aabfbc4d0aed231dc8a3c4"
+      },
+      "rendered_BMPs": [
+        "es-dialog.bmp",
+        "es-fallback.bmp",
+        "es-language.bmp",
+        "es-settings.bmp",
+        "es-tweaks.bmp",
+        "firstboot-en.bmp",
+        "firstboot-ru-saving.bmp",
+        "firstboot-russian-choice.bmp",
+        "ru-confirm.bmp",
+        "ru-fallback.bmp",
+        "ru-language-error.bmp",
+        "ru-language.bmp",
+        "ru-settings.bmp",
+        "ru-tweaks.bmp"
+      ]
+    },
+    "native-runtime-test": {
+      "passed": true,
+      "markers": [
+        "SHORTCUT_VM_EXIT=0",
+        "ACTUAL_TGB_SHORTCUT_SESSION_COMPLETE",
+        "MENU_PHYSICAL_CHORD_ORDER_RELEASE_HOLD_AND_UNMAPPED_PASS cases=136",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GB:old",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GB:new",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GBC:old",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GBC:new",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=gambatte:GB:old",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=gambatte:GB:new",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=gambatte:GBC:old",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=gambatte:GBC:new",
+        "ACTUAL_OLD_NEW_TGB_LATEST_BATTERY_LINK_SEED_PASS=GB",
+        "ACTUAL_OLD_NEW_TGB_LATEST_BATTERY_LINK_SEED_PASS=GBC"
+      ],
+      "full_GB_GBC_TGB_Gambatte_and_link_seed_qualification": true,
+      "new_retroarch_sha256": "de4e75bdb2b8a0b389a5dea2a0740642c1433b93924f433b17769d53de60b0b5",
+      "old_retroarch_sha256": "d6effb287377598c5e8d31f62771b040cfab310bf4007f57e54f8bddb6bab7b9",
+      "actual_old_and_new_RA": true,
+      "actual_pinned_TGB_core": true,
+      "actual_default_Gambatte_core": true,
+      "old_slot_15_and_checkpoint_preserved": true,
+      "paused_raw_SRAM_RTC_observation_byte_exact": true,
+      "post_release_SRAM_counter_compared_with_exact_emulated_frame_delta": true,
+      "actual_latest_battery_link_seed": true,
+      "generated_cartridges": true,
+      "virtual_SDL_input": true,
+      "fixture_local_control_server": true,
+      "production_supervisor_raw_chord_and_level_tests": true,
+      "existing_bridge_source_tests_executed": true,
+      "clean_disposable_FAT_unmount_and_check": true,
+      "physical_testing_pending": true,
+      "physical_SD_used_by_VM": false
+    },
+    "native-settings-test": {
+      "passed": true,
+      "markers": [
+        "SHORTCUT_VM_EXIT=0",
+        "ACTUAL_TGB_SHORTCUT_SESSION_COMPLETE",
+        "MENU_PHYSICAL_CHORD_ORDER_RELEASE_HOLD_AND_UNMAPPED_PASS cases=136",
+        "R52_ACTUAL_RESTART_LOADED_EFFECTIVE_FRAME_DELAY_AND_CORE_REMAP_PASS",
+        "R52_ACTUAL_NATIVE_LATENCY_OVERLAY_AND_REMAP_PROFILE_PERSISTENCE_PASS"
+      ],
+      "systems": [
+        "GB"
+      ],
+      "cores": [
+        "Gambatte"
+      ],
+      "new_retroarch_sha256": "de4e75bdb2b8a0b389a5dea2a0740642c1433b93924f433b17769d53de60b0b5",
+      "old_retroarch_sha256": "d6effb287377598c5e8d31f62771b040cfab310bf4007f57e54f8bddb6bab7b9",
+      "actual_production_managed_wrapper": true,
+      "actual_native_setting_actions": true,
+      "latency_changed_saved_and_reloaded": true,
+      "core_remap_saved_and_active_after_restart": true,
+      "read_only_ELF_address_probe_fixture": true,
+      "virtual_SDL": true,
+      "disposable_FAT": true,
+      "no_SD_access": true,
+      "physical_hardware": false
+    },
+    "native-render-test": {
+      "passed": true,
+      "capture_passed": true,
+      "visual_Russian_review_required": false,
+      "actual_ARM64_RetroArch": true,
+      "real_RGUI_bitmap_font": true,
+      "frontend_sha256": "de4e75bdb2b8a0b389a5dea2a0740642c1433b93924f433b17769d53de60b0b5",
+      "native_language_enum": 9,
+      "SDL_software_display_substitution": true,
+      "physical_handheld": false,
+      "SD_access": false,
+      "frame_sha256": "06a97fe7165b981dbbe9a3371c078b88db3bfc8bfaccd6b17b9e2dbc15fd4e51",
+      "visual_review": "Actual final native menu BMP reviewed: Cyrillic labels readable and unclipped; missing-font banner absent. Software SDL display substitution."
+    },
+    "projection-final-test": {
+      "passed": true,
+      "production_GL2_draw_and_projection": true,
+      "GL_calls_substituted": true,
+      "physical_GPU": false,
+      "game_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "managed_and_unmanaged": true,
+      "game_matrices_preserved": true,
+      "draw_function_sha256": "0f712b652ae9c839ae991af25d8fb2becf0f56eebdd5ce8ab7791ae590fdabcf"
+    },
+    "disc-dispatch-test": {
+      "passed": true,
+      "actual_production_functions_extracted": true,
+      "production_sha256": "a9d718bc04ae9a021aeb5cebae9948c6a554a857cdf799ae3eeb0e044d764560",
+      "disk_callbacks_are_fixtures": true,
+      "physical_hardware": false
+    },
+    "disc-runtime-test": {
+      "passed": true,
+      "markers": [
+        "PLAYLIST_CATALOG_BRIDGE_IDENTITY_PASS",
+        "PLAYLIST_CONTROLLER_SELECTED_AND_CHECKPOINT_STORED_DISC_2_PASS",
+        "REAL_SESSION_NEW_PROCESS_RESUME=1",
+        "PLAYLIST_MANAGED_INDEX_ONLY_PASS",
+        "PLAYLIST_AUTHENTICATES_TRACKS_AND_ORDER_PASS",
+        "CLOVE_PLAYLIST_VM_EXIT=0"
+      ],
+      "actual_ARM64_RA": true,
+      "actual_PCSX_core": true,
+      "synthetic_discs": true,
+      "virtual_SDL": true,
+      "physical_SD_access": false,
+      "frontend_sha256": "de4e75bdb2b8a0b389a5dea2a0740642c1433b93924f433b17769d53de60b0b5"
+    },
+    "power-test": {
+      "passed": true,
+      "markers": [
+        "POWER_TERM_DURING_GAME_AND_SAVE_RETURN_REAL_HELPER_FLUSH_REAP_RESTORE_PASS=host",
+        "POWER_TERM_DURING_GAME_AND_SAVE_RETURN_REAL_HELPER_FLUSH_REAP_RESTORE_PASS=join",
+        "ONION_LINK_BIDIRECTIONAL_SAVE_RETURN_PREVIOUS_BACKUPS_AND_FAT_COMMIT_PASS",
+        "ONION_POKEMON_CANCEL_DURING_PAIRING_NO_SAVE_MUTATION_PASS",
+        "ONION_RADIO_VM_EXIT=0"
+      ],
+      "wrapper_sha256": "e48cb3a5f73ae7eada2f769071ef358195e5801a653e01b9c1c48c1545e3bbf4",
+      "actual_production_wrapper_and_protocol_helper": true,
+      "disposable_FAT32": true,
+      "frontend_and_radio_standins": true,
+      "physical_POWER_not_tested": true,
+      "standard_modes_not_qualified": true,
+      "no_SD_access": true
+    },
+    "standard-runtime-test": {
+      "passed": true,
+      "new_frontend_sha256": "de4e75bdb2b8a0b389a5dea2a0740642c1433b93924f433b17769d53de60b0b5",
+      "actual_stock_ARM32_peer": true,
+      "actual_pinned_FCEUmm": true,
+      "actual_production_startup_wrapper": true,
+      "synthetic_NES": true,
+      "virtual_SDL": true,
+      "physical_hardware": false,
+      "no_SD_access": true
+    }
+  }
+}

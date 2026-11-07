@@ -1,0 +1,13 @@
+# Native menu integration
+
+Normal managed sessions expose upstream Quick Menu, Core Options, Controls and remap management, overlay, latency, rewind and cheat settings. The restricted recovery panel is used only after an unsettled session operation. MENU+SELECT opens the native menu. Resume, Save/Load, state slot, Restart, Close Content and Quit use the authenticated session owner; native content/core replacement and independent save writers are refused with feedback. Physical calibration and global shortcuts remain CloveOS-owned.
+
+Each game/core pair has a writable card profile under `.console/retroarch-profiles/<game-sha256>/<core-sha256>/`. Native configuration, core options and remaps survive exit. The wrapper reapplies ownership-sensitive paths and flags on launch. Reset RetroArch configuration clears these native configuration files; Reset core overrides clears core options and remaps. No checkpoint, battery save or ROM is removed by those resets.
+
+Default-option checkpoints retain the original RASTATE1 container and qualified historical executable identity. When core options differ from the immutable factory profile, a bounded versioned CLOVEOPT suffix carries the core option keys and exact enum values. The whole container is authenticated by the existing checkpoint manifest. Restore validates every option and the complete original container before applying options or deserializing the core. Loading an older checkpoint restores factory options. Option-bearing checkpoints require this or a compatible newer binding and are not backward-compatible with older CloveOS builds. Native display/audio/remap settings are profile settings, not serialized game state.
+
+TGB Dual's dual-cartridge switch remains reserved for the dedicated Trade/Battle launcher because enabling it inside a single-game session changes SRAM topology. Other supported native options use their upstream callbacks; options marked as requiring restart follow upstream core behavior.
+
+English, Spanish and Russian are selected by the frontend before native menu construction. RGUI needs both English and Russian bitmap fonts for Russian. Build-time font installation is described by `provenance/rgui-fonts.json` and `src/console-packaging/install_rgui_fonts.py`; the losslessly decoded raw fonts and CC BY 4.0 notices are installed with the image. The physical portrait-panel projection is corrected only for menu drawing and restores the game's projection immediately afterward.
+
+Qualification records distinguish actual ARM64 programs and real cores under QEMU/SDL substitutions from physical handheld tests. A software matrix recorder verifies GL projection arguments; it is not a physical Mali GPU test.

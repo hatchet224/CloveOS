@@ -26,6 +26,7 @@
 #include "sessiond/retroarch_compat.h"
 #include "sessiond/store.h"
 #include "verbosity.h"
+#include "msg_hash.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -103,6 +104,16 @@ void audio_set_float(enum audio_action action, float value)
     check_main();
     CHECK(action == AUDIO_ACTION_VOLUME_GAIN && value >= 0.0f);
 }
+/* This serializer fixture has no advertised core options. The actual-core
+ * option mutation/restore path is exercised by the full frontend VM suite. */
+config_file_t *config_file_new_from_path_to_string(const char *path)
+{ (void)path; check_main(); return NULL; }
+void config_file_free(config_file_t *conf) { check_main(); CHECK(conf==NULL); }
+void core_option_manager_set_val(core_option_manager_t *opt, size_t idx, size_t value, bool refresh)
+{ (void)opt; (void)idx; (void)value; (void)refresh; CHECK(0); }
+void core_reset(void) { check_main(); }
+void msg_hash_set_uint(enum msg_hash_action type, unsigned value)
+{ (void)type; (void)value; check_main(); }
 bool config_get_array(config_file_t *conf, const char *entry, char *value, size_t size)
 {
     (void)entry; (void)value; (void)size;
@@ -657,3 +668,5 @@ int main(void)
          "integration");
     return 0;
 }
+
+bool config_save_file(const char *path){(void)path;return true;}

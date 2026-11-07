@@ -1,0 +1,62 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# A writable, game/core-specific native RetroArch profile. Sessiond continues
+# to own every checkpoint, battery-save export, shutdown and content transition.
+set -eu
+umask 077
+bb=/bin/busybox
+test "$#" = 4
+factory=$1 core=$2 content=$3 game=$4
+case "$game" in ''|*[!0-9a-f]*) exit 2 ;; esac
+test "${#game}" = 64
+case "$factory" in /etc/console/*.cfg|/etc/console/core-configs/*.cfg) ;; *) exit 2 ;; esac
+test -f "$factory" && test ! -L "$factory"
+test -f "$core" && test -f "$content"
+card=/mnt/SDCARD
+"$bb" awk '$2 == "/mnt/SDCARD" && $3 == "vfat" { ok=1 } END { exit !ok }' /proc/mounts
+core_hash=$("$bb" sha256sum "$core"); core_hash=${core_hash%% *}
+case "$core_hash" in ''|*[!0-9a-f]*) exit 2 ;; esac
+test "${#core_hash}" = 64
+base="$card/.console/retroarch-profiles"
+profile="$base/$game/$core_hash"
+for directory in "$card/.console" "$base" "$base/$game" "$profile" "$profile/config" "$profile/remaps" "$profile/overlays"; do
+    test ! -L "$directory"
+    "$bb" mkdir -p "$directory"
+done
+options=$("$bb" awk -F '"' '/^[[:space:]]*core_options_path[[:space:]]*=/ { print $2; exit }' "$factory")
+case "$options" in /etc/console/*.cfg|/etc/console/core-options/*.cfg) ;; *) exit 2 ;; esac
+test -f "$options" && test ! -L "$options"
+for file in "$profile/retroarch.cfg" "$profile/core-options.cfg"; do test ! -L "$file"; done
+if [ ! -e "$profile/core-options.cfg" ]; then
+    pending=$("$bb" mktemp "$profile/.options.XXXXXX")
+    "$bb" cp "$options" "$pending"
+    "$bb" mv "$pending" "$profile/core-options.cfg"
+fi
+case "$core" in */tgbdual_libretro.so)
+    pending=$("$bb" mktemp "$profile/.options.XXXXXX")
+    "$bb" awk '!/^[[:space:]]*tgbdual_gblink_enable[[:space:]]*=/' "$profile/core-options.cfg" >"$pending"
+    printf 'tgbdual_gblink_enable = "disabled"\n' >>"$pending"
+    "$bb" mv "$pending" "$profile/core-options.cfg"
+    ;; esac
+config="$profile/retroarch.cfg"
+# Carry forward user settings, while binding all writers and lifecycle-sensitive
+# options to this profile and the supervised state protocol on every launch.
+source=$factory; test ! -e "$config" || source=$config
+pending=$("$bb" mktemp "$profile/.config.XXXXXX")
+"$bb" awk '
+ /^[[:space:]]*(core_options_path|config_save_on_exit|auto_overrides_enable|auto_remaps_enable|game_specific_options|global_core_options|input_remapping_directory|rgui_config_directory|overlay_directory|rgui_browser_directory|savefile_directory|savestate_directory|savefiles_in_content_dir|savestates_in_content_dir|autosave_interval|savestate_auto_save|savestate_auto_load|savestate_auto_index|savestate_file_compression|save_file_compression|block_sram_overwrite|network_cmd_enable|stdin_cmd_enable|ui_companion_enable|cheevos_enable|cheevos_hardcore_mode_enable|run_ahead_enabled|preemptive_frames_enable|menu_show_load_core|menu_show_load_content|menu_show_load_disc|menu_show_online_updater|quick_menu_show_undo_save_load_state|quick_menu_show_save_load_state|quick_menu_show_options|quick_menu_show_controls|quick_menu_show_restart_content|quick_menu_show_close_content|quick_menu_show_take_screenshot|menu_show_configurations|content_show_settings|menu_show_quit_retroarch|menu_driver)[[:space:]]*=/ { next }
+ { print }
+' "$source" >"$pending"
+{
+    printf 'core_options_path = "%s/core-options.cfg"\n' "$profile"
+    printf 'input_remapping_directory = "%s/remaps"\nrgui_config_directory = "%s/config"\noverlay_directory = "%s/overlays"\n' "$profile" "$profile" "$profile"
+    printf 'rgui_browser_directory = "%s"\n' "$card"
+    printf 'savefile_directory = "/run/console/native-save-disabled"\nsavestate_directory = "/run/console/native-state-disabled"\n'
+    for key in config_save_on_exit auto_remaps_enable global_core_options content_show_settings menu_show_configurations menu_show_quit_retroarch quick_menu_show_save_load_state quick_menu_show_options quick_menu_show_controls quick_menu_show_restart_content quick_menu_show_close_content quick_menu_show_take_screenshot; do printf '%s = "true"\n' "$key"; done
+    for key in auto_overrides_enable game_specific_options savefiles_in_content_dir savestates_in_content_dir savestate_auto_save savestate_auto_load savestate_auto_index savestate_file_compression save_file_compression block_sram_overwrite network_cmd_enable stdin_cmd_enable ui_companion_enable cheevos_enable cheevos_hardcore_mode_enable run_ahead_enabled preemptive_frames_enable menu_show_load_core menu_show_load_content menu_show_load_disc menu_show_online_updater quick_menu_show_undo_save_load_state; do printf '%s = "false"\n' "$key"; done
+    printf 'autosave_interval = "0"\nmenu_driver = "rgui"\n'
+} >>"$pending"
+"$bb" mv "$pending" "$config"
+export MAGICX_FACTORY_CONFIG="$factory" MAGICX_FACTORY_OPTIONS="$options"
+export HOME="$profile" XDG_CONFIG_HOME="$profile"
+exec /system/bin/retroarch --config "$config" -L "$core" "$content" --verbose

@@ -23,11 +23,14 @@ enum cl_appearance {
 #define CL_FAST_FORWARD_SHIFT 17U
 #define CL_FAST_FORWARD_MAX 50U
 /* Bits 24..25 retain the language in the existing checksummed schema-3 record.
- * Values 2 and 3 are reserved and display English without rewriting the record. */
+ * Value 2 is Russian. Value 3 displays English without rewriting the record. */
 #define CL_LANGUAGE_SHIFT 24U
 #define CL_LANGUAGE_MASK (UINT32_C(3) << CL_LANGUAGE_SHIFT)
 #define CL_HIDE_PORTMASTER /* Legacy migration input; Package Manager owns Ports now. */ (UINT32_C(1) << 26U)
-#define CL_SHORTCUTS_MASK UINT32_C(0x7ffffff)
+/* Explicit acceptance makes an English first-boot choice durable too. Existing
+ * valid records predate onboarding and retain their selection without a prompt. */
+#define CL_LANGUAGE_CONFIRMED (UINT32_C(1) << 27U)
+#define CL_SHORTCUTS_MASK UINT32_C(0xfffffff)
 #define CL_APPS_SORTED (UINT64_C(1)<<16U)
 #define CL_APPS_REVERSE (UINT64_C(1)<<63U)
 #define CL_PREFERENCE_MASK UINT64_MAX
@@ -62,7 +65,7 @@ struct cl_preference_snapshot {
     unsigned int main_tab;
     uint64_t appearance, revision, request_id;
     uint32_t shortcuts;
-    bool ready, pending, error, recovered;
+    bool ready, pending, error, recovered, has_record;
 };
 struct cl_preferences;
 struct cs_store;

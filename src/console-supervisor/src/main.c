@@ -354,19 +354,17 @@ static bool spawn_ra(struct supervisor *s) {
         !stale_identity_remove(s)) {
         return false;
     }
-    args[0] = s->config.retroarch;
-    args[1] = "--config";
-    args[2] = (char *)s->selected->config;
-    args[3] = "-L";
-    args[4] = (char *)s->selected->core;
-    args[5] = (char *)s->selected->content;
-    args[6] = "--verbose";
-    args[7] = NULL;
+    args[0] = "/system/bin/console-managed-retroarch";
+    args[1] = (char *)s->selected->config;
+    args[2] = (char *)s->selected->core;
+    args[3] = (char *)s->selected->content;
+    args[4] = (char *)s->selected->entry.identity.game;
+    args[5] = NULL;
     if (s->idle_cpu || strcmp(s->selected->entry.system, "N64") == 0 || strcmp(s->selected->entry.system, "DC") == 0 ||
         strcmp(s->selected->entry.system, "PSP") == 0 || strcmp(s->selected->entry.system, "SATURN") == 0)
         if (!sc_cpu_policy_prepare(&s->cpu_policy, "/sys/devices/system/cpu/cpu0/cpufreq"))
             fprintf(stderr, "CPU performance governor unavailable; kernel policy retained\n");
-    if (!sc_spawn_game(s->config.retroarch, args, s->config.bridge_launch,
+    if (!sc_spawn_game(args[0], args, s->config.bridge_launch,
                        s->preferences, s->shortcuts, &s->ra_pid)) {
         (void)sc_cpu_policy_restore(&s->cpu_policy);
         return false;
@@ -648,16 +646,28 @@ static bool netplay_runtime_file(const char *path,const char *expected)
 }
 static bool netplay_game(const struct supervisor *s)
 {
-    return s->startup_child&&s->netplay_running&&s->easy_netplay&&s->link_running&&
-        s->level_pid>0&&strcmp(s->launch.auxiliary,"onion4")==0&&
-        netplay_runtime_file("/run/console/easy-netplay.phase","emulator-running\n");
+    if (!s->startup_child || !s->netplay_running || s->level_pid <= 0) return false;
+    return netplay_runtime_file("/run/console/netplay-runtime/phase","emulator-running\n") ||
+        (s->easy_netplay && s->link_running && strcmp(s->launch.auxiliary,"onion4")==0 &&
+         netplay_runtime_file("/run/console/easy-netplay.phase","emulator-running\n"));
+}
+static bool netplay_reset_runtime(void)
+{
+    static const char *const files[]={"/run/console/netplay-runtime/phase",
+        "/run/console/netplay-runtime/audio-ready", "/run/console/netplay-runtime/exit-request",
+        "/run/console/easy-netplay.phase", "/run/console/easy-netplay/audio-ready"};
+    for (size_t i=0U;i<sizeof(files)/sizeof(files[0]);++i)
+        if (unlink(files[i]) != 0 && errno != ENOENT) return false;
+    return true;
 }
 static void service_netplay_levels(struct supervisor *s)
 {
+    const char *ready=netplay_runtime_file("/run/console/netplay-runtime/phase","emulator-running\n") ?
+        "/run/console/netplay-runtime/audio-ready" : "/run/console/easy-netplay/audio-ready";
     if(!netplay_game(s)||s->stopping||s->status.unsettled||s->hook_pending||
         s->standby_active||s->standby_transition||s->netplay_level_restore_attempted||
         s->netplay_level_pid>0||s->config.level_helper[0]=='\0'||
-        !netplay_runtime_file("/run/console/easy-netplay/audio-ready","ready\n"))return;
+        !netplay_runtime_file(ready,"ready\n"))return;
     char *args[]={s->config.level_helper,"restore",s->config.base.card_path,s->config.base.card_uuid,NULL};
     s->netplay_level_restore_attempted=true;
     if(sc_spawn(s->config.level_helper,args,-1,-1,NULL,&s->netplay_level_pid))
@@ -1692,7 +1702,9 @@ static void menu_input(struct supervisor *s, uint64_t now) {
             /* During link gameplay the MENU chord belongs to RetroArch. A
              * supervised cancellation before launch still restores Wi-Fi. */
             if(netplay_game(s)){
-                int fd=open("/run/console/easy-netplay/exit-request",O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,0600);
+                const char *exit_path=netplay_runtime_file("/run/console/netplay-runtime/phase","emulator-running\n") ?
+                    "/run/console/netplay-runtime/exit-request" : "/run/console/easy-netplay/exit-request";
+                int fd=open(exit_path,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,0600);
                 if(fd>=0){(void)write(fd,"exit\n",5U);(void)close(fd);}
             }else if (startup_menu_cancel_allowed(s))
                 (void)sc_term_once(s->level_pid, &s->level_term);
@@ -1812,13 +1824,14 @@ static bool launch_glo_app(struct supervisor *s)
             const char *extension = strrchr(game.content, '.');
             if ((strcmp(game.entry.system, "GB") != 0 && strcmp(game.entry.system, "GBC") != 0) ||
                 extension == NULL || (strcasecmp(extension, ".gb") != 0 && strcasecmp(extension, ".gbc") != 0)) {
-                remember_error(s, "PokÃ©mon link requires an unpacked .gb or .gbc cartridge in Games.");
+                remember_error(s, "PokÃƒÂ©mon link requires an unpacked .gb or .gbc cartridge in Games.");
                 return false;
             }
         }
         if ((!link && !gb && !netplay_core(game.core)) || strnlen(intent->auxiliary, sizeof(intent->auxiliary)) ==
             sizeof(intent->auxiliary) || (!easy && !host && !automatic_lan && inet_pton(AF_INET, intent->auxiliary, &address) != 1) ||
             !sc_game_files_check(&game, s->config.retroarch, true)) return false;
+        if (!netplay_reset_runtime()) return false;
         if (easy) {
             bool onion = strcmp(intent->auxiliary, "onion4") == 0;
             bool onion_supported = gb || strcmp(game.entry.system, "FC") == 0 ||
@@ -1831,7 +1844,7 @@ static bool launch_glo_app(struct supervisor *s)
             (void)snprintf(profile, sizeof(profile), "%s\n%s\n%s",
                            game.profile.identity.content, game.profile.identity.core, game.profile.identity.retroarch);
             cs_sha256_hex(profile, strlen(profile), proof);
-            char language[2] = {(char)('0'+(cl_language_get()==CL_SPANISH?1:0)), '\0'};
+            char language[2] = {(char)('0'+(unsigned int)cl_language_get()), '\0'};
             char *args[] = {onion ? "/system/bin/console-onion-easy-netplay" : "/system/bin/console-easy-netplay", host ? "host" : "join",
                             link ? game.profile.identity.content : proof, game.config, game.core, game.content,
                             onion ? (link ? "link" : "standard") : NULL,

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/libretro/retroarch-assets",
+  "commit": "d9f969054dc7fbb6fa89519036d2b971e0855b51",
+  "license": "CC-BY-4.0",
+  "attribution": "RetroArch assets contributors; RGUI bitmap fonts, unmodified",
+  "files": [
+    {
+      "path": "rgui/font/bitmap10x10_eng.bin",
+      "bytes": 1160,
+      "sha256": "152725f53903df1b36d1aaec34bf3ccaa38eb3bcee1dd357e067681cb7a81f5c",
+      "url": "https://raw.githubusercontent.com/libretro/retroarch-assets/d9f969054dc7fbb6fa89519036d2b971e0855b51/rgui/font/bitmap10x10_eng.bin",
+      "decoded_bytes": 3328,
+      "decoded_sha256": "054652d362dd48c6f6bea35fc7ef4e8011568a072e70b661e92ca990b9227a2d"
+    },
+    {
+      "path": "rgui/font/bitmap10x10_rus.bin",
+      "bytes": 622,
+      "sha256": "c954323c5eae4993239431eb7bfbce7525c095982c738a7af1badec90ef32dc7",
+      "url": "https://raw.githubusercontent.com/libretro/retroarch-assets/d9f969054dc7fbb6fa89519036d2b971e0855b51/rgui/font/bitmap10x10_rus.bin",
+      "decoded_bytes": 1248,
+      "decoded_sha256": "ad0139a1c3f250cb907f29747a1b6e6bef3d56c5d926b8eed19d0a5ace81ffc9"
+    },
+    {
+      "path": "COPYING",
+      "bytes": 18660,
+      "sha256": "469faa8457ffed7428f1c150f4d8682ce25f2d991a694eec544e661f43452f50",
+      "url": "https://raw.githubusercontent.com/libretro/retroarch-assets/d9f969054dc7fbb6fa89519036d2b971e0855b51/COPYING"
+    }
+  ],
+  "install_directory": "opt/console/share/retroarch/assets/rgui/font",
+  "modifications": "RZIP containers losslessly decoded at build time; glyph bits unchanged"
+}

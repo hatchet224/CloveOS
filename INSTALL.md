@@ -1,25 +1,19 @@
-# Installing CloveOS r50
+# Installing CloveOS R52
 
-This test image targets the **MagicX Mini Zero 28**. Use a microSD card sold as 8 GB or larger. Tested virtual capacities extend through 1 TB. The fresh image is 4 GiB.
+**Release preparation:** these instructions apply once the R52 download is published. This source update does not itself publish a firmware image.
 
-1. Download `CloveOS-r50.zip` and `SHA256SUMS.txt` from the same release.
-2. Verify the ZIP's SHA-256 against `SHA256SUMS.txt`. In PowerShell, run `Get-FileHash .\CloveOS-r50.zip -Algorithm SHA256`.
-3. Extract `CloveOS-r50.img`. Allow at least 4 GiB of free disk space for extraction. You can verify the extracted image with `Get-FileHash .\CloveOS-r50.img -Algorithm SHA256` and the image entry in the same checksum file.
-4. Back up anything you need from the destination card. Use a whole-card image writer such as balenaEtcher or Rufus in DD mode to write the `.img`. Confirm the correct target card before starting. Flashing erases that card.
-5. Safely eject the card, put it in the Mini Zero 28's TF1 slot, and power on. Keep power connected while CloveOS prepares the data volume. It automatically expands before normal launcher services start. If Windows offers to format a Linux partition, cancel that prompt.
-6. Add your own games to `Roms/<system>` and any required emulator BIOS files to `BIOS` on the Windows-visible `CLOVE_DATA` volume. Use the folders supplied by the image. Configure Wi-Fi and other preferences on the handheld.
+For the **MagicX Mini Zero 28**. Use a microSD card sold as **8 GB or larger**. The extracted raw image is 4 GiB. Flashing the whole-card image erases the selected card, including existing games and saves.
 
-This download is a raw SD-card image. PhoenixCard expects a different Allwinner
-firmware format and cannot write this artifact. Use Rufus in DD mode or balenaEtcher.
+1. Download `CloveOS-r52.zip` and `SHA256SUMS.txt` from the [R52 release](https://github.com/hatchet224/CloveOS/releases/tag/r52).
+2. In PowerShell, run `Get-FileHash .\CloveOS-r52.zip -Algorithm SHA256` and compare the result with the ZIP entry in the checksum file.
+3. Extract `CloveOS-r52.img`. Allow at least 4 GiB of free space for extraction. Verify the image with the same command and its checksum entry if desired.
+4. Back up the destination card. Select the extracted image and the correct card in **Rufus using DD mode** or **balenaEtcher**, then write it. PhoenixCard expects a different Allwinner firmware format and does not support this raw image.
+5. Safely eject the card, insert it in TF1 and power on. Keep power connected during initial data expansion. Cancel any Windows prompt to format a Linux partition.
+6. Complete startup setup. Fresh installs offer **English**, **Español** and **Русский** and save the selection. Existing installations retain their valid saved language. Settings → Language remains available.
+7. Put games in `Roms/<system>` and required emulator BIOS files in `BIOS` on the Windows-visible `CLOVE_DATA` volume. Configure Wi-Fi and accounts on the handheld. Use the Ports Collection for PortMaster and its games.
 
-Choose English or Español in Settings → Language / Ajustes → Idioma. Open
-Apps → PortMaster to manage and launch native ports, stored under `Roms/ports`
-on `CLOVE_DATA`. Follow each port's instructions for extra game assets.
+First boot expands `CLOVE_DATA` to use available card capacity after system and filesystem overhead. Repeated boots at the same capacity do not resize it again. FAT32 limits individual files to 4 GiB minus one byte. Dirty or error-marked volumes need repair before expansion.
 
-The expansion path preserves file data, retries interrupted metadata updates, and makes no expansion metadata writes on repeated boots at the same capacity. An unclean FAT32 volume is refused before new expansion. If that happens, power down, repair the data filesystem with an appropriate tool, and retry. Reformatting the data volume removes the expansion layout.
+The shared image contains no ROMs, emulator BIOS, personal saves, downloaded box art, Wi-Fi credentials, account details, private keys or private device logs. Supply your own content and account information.
 
-System partitions and filesystem structures consume part of the card. This build reserves two 128 MiB FAT tables and about 1 GiB for the system area. The remaining data capacity is available for games and other files. FAT32 limits each individual file to 4 GiB minus one byte.
-
-The image starts without game content, emulator BIOS files, saves, downloaded box art, Wi-Fi profiles, or account credentials. ScreenScraper setup requires the user's own account and API client credentials. SFTP creates its host key locally, and enabled transfer services create their own credentials.
-
-VM tests covered the filesystem, original Zero 28 kernel, clean launcher starts, capacity expansion, and recovery. Fresh-card first boot on the physical handheld is still pending. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) before testing.
+Read the release notes, `AUDIT.json` and [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for validation scope and limitations. Original CloveOS source is GPL-3.0-or-later; third-party components retain their licenses. Vendor corresponding-source and redistribution review remains incomplete; see [REDISTRIBUTION.md](REDISTRIBUTION.md).

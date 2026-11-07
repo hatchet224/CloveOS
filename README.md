@@ -2,60 +2,28 @@
 
 CloveOS is a controller-first Linux firmware project for the **MagicX Mini Zero 28**, inspired by the OnionOS experience.
 
-The [R56 development source](releases/r56/README.md) adds normal single-player
-TGB Dual selection and the Ports Collection layout. Real-core software save and
-resume tests pass; physical Pokemon trading remains unverified.
+**R52 source is ready; the clean full-card download is being prepared.** Published firmware downloads remain on [Releases](https://github.com/hatchet224/CloveOS/releases). The new implementation and its software validation are below; no R52 binary release is claimed by this source commit. See [current qualification](releases/r52/SOFTWARE_TESTS.json) and [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
-The original CloveOS source is published under **GPL-3.0-or-later**. Start with
-[BUILDING.md](BUILDING.md), [LICENSE](LICENSE), and
-[LICENSE_SCOPE.md](LICENSE_SCOPE.md). Native application sources are in `src/`,
-with the RetroArch integration patches, LAN service, capacity helper, tests,
-dependency pins, and image reconstruction records. Third-party components retain
-their existing licenses.
+R52 adds Russian and fresh-install language selection, consistent native RetroArch menu access during normal play and Netplay, and a correction for the sideways Netplay menu. It includes the Pokémon link hosting, controls, volume and save-return fixes, normal TGB Dual selection, the brightness/wake correction, and the PortMaster runtime correction. Detailed validation and its limits are in the release audit.
 
-R51 addresses brightness restoration and shortcut direction, restores PortMaster
-online catalog updates, and adds a saved toggle plus a system-selection launch
-entry. See [the R51 source supplement](releases/r51/README.md). R50's language,
-Ports and startup work remains in [the R50 supplement](releases/r50/README.md),
-with compatibility-core patches in [the R49 supplement](releases/r49/README.md).
-
-**R51 has a confirmed physical brightness-direction bug.** A narrowly scoped
-[R52 source candidate](releases/r52/README.md) corrects the board adapter and
-meter. Its targeted software checks pass; handheld confirmation is pending.
-
-R52 subsequently failed physical sleep/wake acceptance despite initially correct
-controls. Its lifecycle correction is under investigation; no public R52 binary
-release has been published. See [current test status](KNOWN_ISSUES.md).
-
-[RELEASE_POLICY.md](RELEASE_POLICY.md) requires matching source, build inputs,
-notices, privacy checks, and verified redistribution rights for every future
-update. The current image still has unresolved vendor/component source and
-redistribution questions. Publishing CloveOS's own source does not clear those
-third-party payloads or make every byte of an SD-card image GPL software.
-
-R51 is a development test candidate. It includes a game launcher, GameSwitcher, save and resume integration, an optional app catalog, and networking tools. Virtual-machine checks have passed. Fresh-card boot, controls, display, live battery readings, and two-handheld multiplayer still need device testing.
-
-See [Releases](https://github.com/hatchet224/CloveOS/releases) for release status.
-The corresponding-source and redistribution review remains incomplete for
-full-card images, including R48, R49, R50 and R51. Software regression checks do not
-replace physical handheld verification. Read the release notes before testing.
+The maintainer confirmed Pokémon link play between the Z28 and a Miyoo Mini Plus running Onion 4.3.1-1, with either device hosting, working controls and volume, completed trade/battle, and progress retained after exit and reload. That report covers the preceding installed candidate. R52's additional language, menu and exit-cleanup work has separate software validation; it is not a claim that every core or wireless configuration has been tested on hardware.
 
 The clean image includes:
 
-- The custom CloveOS house-and-hatchets splash and original Clove interface theme.
+- The custom house-and-hatchets splash and Clove interface theme.
+- English, Spanish and Russian, with a saved language choice and a first-boot chooser for fresh installations.
 - File Explorer, Gallery, Search, Expert access, list filtering and refresh, and Battery Monitor.
-- Cores for GB, GBC, GBA, NES, SNES, N64, Master System, Genesis, Game Gear, PlayStation, PSP, Dreamcast, Atari 2600, TurboGrafx-16, PICO-8, Neo Geo arcade, FBNeo, and MAME 2003-Plus. Compatibility and performance vary by game.
+- Cores for GB, GBC, GBA, NES, SNES, N64, Master System, Genesis, Game Gear, PlayStation, PSP, Dreamcast, Atari 2600, TurboGrafx-16, PICO-8, Neo Geo arcade, FBNeo and MAME 2003-Plus. Compatibility and performance vary by game.
 - PlayStation playlist disc switching and checkpoint restore.
-- Direct-IP Netplay, Easy Netplay, GB/GBC link-play integration, web transfer, SMB, and SFTP. Physical hotspot and Pokémon trade/battle verification is pending.
+- Direct-IP Netplay, Easy Netplay, GB/GBC Pokémon link integration, web transfer, SMB and SFTP.
+- Ports Collection and PortMaster integration. Port compatibility depends on each game's runtime, renderer and controls.
 
-The download contains no ROMs, emulator BIOS files, game saves, downloaded box art, Wi-Fi profiles, or personal account credentials. Users supply their own game content and configure their own accounts on the handheld.
+No ROMs, emulator BIOS, personal saves, downloaded box art, Wi-Fi profiles or personal account credentials are included. Supply your own game content and configure your own accounts on the handheld.
 
-The compressed download is `CloveOS-r50.zip`. Extract it to obtain `CloveOS-r50.img`. The image is 4 GiB and fits cards sold as 8 GB. First boot expands the data volume to use the available card capacity after system and filesystem overhead. Virtual tests covered nominal 8 GB through 1 TB cards, with additional recovery and repeat-boot tests. The data volume is named `CLOVE_DATA`.
+The raw image fits cards sold as **8 GB or larger**. First boot expands `CLOVE_DATA` to use available card capacity after system and filesystem overhead. Capacity tests cover nominal 8 GB through 1 TB cards. PhoenixCard expects a different firmware format; use a raw-image writer for this download.
 
-Follow [INSTALL.md](INSTALL.md) for installation and [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for current limitations. Flashing an image erases the selected card, so verify the target and back up anything you need first.
+Original CloveOS code is **GPL-3.0-or-later**. Start with [BUILDING.md](BUILDING.md), the [R52 build delta](releases/r52/BUILD_DELTA.md), [LICENSE](LICENSE) and [LICENSE_SCOPE.md](LICENSE_SCOPE.md). Application sources are in `src/`, alongside RetroArch integration patches, services, tests, dependency pins and image reconstruction records. The [native menu design](src/retroarch-magicx-bridge/NATIVE_MENU.md) explains settings, save ownership and checkpoint compatibility. Third-party components retain their licenses and notices.
 
-Report reproducible problems in [Issues](https://github.com/hatchet224/CloveOS/issues). Include the device model, build, core, file format, steps, expected result, and observed result. Review logs before sharing them and remove passwords or other personal details. Provide the game title when relevant, and keep ROMs and BIOS files out of issue attachments.
+Vendor/kernel corresponding-source and component redistribution review remains incomplete. Publishing CloveOS's source does not relicense the complete card image. See [REDISTRIBUTION.md](REDISTRIBUTION.md), [RELEASE_POLICY.md](RELEASE_POLICY.md) and the release audit for the exact scope. Earlier `releases/` supplements retain development history, including private revision labels; the public version is R52.
 
-Project credits are in [CREDITS.md](CREDITS.md). The outstanding binary, source, firmware, and asset review is recorded in [REDISTRIBUTION.md](REDISTRIBUTION.md). Component licenses and notices need to be preserved with the matching source release.
-
-[R54 brightness lifecycle correction source](releases/r54/README.md) addresses the captured PWM mode change. The user confirmed the requested brightness-direction and two-cycle sleep/wake test passed; see the [physical acceptance record](releases/r54/PHYSICAL_ACCEPTANCE.json).
+Report reproducible problems in [Issues](https://github.com/hatchet224/CloveOS/issues). Include the device, build, core, file format, reproduction steps, and expected and observed behavior. Remove passwords and personal details from logs; do not attach ROMs or BIOS files. Project credits are in [CREDITS.md](CREDITS.md).

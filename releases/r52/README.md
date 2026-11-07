@@ -1,3 +1,11 @@
+# R52 current source
+
+The current implementation adds Russian, fresh-install language selection, full native RetroArch menu/settings access, panel-correct Netplay menus, native profile persistence and the Netplay lifecycle fixes. See [BUILD_DELTA.md](BUILD_DELTA.md), [native menu design](../../src/retroarch-magicx-bridge/NATIVE_MENU.md) and [SOFTWARE_TESTS.json](SOFTWARE_TESTS.json). The clean R52 binary download is still being prepared.
+
+The record below describes an earlier brightness-only development candidate. The later R54 hardware correction is included in the current source; the maintainer confirmed its brightness direction and repeated wake behavior. Private development labels are retained as history.
+
+---
+
 # R52 brightness correction candidate
 
 **Physical R52 acceptance failed after sleep/wake.** The direction initially
