@@ -1,0 +1,20 @@
+{
+  "source_base_commit": "acb6f03da93ff7caf1bcdc5c9cdb55bd31b7a8e2",
+  "CGO_ENABLED": "0",
+  "GOOS": "linux",
+  "GOARCH": "arm64",
+  "build_flags": [
+    "-trimpath",
+    "-ldflags=-s -w"
+  ],
+  "Go_version": "go version go1.27.3 windows/amd64",
+  "helper_sha256": "63cda1cc94c953b890c7a7abf28df3b9134f4f813d659fbcf523afb37c77e97e",
+  "native_helper_sha256": "8d1780d68015b5988886394aa4b46b25837baefdaca16d08c4e8ac6c99f4be89",
+  "source_sha256": {
+    "onion_peer.go": "ba0ac4b3216e4d232f9dae4dc8ab1cc4646512c80d3a5d586308f5efa3ab26d6",
+    "onion_link.go": "5600af10159b1d8c862f46a5d96b4fe9621c592c42c27b1cf7c102318a55e9a1",
+    "onion_lan.go": "9f1c6307be5c80e5fc022848ac2b7cc6677bd818b936f99b3d5687968412c2d2"
+  },
+  "wrapper_sha256": "df30377f99a34f2504ecc32a54096d5e7d11c904b9439a263352b03fd895287b",
+  "physical_wireless_acceptance_pending": true
+}

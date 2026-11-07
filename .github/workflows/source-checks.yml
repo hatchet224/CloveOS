@@ -37,4 +37,4 @@ jobs:
           ctest --test-dir build/library-tests -R '^library_linux$' --output-on-failure
       - name: Check Onion-compatible room and file exchange
         working-directory: src/console-onion-peer
-        run: GO111MODULE=off go test onion_peer.go onion_link.go onion_lan.go onion_peer_test.go startup_deadline_test.go
+        run: GO111MODULE=off go test onion_peer.go onion_link.go onion_lan.go onion_peer_test.go startup_deadline_test.go onion_curl_test.go onion_address_test.go

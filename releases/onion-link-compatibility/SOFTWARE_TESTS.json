@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "base_source_commit": "acb6f03da93ff7caf1bcdc5c9cdb55bd31b7a8e2",
+  "real_curl_loopback_tests": true,
+  "full_Linux_helper_tests": true,
+  "production_helper_and_wrapper_in_disposable_VM": true,
+  "normal_and_fallback_peer_address": true,
+  "no_peer_timeout_and_save_preservation": true,
+  "WiFi_restore": true,
+  "bidirectional_save_return_and_previous_backups": true,
+  "radio_and_RetroArch_mocked": true,
+  "physical_trade_passed": false,
+  "original_kernel_candidate_file_hashes_passed": true,
+  "changed_root_files": [
+    "./etc/console/BINARY_MANIFEST.json",
+    "./system/bin/console-onion-easy-netplay",
+    "./system/bin/console-onion-peer"
+  ],
+  "Menu_rewind_brightness_Ports_and_splash_unchanged": true,
+  "private_logs_ROMs_BIOS_saves_and_credentials_included": false
+}

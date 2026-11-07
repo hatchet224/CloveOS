@@ -61,6 +61,12 @@ netplay_listening() {
     kill -0 "$ra" 2>/dev/null && "$bb" netstat -lnt 2>/dev/null |
         "$bb" awk '$4 ~ /:55435$/ && $6 == "LISTEN" { found=1 } END { exit !found }'
 }
+associated_client() {
+    local stations
+    stations=$(hostapd_cli -p "$session/ap" -i "$radio" all_sta 2>/dev/null) || return 1
+    client_ip=$(/system/bin/console-onion-peer peer-address "$radio" "$stations" 2>/dev/null) || return 1
+    [ -n "$client_ip" ]
+}
 link_task() {
     /system/bin/console-onion-peer "$@" & pairing=$!
     local status=0;wait "$pairing" || status=$?;pairing=
@@ -209,6 +215,9 @@ if [ "$role" = host ]; then
     }
     wait_until 32 backends_ready || exit 22
     if [ "$mode" = link ]; then
+        mark_phase finding-associated-peer-address
+        wait_until 240 associated_client || exit 28
+        printf 'pokemon-link: associated_peer_address=%s\n' "$client_ip"
         mark_phase pairing-cartridges-and-saves
         link_task link-pair "$client_ip:21" "$session"
         launch_link --host

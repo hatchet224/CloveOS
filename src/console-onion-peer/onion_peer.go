@@ -417,6 +417,13 @@ func servePeer(c net.Conn, mapping Export, ip net.IP) {
 			_ = reply(c, 257, "\""+cwd+"\"")
 		case "CWD":
 			found := full == "/"
+			// Stock Onion curl changes into /tmp before STOR, including
+			// ready markers. This is a virtual session inbox only: writes
+			// still pass the exact role/name/size checks in linkUpload.
+			if full == "/tmp" {
+				_, maximum, link := linkUpload(mapping, "/tmp/host_ready")
+				found = link && maximum == 0
+			}
 			for key := range mapping.Files {
 				if strings.HasPrefix(key, strings.TrimSuffix(full, "/")+"/") {
 					found = true
@@ -749,6 +756,19 @@ func main() {
 		os.Exit(2)
 	}
 	switch os.Args[1] {
+	case "peer-address":
+		if len(os.Args) != 4 {
+			os.Exit(2)
+		}
+		table, err := os.ReadFile("/proc/net/arp")
+		if err != nil {
+			os.Exit(1)
+		}
+		address, err := associatedPeerAddress(os.Args[2], os.Args[3], string(table))
+		if err != nil {
+			os.Exit(1)
+		}
+		fmt.Println(address)
 	case "link-init":
 		if len(os.Args) != 6 {
 			os.Exit(2)

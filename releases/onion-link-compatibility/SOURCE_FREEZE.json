@@ -1,0 +1,30 @@
+{
+  "base_source_commit": "acb6f03da93ff7caf1bcdc5c9cdb55bd31b7a8e2",
+  "files": [
+    {
+      "path": "src/console-onion-peer/onion_peer.go",
+      "sha256": "ba0ac4b3216e4d232f9dae4dc8ab1cc4646512c80d3a5d586308f5efa3ab26d6"
+    },
+    {
+      "path": "src/console-onion-peer/onion_lan.go",
+      "sha256": "9f1c6307be5c80e5fc022848ac2b7cc6677bd818b936f99b3d5687968412c2d2"
+    },
+    {
+      "path": "src/console-onion-peer/onion_curl_test.go",
+      "sha256": "3c367300c668df0d1186c720c4f55bc65f53844d92a5f6f78397dda1fdcea116"
+    },
+    {
+      "path": "src/console-onion-peer/onion_address_test.go",
+      "sha256": "6d7bb677d469cfa6751ae4e0c010f1b06a88b80b9b0a81c3e2005b8b1533b30f"
+    },
+    {
+      "path": "src/console-onion-peer/LINK_COMPATIBILITY_VALIDATION.md",
+      "sha256": "7b4707b0c9e70f4bbaad30e9acc87c954947b8b174453f6030ecf0392df0bf61"
+    },
+    {
+      "path": "src/console-supervisor/init/console-onion-easy-netplay",
+      "sha256": "df30377f99a34f2504ecc32a54096d5e7d11c904b9439a263352b03fd895287b"
+    }
+  ],
+  "private_inputs_included": false
+}

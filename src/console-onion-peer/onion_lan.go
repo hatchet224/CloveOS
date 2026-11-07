@@ -17,6 +17,67 @@ import (
 	"time"
 )
 
+// Resolve only the sole associated hotspot station, never scan the subnet.
+// Onion's client can fall back from DHCP to .101 through .250.
+func associatedPeerAddress(iface, stations, table string) (string, error) {
+	if iface != "wlan0" || len(stations) > 65536 || len(table) > 262144 {
+		return "", errors.New("invalid hotspot discovery input")
+	}
+	station := ""
+	authorized := false
+	for _, line := range strings.Split(stations, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "flags=") && strings.Contains(line, "[ASSOC]") && strings.Contains(line, "[AUTHORIZED]") {
+			authorized = true
+		}
+		if len(line) != 17 || strings.Count(line, ":") != 5 {
+			continue
+		}
+		mac, err := net.ParseMAC(line)
+		if err != nil || len(mac) != 6 || mac[0]&1 != 0 || mac.String() == "00:00:00:00:00:00" {
+			continue
+		}
+		if station != "" {
+			return "", errors.New("multiple associated stations")
+		}
+		station = mac.String()
+	}
+	if station == "" || !authorized {
+		return "", errors.New("no authorized associated station")
+	}
+	selected := ""
+	for _, line := range strings.Split(table, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 6 || fields[5] != iface {
+			continue
+		}
+		mac, err := net.ParseMAC(fields[3])
+		if err != nil || mac.String() != station {
+			continue
+		}
+		flags, err := strconv.ParseUint(fields[2], 0, 32)
+		if err != nil || flags != 2 {
+			continue
+		}
+		hardware, err := strconv.ParseUint(fields[1], 0, 32)
+		if err != nil || hardware != 1 {
+			continue
+		}
+		ip := net.ParseIP(fields[0]).To4()
+		if ip == nil || ip[0] != 192 || ip[1] != 168 || ip[2] != 100 || ip[3] < 101 || ip[3] > 250 {
+			continue
+		}
+		if selected != "" && selected != ip.String() {
+			return "", errors.New("ambiguous station address")
+		}
+		selected = ip.String()
+	}
+	if selected == "" {
+		return "", errors.New("associated station address not ready")
+	}
+	return selected, nil
+}
+
 func tcpRoom(ctx context.Context, address string, crc uint32, core, version string) (matched bool) {
 	stage := "dial"
 	defer func() {
