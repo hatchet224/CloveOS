@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "source_files": 9,
+  "all_source_test_payload_candidate_hashes_bound": true,
+  "actual_RA_TGB_GB_GBC_each_host_role": true,
+  "virtual_physical_raw_buttons_reach_only_local_player": true,
+  "actual_MENU_mapping_and_SIGINT_two_SRAM_flushes": true,
+  "production_wrapper_real_FTP_save_return_frontend_standin": true,
+  "actual_supervisor_evdev_volume_and_brightness_wrapper_alive": true,
+  "real_child_write_fsync_exit_not_reap_lifecycle_barriers": true,
+  "board_level_adapter_real_logic_hardware_mocked": true,
+  "normal_controls_levels_and_standby_regressions_pass": true,
+  "physical_trade_audio_white_menu_acceptance_pending": true,
+  "standard_Easy_Direct_IP_not_qualified": true,
+  "physical_SD_access": false,
+  "flash_hold": true,
+  "public_R52_release_hold": true,
+  "revision_frozen": "CloveOS r56"
+}

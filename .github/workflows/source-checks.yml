@@ -38,5 +38,5 @@ jobs:
       - name: Check Onion-compatible room and file exchange
         working-directory: src/console-onion-peer
         run: GO111MODULE=off go test .
-      - name: Build native Netplay panel and test localized stages
+      - name: Build Netplay input and progress programs and test localized stages
         run: python3 tools/test-netplay-panel.py

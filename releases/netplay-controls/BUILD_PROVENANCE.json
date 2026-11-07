@@ -1,0 +1,23 @@
+{
+  "base_source_commit": "de834822cb6d4614c7df62fc5a3c7d092aed3252",
+  "outputs": {
+    "console-onion-peer": {
+      "bytes": 3670176,
+      "sha256": "7a9fe611365e23cf244c6bfb1c40911cbedac3263f2631d0174bf07233233e5e"
+    },
+    "console-supervisor": {
+      "bytes": 2566768,
+      "sha256": "74df77f4e1f2b5683a4bda9292271e421d3dc1ef447d36aeb76f6d5d1ec4509f"
+    },
+    "console-netplay-input": {
+      "bytes": 15552,
+      "sha256": "3241a43f0bb8f4c052201c7049060df883ece950906a7603ea34d8b1f7b6c249"
+    }
+  },
+  "wrapper_sha256": "e98e30575a09b07422c2571ba83a792bc26ed181319cc63aa1b131545c2b1ddc",
+  "RA_and_cores_unchanged": true,
+  "Go": "Go1.27.3 CGO_ENABLED=0 linux/arm64 -trimpath -ldflags=-s -w",
+  "C": "Zig0.13.0 aarch64-linux-gnu.2.29 Cortex-A53 CMake MinSizeRel",
+  "dependency_pins": "Unchanged published pins",
+  "revision_frozen": true
+}

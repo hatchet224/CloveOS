@@ -1,5 +1,7 @@
 # CloveOS test status
 
+- **Pokemon link controls/hosting:** [development correction](releases/netplay-controls/README.md) passes actual-emulator GB/GBC control tests in both roles and separate volume/save-return/lifecycle fixtures. Physical trade/battle, sound, display and standard-mode qualification remain pending; R52 is unreleased.
+
 - **Pokemon link startup and UI:** [the post-ready correction](releases/netplay-post-ready/README.md) fixes duplicate session settings and the stock client cookie check, and adds themed live progress. Actual emulator software tests pass; physical wireless/trade acceptance remains pending.
 
 - **Onion Pokemon link startup:** the [compatibility correction](releases/onion-link-compatibility/README.md) addresses stock curl uploads and fallback client addresses. Software tests pass; physical cross-device trade acceptance remains pending.
@@ -23,7 +25,7 @@ r51 is a development test candidate. Current evidence includes ARM and original 
 - Spanish uses English fallback where text is not translated. ROM names, filenames, paths, SSIDs and protocol identities retain their original values.
 - R48 testers reported brightness remaining low after wake. R49 adds a runtime brightness target for restoration after display reopen, including when no persistent brightness setting exists. Software regression checks cover this path; physical wake testing remains pending.
 - Hardware checks remain for boot, controls, audio, sleep/wake, live battery telemetry, and game performance. Battery runtime estimates require sustained discharge readings.
-- Easy Netplay hotspot behavior and actual Pokémon trades and battles need two handhelds. Generated GB/GBC cartridges and two RetroArch processes passed the VM link tests.
+- Easy Netplay hotspot behavior and actual PokÃ©mon trades and battles need two handhelds. Generated GB/GBC cartridges and two RetroArch processes passed the VM link tests.
 - PlayStation playlist disc switching and cold checkpoint restore passed in the VM. Other disc cores still need equivalent checks.
 - Dreamcast slowdown and fast-forward behavior need a handheld check. Core availability does not guarantee full-speed performance or compatibility for every game.
 - The stock OnionOS app, core, and shortcut catalog is incomplete. Additional ports are planned for later updates.

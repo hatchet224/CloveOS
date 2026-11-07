@@ -263,6 +263,71 @@ int main(void)
     assert(startup_menu_cancel_allowed(s));
     puts("R55_NETPLAY_MENU_SETUP_CANCEL_GAMEPLAY_CHORD_PASS current_onion_phase=1 no_wrong_subdirectory_probe=1 physical_emulator_input_pending=1");
     puts("NETPLAY_PRODUCTION_MENU_OBSERVER_SAVE_RETURN_AND_WIFI_RESTORE_CANNOT_CANCEL_PASS");
+    /* Netplay is an auxiliary wrapper: MENU_READY, no managed RA PID, and
+     * level_pid remains occupied for the whole session. Exercise real raw
+     * volume edges in that state, including delayed audio initialization. */
+    assert(mkdir("/run/console/easy-netplay",0700)==0||errno==EEXIST);
+    for(unsigned int role=0U;role<2U;++role){
+        s->netplay_running=true;s->easy_netplay=true;s->startup_child=true;s->link_running=true;
+        s->launch.kind=role==0U?CL_LAUNCH_LINK_HOST:CL_LAUNCH_LINK_JOIN;
+        s->status.state=CS_MENU_READY;s->status.active=false;s->status.unsettled=false;
+        s->ra_pid=0;s->level_pid=456;s->netplay_level_pid=0;s->netplay_levels_restored=false;
+        s->netplay_level_restore=false;s->netplay_level_restore_attempted=false;s->hook_pending=false;s->stopping=false;
+        s->standby_active=false;s->standby_transition=false;s->preferences=0U;
+        int phase=open("/run/console/easy-netplay.phase",O_WRONLY|O_CREAT|O_TRUNC,0600);assert(phase>=0);
+        assert(write(phase,"emulator-running\n",17U)==17&&close(phase)==0);
+        assert(unlink("/run/console/easy-netplay/audio-ready")==0||errno==ENOENT);
+        unsigned int before=spawned;
+        service_netplay_levels(s);assert(spawned==before); /* No guessed timer. */
+        int ready=open("/run/console/easy-netplay/audio-ready",O_WRONLY|O_CREAT|O_EXCL,0600);assert(ready>=0);
+        assert(write(ready,"ready\n",6U)==6&&close(ready)==0);
+        service_netplay_levels(s);
+        assert(spawned==before+1U&&strcmp(target_kind,"restore")==0);
+        assert(s->level_pid==456&&s->netplay_level_pid==999&&s->netplay_level_restore);
+        /* The actual reap path acknowledges a successful restore. Hardware
+         * adapter readback is covered by the board-adapter fixture separately. */
+        s->netplay_level_pid=0;s->netplay_level_restore=false;s->netplay_levels_restored=true;
+        for(unsigned int modifier=0U;modifier<2U;++modifier)for(unsigned int up=0U;up<2U;++up){
+            int fds[2];assert(pipe2(fds,O_NONBLOCK|O_CLOEXEC)==0);
+            cs_evdev_init(&s->menu);s->menu.fd=fds[0];s->menu.code=KEY_BACK;
+            cs_hotkeys_reset(&s->hotkeys,false);memset(&s->menu_chords,0,sizeof(s->menu_chords));
+            uint64_t at=120000U+role*20000U+modifier*4000U+up*1000U;
+            struct input_event e={.type=EV_KEY,.value=1};
+            if(modifier){e.code=KEY_BACK;e.time.tv_sec=(time_t)(at/1000U);assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));}
+            e.code=up?KEY_VOLUMEUP:KEY_VOLUMEDOWN;e.time.tv_sec=(time_t)(at/1000U);
+            before=spawned;assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));test_clock=at;menu_input(s,at);
+            assert(spawned==before+1U&&s->level_pid==456&&s->netplay_level_pid==999);
+            assert(strcmp(target_kind,modifier?"brightness":"volume")==0&&strcmp(target_step,up?"up":"down")==0);
+            e.value=2;e.time.tv_usec=100000;assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));test_clock=at+100U;menu_input(s,test_clock);
+            assert(spawned==before+1U&&s->level_queued);
+            s->netplay_level_pid=0;s->level_adjusting=false;service_level_queue(s);
+            assert(spawned==before+2U&&!s->level_queued&&s->level_pid==456);
+            e.value=0;e.time.tv_usec=200000;assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));test_clock=at+200U;menu_input(s,test_clock);
+            s->netplay_level_pid=0;s->level_adjusting=false;
+            e.value=2;e.time.tv_usec=300000;assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));test_clock=at+300U;menu_input(s,test_clock);
+            assert(spawned==before+2U&&!s->level_queued);
+            close(fds[1]);cs_evdev_close(&s->menu);
+        }
+        /* A bare MENU tap requests normal emulator shutdown, never TERM of
+         * the wrapper, even while its separate level child is still alive. */
+        int taps[2];assert(pipe2(taps,O_NONBLOCK|O_CLOEXEC)==0);
+        cs_evdev_init(&s->menu);s->menu.fd=taps[0];s->menu.code=KEY_BACK;
+        cs_hotkeys_reset(&s->hotkeys,false);memset(&s->menu_chords,0,sizeof(s->menu_chords));
+        uint64_t tap=180000U+role*4000U;unsigned int term_before=terminated;
+        struct input_event press={.type=EV_KEY,.code=KEY_BACK,.value=1,.time={.tv_sec=(time_t)(tap/1000U)}};
+        assert(write(taps[1],&press,sizeof(press))==(ssize_t)sizeof(press));test_clock=tap;menu_input(s,tap);
+        press.value=0;press.time.tv_usec=100000;assert(write(taps[1],&press,sizeof(press))==(ssize_t)sizeof(press));
+        test_clock=tap+100U;menu_input(s,test_clock);test_clock=tap+301U;menu_input(s,test_clock);
+        assert(terminated==term_before&&s->level_pid==456);
+        assert(netplay_runtime_file("/run/console/easy-netplay/exit-request","exit\n"));
+        assert(unlink("/run/console/easy-netplay/exit-request")==0);
+        s->netplay_level_pid=999;assert(!spawn_ui(s));s->netplay_level_pid=0;
+        close(taps[1]);cs_evdev_close(&s->menu);
+        puts(role==0U?"NETPLAY_HOST_WRAPPER_ALIVE_AUDIO_READY_VOLUME_REPEAT_RELEASE_AND_BRIGHTNESS_PASS":"NETPLAY_JOIN_WRAPPER_ALIVE_AUDIO_READY_VOLUME_REPEAT_RELEASE_AND_BRIGHTNESS_PASS");
+        puts("NETPLAY_MENU_TAP_REQUESTS_EMULATOR_EXIT_NOT_WRAPPER_TERMINATION_PASS");
+    }
+    assert(unlink("/run/console/easy-netplay/audio-ready")==0);
+    assert(unlink("/run/console/easy-netplay.phase")==0);
     free(s);
     puts("LEVEL_ROUTER_PASS running-game/native-Quick-Menu/menu allowed; actual raw volume path and brightness chord consumed; checkpoint/shutdown/aux barriers preserved");
     puts("LEVEL_CLOCK_RACE_PASS post-read MENU edge retained; brightness-up routed; future and stale edges rejected");

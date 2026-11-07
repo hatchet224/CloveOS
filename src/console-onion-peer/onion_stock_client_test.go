@@ -23,6 +23,25 @@ func TestStockPokemonClientAdvertisedCore(t *testing.T) {
 	}
 	server := curlFixture(t, Export{Files: map[string]string{"/mnt/SDCARD/RetroArch/.retroarch/cores/tgbdual_libretro.so": file}})
 	fields := map[string]string{"[core]": "/mnt/SDCARD/RetroArch/.retroarch/cores/gambatte_libretro.so", "[corechksum]": "not-the-tgb-crc"}
+	// Stock create_cookie_info with unset netplaycore emits an empty core and
+	// omits its checksum. Verify the real pinned file rather than this metadata.
+	empty, err := cookie([]byte("[core]: \n[rom]: /selected.gbc\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := checkLinkPeerCore("host", server, empty, row); err != nil {
+		t.Fatalf("actual stock unset-core cookie rejected: %v", err)
+	}
+	for _, malformed := range []map[string]string{
+		{}, {"[core]": "", "[corechksum]": ""}, {"[core]": "", "[corechksum]": crc},
+	} {
+		if err := checkLinkPeerCore("host", server, malformed, row); err == nil {
+			t.Fatal("malformed/contradictory cookie accepted")
+		}
+	}
+	if err := checkLinkPeerCore("join", server, empty, row); err == nil {
+		t.Fatal("empty host accepted when joining")
+	}
 	if err := checkLinkPeerCore("host", server, fields, row); err != nil {
 		t.Fatalf("stock client with actual pinned TGB rejected: %v", err)
 	}

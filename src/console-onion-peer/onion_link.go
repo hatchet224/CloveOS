@@ -235,6 +235,9 @@ func remoteExists(address, remote string) (bool, error) {
 }
 func checkLinkPeerCore(role, address string, fields map[string]string, row Core) error {
 	name := path.Base(fields["[core]"])
+	core, hasCore := fields["[core]"]
+	_, hasCRC := fields["[corechksum]"]
+	fmt.Fprintf(os.Stderr, "pokemon-link: peer_core_name=%q core_field_present=%t crc_field_present=%t\n", name, hasCore, hasCRC)
 	_, expectedCRC, err := fileDigest(row.ARM32)
 	if err != nil {
 		return err
@@ -249,7 +252,8 @@ func checkLinkPeerCore(role, address string, fields map[string]string, row Core)
 	// selected core, so its ordinary GLO default can still say Gambatte.
 	// Verify the actual known TGB file read-only; never use the advertised
 	// Gambatte revision as evidence of link-core compatibility.
-	if role != "host" || name != "gambatte_libretro.so" {
+	stockUnset := hasCore && core == "" && !hasCRC
+	if role != "host" || (name != "gambatte_libretro.so" && !stockUnset) {
 		return errors.New("Onion Pokemon link requires TGB Dual")
 	}
 	payload, err := fetch(address, "/mnt/SDCARD/RetroArch/.retroarch/cores/tgbdual_libretro.so", 26214400)
@@ -260,7 +264,7 @@ func checkLinkPeerCore(role, address string, fields map[string]string, row Core)
 	if hex.EncodeToString(digest[:]) != row.SHA32 {
 		return errors.New("stock client's actual TGB Dual differs from pinned Onion revision")
 	}
-	fmt.Fprintln(os.Stderr, "pokemon-link: stock GLO Gambatte cookie; actual pinned TGB Dual verified read-only")
+	fmt.Fprintln(os.Stderr, "pokemon-link: stock pre-selection cookie; actual pinned TGB Dual verified read-only")
 	return nil
 }
 

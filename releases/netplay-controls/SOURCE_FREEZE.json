@@ -1,0 +1,55 @@
+{
+  "base_source_commit": "de834822cb6d4614c7df62fc5a3c7d092aed3252",
+  "files": [
+    {
+      "path": "src/console-onion-peer/onion_link.go",
+      "sha256": "1109e86e4ff43dc358d625c822c923d8f10ba70fc9ffeae864753dbfb7682599",
+      "bytes": 18620
+    },
+    {
+      "path": "src/console-onion-peer/onion_stock_client_test.go",
+      "sha256": "e11fbe944574cbf5f8d643412da62a381a2ffb0bdc5505746b18b3058dead724",
+      "bytes": 2947
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "bd0c5ec7bbcb4cd154c3965890dd5df0e75040ce2bcb7107ba34d9be366a1804",
+      "bytes": 20173
+    },
+    {
+      "path": "src/console-supervisor/src/main.c",
+      "sha256": "bc326c2f56ea5f4c02b8f9845390f4b929e2c0fd6411912e162b3380233a86d4",
+      "bytes": 114419
+    },
+    {
+      "path": "src/console-supervisor/src/netplay_input.c",
+      "sha256": "586b600b92d51d16d65e61691ba1f1c0923607077bd257d6df4892fcf10047f4",
+      "bytes": 6767
+    },
+    {
+      "path": "src/console-supervisor/tests/test_level_router.c",
+      "sha256": "70f00d1081343a50ca8fded16d806ac0f4bec0b6619e7743ce33305979562924",
+      "bytes": 19564
+    },
+    {
+      "path": "src/console-supervisor/tests/test_netplay_level_drain.c",
+      "sha256": "6cf0f7156b335085eabcca3ae7fcf00e8e4e8c5b12e08997ac70b309a2e4900a",
+      "bytes": 5198
+    },
+    {
+      "path": "src/console-supervisor/init/console-onion-easy-netplay",
+      "sha256": "e98e30575a09b07422c2571ba83a792bc26ed181319cc63aa1b131545c2b1ddc",
+      "bytes": 16230
+    },
+    {
+      "path": "src/console-supervisor/NETPLAY_INPUT.md",
+      "sha256": "0c15433a5c7af06b24c7c67dde1c5d3299db81c7b493ab4ce56de823708feb74",
+      "bytes": 2975
+    }
+  ],
+  "private_inputs_included": false,
+  "manager_owns_public_checkout": true,
+  "public_R52_release_hold": true,
+  "revision_unchanged": "CloveOS r56",
+  "physical_acceptance_pending": true
+}

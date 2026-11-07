@@ -35,7 +35,7 @@ esac;fi
 mkdir "$session" || exit 22
 rm -f "$root/easy-netplay.failed-stage"
 exec </dev/null >>"$root/easy-netplay.log" 2>&1
-ra= ap= peer= ready_peer= pairing= station= notice= recover= prior_ssid= prior_state= dhcp_server=
+ra= ap= peer= ready_peer= pairing= station= notice= recover= prior_ssid= prior_state= dhcp_server= monitor=
 phase=initializing
 export CLOVE_NETPLAY_STATUS=1
 mark_phase() {
@@ -91,6 +91,27 @@ launch_link() {
     stop_child "$notice";notice=
     /system/bin/retroarch --verbose --config "$config" "$@" -L "$core" --subsystem gb_link_2p \
         "$session/player1.gb" "$session/player2.gb" >"$session/retroarch.log" 2>&1 & ra=$!
+    monitor_emulator & monitor=$!
+}
+monitor_emulator() {
+    # Audio initialization can reopen/reset the board mixer. Publish readiness
+    # from the real frontend log, never a guessed delay after fork. Supervisor
+    # restores the saved level and then owns live physical volume requests.
+    audio_ready=
+    exit_sent=
+    while kill -0 "$ra" 2>/dev/null; do
+        if [ -z "$audio_ready" ] && "$bb" grep -q '\[Audio\]: Started .*audio driver' "$session/retroarch.log"; then
+            printf 'ready\n' >"$session/audio-ready"
+            audio_ready=1
+        fi
+        if [ -z "$exit_sent" ] && [ -f "$session/exit-request" ]; then
+            # One SIGINT asks RetroArch's ordinary runloop to quit and flush
+            # both battery saves. Never kill the wrapper/save-return helper.
+            kill -INT "$ra" 2>/dev/null || :
+            exit_sent=1
+        fi
+        sleep 0.1
+    done
 }
 wpa_available() { [ "$(system_wpa ping 2>/dev/null)" = PONG ]; }
 wpa_stopped() { [ ! -S "$root/wpa/$radio" ]; }
@@ -131,6 +152,7 @@ cleanup() {
     stop_child "$peer"
     stop_child "$ready_peer"
     stop_child "$pairing"
+    stop_child "$monitor"
     stop_child "$ra"
     stop_child "$station"
     stop_child "$ap"
@@ -149,7 +171,7 @@ cleanup() {
         rm -f "$session/player1.gb" "$session/player2.gb" "$session/own.srm" "$session/own.rtc" "$session/link-session.json" "$session/retroarch.log"
         for temporary in "$session"/.link-*;do [ ! -f "$temporary" ] || rm -f "$temporary";done
     fi
-    rm -f "$session/export.json" "$session/retroarch.cookie" "$session/remote.cookie" "$session/options.cfg" "$session/retroarch.cfg" "$session/status" "$session/status.pending" "$session/peer-name"
+    rm -f "$session/export.json" "$session/retroarch.cookie" "$session/remote.cookie" "$session/options.cfg" "$session/retroarch.cfg" "$session/status" "$session/status.pending" "$session/peer-name" "$session/controller.map" "$session/controls.cfg" "$session/controls.pending" "$session/audio-ready" "$session/exit-request"
     rm -f "$session/hostapd.conf" "$session/join.conf" "$session/wpa/$radio" "$session/ap/$radio"
     rmdir "$session/wpa" "$session/ap" "$session" 2>/dev/null || :
     # Keep the failure phase for the post-exit diagnostic, after the live
@@ -197,9 +219,23 @@ if [ "$mode" = link ];then
     printf 'libretro_directory = "%s"\ncore_info_cache_enable = "false"\n' "$(/bin/busybox dirname "$core")" >>"$config"
 fi
 # Check the backend binaries before touching the radio.
-for program in hostapd hostapd_cli wpa_cli wpa_supplicant console-onion-peer console-netplay-status; do
+for program in hostapd hostapd_cli wpa_cli wpa_supplicant console-onion-peer console-netplay-status console-netplay-input; do
     [ -x "/system/bin/$program" ] || exit 22
 done
+# Replace inherited reference bindings, including duplicate keys (first wins).
+# The protected helper validates calibration against the real SDL joystick and
+# produces a GameController map because unmanaged RA uses semantic button IDs.
+if [ "$mode" = link ]; then
+/system/bin/console-netplay-input >"$session/controls.cfg" || exit 29
+"$bb" awk 'NR==FNR { key=$0;sub(/[[:space:]]*=.*/,"",key);replace[key]=1;next }
+    { key=$0;sub(/^[[:space:]]*/,"",key);sub(/[[:space:]]*=.*/,"",key);if(!(key in replace))print }' \
+    "$session/controls.cfg" "$config" >"$session/controls.pending" || exit 29
+cat "$session/controls.cfg" >>"$session/controls.pending"
+mv "$session/controls.pending" "$session/retroarch.cfg"
+config=$session/retroarch.cfg
+SDL_GAMECONTROLLERCONFIG=$(cat "$session/controller.map")
+export SDL_GAMECONTROLLERCONFIG
+fi
 [ -f "$root/wpa.conf" ] && [ ! -L "$root/wpa.conf" ] && wpa_available || exit 22
 original=$(system_wpa status) || exit 22
 prior_state=$(printf '%s\n' "$original" | "$bb" sed -n 's/^wpa_state=//p')
@@ -292,6 +328,7 @@ mark_phase emulator-running
 status=0
 wait "$ra" || status=$?
 ra=
+stop_child "$monitor";monitor=
 if [ "$mode" = link ] && [ "$status" = 0 ]; then
     "$bb" grep -Eq '\[Netplay\].*joined as player 2|\[Netplay\].*joined with input devices' "$session/retroarch.log" || exit 20
     mark_phase returning-saves

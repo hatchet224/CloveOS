@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile the native panel and run its stage tests without board-only services."""
+"""Compile Netplay input/progress programs and run portable stage tests."""
 from pathlib import Path
 import shutil
 import subprocess
@@ -24,11 +24,14 @@ add_subdirectory("${CLOVE_SOURCE}/src/console-launcher" launcher EXCLUDE_FROM_AL
 add_executable(console-netplay-status "${CLOVE_SOURCE}/src/console-supervisor/src/netplay_status.c")
 target_include_directories(console-netplay-status PRIVATE "${CLOVE_SOURCE}/src/console-supervisor/include")
 target_link_libraries(console-netplay-status PRIVATE console_launcher m)
+find_package(SDL2 2.0.5 CONFIG REQUIRED)
+add_executable(console-netplay-input "${CLOVE_SOURCE}/src/console-supervisor/src/netplay_input.c")
+target_link_libraries(console-netplay-input PRIVATE sessiond_linux SDL2::SDL2)
 add_executable(netplay_status_tests "${CLOVE_SOURCE}/src/console-supervisor/tests/test_netplay_status.c")
 target_include_directories(netplay_status_tests PRIVATE "${CLOVE_SOURCE}/src/console-supervisor/include")
 target_compile_options(netplay_status_tests PRIVATE -UNDEBUG)
 target_link_libraries(netplay_status_tests PRIVATE console_launcher_history)
 ''', encoding='utf-8')
 subprocess.run(['cmake', '-S', str(fixture), '-B', str(build), '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_C_COMPILER='+compiler], check=True)
-subprocess.run(['cmake', '--build', str(build), '--target', 'console-netplay-status', 'netplay_status_tests', '-j2'], check=True)
+subprocess.run(['cmake', '--build', str(build), '--target', 'console-netplay-status', 'console-netplay-input', 'netplay_status_tests', '-j2'], check=True)
 subprocess.run([str(build / 'netplay_status_tests')], check=True)
