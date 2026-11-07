@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Extract actual production recovery functions into a bounded mock-native-RGUI fixture."""
+"""Extract native save-error notification/return functions; the removed custom menu is not recreated."""
 from pathlib import Path
 import argparse,hashlib,json
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--source',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
 a=p.parse_args();s=a.source.read_text();root=Path(__file__).resolve().parent
 fragments={}
-for signature in ['static bool ra_quick_menu(', 'static void recovery_hide(',
+for signature in ['static void native_notice(', 'static bool ra_quick_menu(',
                   'static void recovery_status(void)\n{','static void recovery_command(',
-                  'static unsigned int recovery_menu_action(',
-                  'unsigned int magicx_retroarch_menu_action(',
-                  'const char *magicx_retroarch_menu_label(']:
+                  'static void native_error_exit(', 'static bool native_notice_action(',
+                  'bool magicx_retroarch_menu_finish_requested(']:
  start=s.index(signature);at=s.index('{',start);depth=0
  for end in range(at,len(s)):
   if s[end]=='{':depth+=1

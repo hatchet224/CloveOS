@@ -77,7 +77,9 @@ struct mx_ra {
     void (*psp_fps)(float *, float *, float *);
     bool managed, internal_command, content_closed, quick_menu, recovery_panel, first_frame_entered, priming_load;
     bool restore_render_warmup;
-    bool settings_page, rewind_owned;
+    bool settings_page, rewind_owned, save_error;
+    char native_notice[384];
+    unsigned int native_exit_confirm;
     bool swap_triggers, triggers_swapped, hide_hints, levels_observed;
     unsigned int osd_width, fast_forward_rate, meter_level, meter_max;
     uint64_t next_level_poll, meter_until;
@@ -247,6 +249,15 @@ static void feedback_refresh(const char *message)
         runloop_msg_queue_push(message, 1U, 180U, true, NULL,
                                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
+/* Use RGUI's existing message box; the notification is dismissed with A/B.
+ * It never substitutes a second recovery menu or asserts that a save worked. */
+static void native_notice(const char *message)
+{
+    (void)snprintf(ra.native_notice, sizeof(ra.native_notice), "%s", message);
+#ifdef HAVE_MENU
+    if (ra.quick_menu) menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+#endif
+}
 static void control_request(uint32_t operation)
 {
     bool manual = manual_operation(operation);
@@ -265,70 +276,8 @@ static void control_request(uint32_t operation)
     }
 }
 const char *magicx_retroarch_menu_label(unsigned int index)
-{
-    static char labels[8][112];
-    static const char *const titles[] = {"Resume Game", "Save Slot", "Load Slot",
-                                        "Take Screenshot", "Save and Exit to MainUI"};
-    const char *phase = "";
-    if(index>=8U)return "";
-    if(!ra.recovery_panel && ra.settings_page){
-        settings_t *settings=config_get_ptr();
-        if(index==0U){
-            const char *state=!managed_rewind_supported()?"Unavailable for this core":
-                (settings->bools.rewind_enable?"On":"Off");
-            (void)snprintf(labels[index],sizeof(labels[index]),"Rewind: %s",state);
-        }else if(index==1U)(void)snprintf(labels[index],sizeof(labels[index]),"Show FPS: %s",settings->bools.video_fps_show?"On":"Off");
-        else if(index==2U)(void)snprintf(labels[index],sizeof(labels[index]),"Aspect ratio: %s",settings->uints.video_aspect_ratio_idx==ASPECT_RATIO_4_3?"4:3":"Core");
-        else if(index==3U)strcpy(labels[index],"Back to Quick Menu");
-        else return "";
-        return labels[index];
-    }
-    if(!ra.recovery_panel && index==(ra.disc_count!=0U?6U:5U))return "Settings";
-    if (index == 5U) {
-        unsigned int active;
-        if (ra.recovery_panel || ra.disc_count == 0U) return "";
-        if (disc_index(&active) && !ra.disc_fault)
-            (void)snprintf(labels[index], sizeof(labels[index]), "Disc %u/%u - Switch Disc", active + 1U, ra.disc_count);
-        else strcpy(labels[index], "Switch Disc [unavailable]");
-        return labels[index];
-    }
-    if (index > 5U) return "";
-    if (ra.recovery_panel) {
-        const char *text;
-        uint32_t required = 0U;
-        if (ra.recovery_confirm != 0U) {
-            text = index == 0U ? "Cancel - keep game paused" :
-                   index == 1U ? (ra.recovery_confirm == 1U ? "CONFIRM power off - unsaved progress lost" :
-                                                           "CONFIRM MainUI - unsaved progress lost") :
-                   index == 2U ? "Previous committed checkpoint is retained" :
-                   index == 3U ? "This action does not promise a fresh save" : "B cancels";
-        } else {
-            text = index == 0U ? "Cancel - keep game paused" :
-                   index == 1U ? "Retry - reinsert card first" :
-                   index == 2U ? "Continue without a new checkpoint" :
-                   index == 3U ? "Power off..." : "Return to MainUI...";
-            required = index == 1U ? CS_RECOVERY_RETRY : index == 2U ? CS_RECOVERY_CONTINUE :
-                       index == 3U ? CS_RECOVERY_OFF : index == 4U ? CS_RECOVERY_MENU : 0U;
-        }
-        (void)snprintf(labels[index], sizeof(labels[index]), "%s%s", text,
-                       required != 0U && (ra.feedback.observed.available & required) == 0U ? " [unavailable]" : "");
-        return labels[index];
-    }
-    switch (ra.feedback.phase) {
-    case MX_FEEDBACK_QUEUED: phase = "Queued"; break;
-    case MX_FEEDBACK_BUSY: phase = "Working"; break;
-    case MX_FEEDBACK_DONE: phase = "Complete"; break;
-    case MX_FEEDBACK_FAILED: phase = "Failed"; break;
-    default: break;
-    }
-    if (index == 1U || index == 2U) {
-        if (ra.feedback.known)
-            (void)snprintf(labels[index], sizeof(labels[index]), "%s %u%s%s", titles[index],
-                           ra.feedback.observed.slot, phase[0] != '\0' ? " - " : "", phase);
-        else (void)snprintf(labels[index], sizeof(labels[index]), "%s ? - Connecting", titles[index]);
-    } else (void)snprintf(labels[index], sizeof(labels[index]), "%s", titles[index]);
-    return labels[index];
-}
+{ (void)index;return NULL; }
+
 static void recovery_status(void);
 static void poll_control_status(uint64_t now)
 {
@@ -679,7 +628,8 @@ static bool managed_rewind_supported(void)
 #ifdef HAVE_REWIND
     core_option_manager_t *options=runloop_state_get_ptr()->core_options;
     if(!ra.managed || ra.content_closed || !loaded_single_content() || ra.disc_count!=0U ||
-       strcmp(ra.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")!=0 ||
+       (strcmp(ra.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")!=0 &&
+        strcmp(ra.identity.core,"b83a869c3b25f1f02e2d06687abd0e1ff992d379ae815b5f7e08d53bcd457301")!=0) ||
        !magicx_core_basename(path_get(RARCH_PATH_CORE),"tgbdual_libretro.so") ||
        options==NULL || options->size!=1U)return false;
 #ifdef HAVE_NETWORKING
@@ -712,31 +662,33 @@ static bool managed_rewind_reseed(void)
     return false;
 #endif
 }
-static bool managed_rewind_toggle(void)
+static bool managed_rewind_set(bool enabled)
 {
 #ifdef HAVE_REWIND
     settings_t *settings=config_get_ptr();
-    if(!ra.quick_menu || !ra_paused(NULL) || magicx_bridge_busy(ra.bridge) ||
-       ra.recovery_panel || ra.controls.fd>=0 ||
-       ra.feedback.phase==MX_FEEDBACK_QUEUED || ra.feedback.phase==MX_FEEDBACK_BUSY ||
-       !managed_rewind_supported())return false;
-    if(settings->bools.rewind_enable){
-        managed_rewind_clear();settings->bools.rewind_enable=false;ra.rewind_owned=false;
-        fprintf(stderr,"Clove rewind: disabled; RAM history discarded\n");return true;
-    }
+    managed_rewind_clear();settings->bools.rewind_enable=false;ra.rewind_owned=false;
+    if(!enabled)return true;
+    if(!managed_rewind_supported())return false;
     settings->sizes.rewind_buffer_size=MAGICX_REWIND_BYTES;
     settings->uints.rewind_granularity=1U;
     settings->bools.rewind_enable=true;ra.rewind_owned=true;
     if(!managed_rewind_reseed()){
         managed_rewind_clear();settings->bools.rewind_enable=false;ra.rewind_owned=false;
-        fprintf(stderr,"Clove rewind: core/buffer initialization unavailable; remains disabled\n");return false;
+        fprintf(stderr,"Clove rewind: initialization unavailable; remains disabled\n");return false;
     }
-    fprintf(stderr,"Clove rewind: qualified single TGB enabled; buffer_bytes=%u state_bytes=%zu\n",
+    fprintf(stderr,"Clove rewind: owned history ready buffer_bytes=%u state_bytes=%zu\n",
             MAGICX_REWIND_BYTES,runloop_state_get_ptr()->rewind_st.size);
     return true;
 #else
-    return false;
+    (void)enabled;return false;
 #endif
+}
+static bool managed_rewind_toggle(void)
+{
+    if(!ra.quick_menu || !ra_paused(NULL) || magicx_bridge_busy(ra.bridge) ||
+       ra.controls.fd>=0 || ra.feedback.phase==MX_FEEDBACK_QUEUED ||
+       ra.feedback.phase==MX_FEEDBACK_BUSY)return false;
+    return managed_rewind_set(!config_get_ptr()->bools.rewind_enable);
 }
 static bool managed_rewind_valid(void)
 {
@@ -922,6 +874,8 @@ static bool ra_quick_menu(void *context, bool open, char error[MAGICX_ERROR_MAX]
         ra.settings_page = false;
         fprintf(stderr,"Clove Quick Menu: closed; awaiting authenticated release\n");
         if (!ra_set_paused(NULL, true)) return error_text(error, "Quick Menu pause restoration failed");
+        if(ra.save_error && !magicx_bridge_recovery_menu_closed(ra.bridge))
+            return error_text(error,"native menu close awaits settled checkpoint writers");
     }
     update_game_triggers(open);
     return true;
@@ -930,171 +884,73 @@ static bool ra_quick_menu(void *context, bool open, char error[MAGICX_ERROR_MAX]
     return error_text(error, "native Quick Menu was not compiled");
 #endif
 }
-static void recovery_hide(void)
-{
-#ifdef HAVE_MENU
-    if (ra.recovery_panel) {
-        bool paused = ra_paused(NULL);
-        ra.internal_command = true;
-        retroarch_menu_running_finished(false);
-        ra.internal_command = false;
-        ra.quick_menu = false;
-        ra.recovery_panel = false;
-        ra.recovery_confirm = 0U;
-        update_game_triggers(false);
-        /* Native close may UNPAUSE. Preserve the actual state observed before
-         * closing, including an already authorized bridge RELEASE in flight. */
-        (void)ra_set_paused(NULL, paused);
-    }
-#endif
-}
 static void recovery_status(void)
 {
 #ifdef HAVE_MENU
-    char error[MAGICX_ERROR_MAX];
-    bool pending = ra.feedback.phase == MX_FEEDBACK_QUEUED || ra.feedback.phase == MX_FEEDBACK_BUSY;
-    if (ra.feedback.observed.recovery == 0U) {
-        recovery_hide();
-        return;
+    bool pending=ra.feedback.phase==MX_FEEDBACK_QUEUED || ra.feedback.phase==MX_FEEDBACK_BUSY;
+    if(ra.feedback.observed.recovery==0U){
+        ra.save_error=false;ra.native_exit_confirm=0U;return;
     }
-    if (!ra.recovery_panel && !pending && !ra.content_closed) {
-        if (ra_set_paused(NULL, true) && ra_quick_menu(NULL, true, error)) {
-            ra.recovery_panel = true;
-            ra.recovery_confirm = 0U;
-            menu_state_get_ptr()->selection_ptr = 0U;
-            ra.recovery_shown_flags = ra.feedback.observed.available;
-            feedback_refresh("Checkpoint recovery - game remains paused");
-        } else fprintf(stderr, "MagicX recovery panel unavailable: native RGUI/pause required\n");
-    } else if (ra.recovery_panel && ra.recovery_shown_flags != ra.feedback.observed.available) {
-        ra.recovery_shown_flags = ra.feedback.observed.available;
-        feedback_refresh(NULL);
+    bool first=!ra.save_error;ra.save_error=true;
+    if(!ra.quick_menu && !pending && !ra.content_closed){
+        char error[MAGICX_ERROR_MAX];
+        if(!ra_set_paused(NULL,true) || !ra_quick_menu(NULL,true,error))return;
+        first=true;
+    }
+    if(first && ra.quick_menu){
+        native_notice("Save/checkpoint failed. Last good save retained.\n"
+                      "Progress since that save is not saved.\n"
+                      "A/B: dismiss. Resume: return to the game.\n"
+                      "Close Content: leave without the latest save.");
+        fprintf(stderr,"Clove save error: native RGUI remains available; no save success claimed\n");
     }
 #endif
 }
 static void recovery_command(uint32_t operation)
 {
-    struct magicx_control_feedback candidate = ra.feedback;
-    /* Preflight the exact currently advertised recovery action. No ACK or
-     * user selection bypasses the daemon's independent live-state checks. */
-    if (!magicx_feedback_begin(&candidate, operation, 1U) ||
-        !magicx_controls_request(&ra.controls, control_path(), operation, controls_now())) {
-        feedback_refresh("Recovery action unavailable; game remains paused");
-        return;
+    struct magicx_control_feedback candidate=ra.feedback;
+    if(!magicx_feedback_begin(&candidate,operation,1U)){
+        native_notice("The operation is still settling. Settings remain available.\n"
+                      "No new save has been committed. A/B: dismiss.");return;
     }
-    candidate.token = ra.controls.token;
-    ra.feedback = candidate;
-    recovery_hide(); /* Before sending: never close after RELEASE and re-pause. */
-    ra.next_status = 0U;
-    feedback_refresh("Recovery action queued - awaiting daemon");
+    /* Close before queuing RELEASE/EXIT: a fast daemon must never be re-paused
+     * after it acknowledges the explicit return-to-game request. */
+    char error[MAGICX_ERROR_MAX];bool was_open=ra.quick_menu;
+    if(was_open && !ra_quick_menu(NULL,false,error))return;
+    if(!magicx_controls_request(&ra.controls,control_path(),operation,controls_now())){
+        if(was_open)(void)ra_quick_menu(NULL,true,error);
+        native_notice("The request failed. The last good save is retained.\nA/B: dismiss.");return;
+    }
+    candidate.token=ra.controls.token;ra.feedback=candidate;ra.next_status=0U;
+    ra.native_notice[0]='\0';ra.native_exit_confirm=0U;
 }
-static unsigned int recovery_menu_action(unsigned int action, size_t selected)
+static void native_error_exit(void)
+{
+    ra.native_exit_confirm=1U;
+    native_notice("The latest progress has NOT been saved.\n"
+                  "A: return Home without that progress.\n"
+                  "B: cancel and keep the game paused.\n"
+                  "The previous committed save is retained.");
+}
+static bool native_notice_action(unsigned int action)
 {
 #ifdef HAVE_MENU
-    if (action == MENU_ACTION_UP || action == MENU_ACTION_DOWN || action == MENU_ACTION_NOOP)
-        return action;
-    if (action == MENU_ACTION_CANCEL) {
-        ra.recovery_confirm = 0U;
-        menu_state_get_ptr()->selection_ptr = 0U;
-        feedback_refresh("Cancelled - game remains paused");
-    } else if (action == MENU_ACTION_OK) {
-        if (ra.recovery_confirm != 0U) {
-            if (selected == 1U)
-                recovery_command(ra.recovery_confirm == 1U ? CS_CONTROL_RECOVERY_OFF : CS_CONTROL_RECOVERY_MENU);
-            else {
-                ra.recovery_confirm = 0U;
-                menu_state_get_ptr()->selection_ptr = 0U;
-                feedback_refresh("Cancelled - game remains paused");
-            }
-        } else if (selected == 1U) recovery_command(CS_CONTROL_RECOVERY_RETRY);
-        else if (selected == 2U) recovery_command(CS_CONTROL_RECOVERY_CONTINUE);
-        else if (selected == 3U || selected == 4U) {
-            uint32_t flag = selected == 3U ? CS_RECOVERY_OFF : CS_RECOVERY_MENU;
-            if ((ra.feedback.observed.available & flag) != 0U) {
-                ra.recovery_confirm = selected == 3U ? 1U : 2U;
-                menu_state_get_ptr()->selection_ptr = 0U; /* Cancel is default. */
-                feedback_refresh("Confirmation required; no fresh checkpoint promised");
-            } else feedback_refresh("Recovery action unavailable until writers settle");
-        } else feedback_refresh("Cancelled - game remains paused");
+    if(ra.native_notice[0]=='\0')return false;
+    struct menu_state *menu=menu_state_get_ptr();
+    if(menu->driver_ctx && menu->driver_ctx->render_messagebox)
+        menu->driver_ctx->render_messagebox(menu->userdata,ra.native_notice);
+    if(action==MENU_ACTION_CANCEL || action==MENU_ACTION_OK){
+        bool leave=action==MENU_ACTION_OK && ra.native_exit_confirm==1U;
+        ra.native_notice[0]='\0';ra.native_exit_confirm=0U;
+        menu->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+        if(leave)recovery_command(CS_CONTROL_RECOVERY_MENU);
     }
-    return MENU_ACTION_NOOP;
+    return true;
 #else
-    (void)selected;
-    return action;
+    (void)action;return false;
 #endif
 }
-static unsigned int legacy_recovery_menu_action(unsigned int action, size_t selected)
-{
-#ifdef HAVE_MENU
-    if (!ra.managed) return action;
-    if (ra.recovery_panel) return recovery_menu_action(action, selected);
-    if (!ra.quick_menu) return MENU_ACTION_NOOP;
-    if(ra.settings_page){
-        if(action==MENU_ACTION_CANCEL || (selected==3U && action==MENU_ACTION_OK)){
-            ra.settings_page=false;fprintf(stderr,"Clove settings: returned to Quick Menu\n");menu_state_get_ptr()->selection_ptr=ra.disc_count!=0U?6U:5U;
-            feedback_refresh(NULL);return MENU_ACTION_NOOP;
-        }
-        if(action==MENU_ACTION_UP || action==MENU_ACTION_DOWN || action==MENU_ACTION_NOOP)return action;
-        if(action==MENU_ACTION_OK || action==MENU_ACTION_LEFT || action==MENU_ACTION_RIGHT){
-            settings_t *settings=config_get_ptr();
-            if(selected==0U)feedback_refresh(managed_rewind_toggle()?"Rewind setting changed":"Rewind unavailable; game remains paused");
-            else if(selected==1U){settings->bools.video_fps_show=!settings->bools.video_fps_show;feedback_refresh(NULL);}
-            else if(selected==2U){
-                settings->uints.video_aspect_ratio_idx=settings->uints.video_aspect_ratio_idx==ASPECT_RATIO_4_3?ASPECT_RATIO_CORE:ASPECT_RATIO_4_3;
-                video_driver_set_aspect_ratio();feedback_refresh(NULL);
-            }
-        }
-        return MENU_ACTION_NOOP;
-    }
-    if(selected==(ra.disc_count!=0U?6U:5U) && action!=MENU_ACTION_CANCEL){
-        if(action==MENU_ACTION_OK){ra.settings_page=true;fprintf(stderr,"Clove settings: opened bounded runtime settings\n");menu_state_get_ptr()->selection_ptr=0U;feedback_refresh(NULL);}
-        return action==MENU_ACTION_UP || action==MENU_ACTION_DOWN || action==MENU_ACTION_NOOP?action:MENU_ACTION_NOOP;
-    }
-    if (selected == 5U && ra.disc_count != 0U &&
-        (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)) {
-        unsigned int active;
-        if (ra.controls.fd >= 0 || !ra.feedback.known || !ra.feedback.observed.active ||
-            !ra.feedback.observed.quick_menu || ra.feedback.observed.busy ||
-            ra.feedback.phase == MX_FEEDBACK_QUEUED || ra.feedback.phase == MX_FEEDBACK_BUSY ||
-            !disc_index(&active)) {
-            feedback_refresh("Disc switch unavailable while the session is busy");
-        } else {
-            const unsigned int step = action == MENU_ACTION_LEFT ? ra.disc_count - 1U : 1U;
-            feedback_refresh(disc_select((active + step) % ra.disc_count) ? "Disc inserted" :
-                             (ra.disc_fault ? "Disc tray failed. Session remains paused." : "Disc switch failed"));
-        }
-        return MENU_ACTION_NOOP;
-    }
-    switch ((enum menu_action)action) {
-    case MENU_ACTION_CANCEL:
-        control_request(CS_CONTROL_QUICK_MENU_CLOSE);
-        break;
-    case MENU_ACTION_LEFT: control_request(CS_CONTROL_SLOT_DOWN); break;
-    case MENU_ACTION_RIGHT: control_request(CS_CONTROL_SLOT_UP); break;
-    case MENU_ACTION_OK:
-        switch (selected) {
-        case 0U: control_request(CS_CONTROL_QUICK_MENU_CLOSE); break;
-        case 1U: control_request(CS_CONTROL_SAVE_SLOT); break;
-        case 2U: control_request(CS_CONTROL_LOAD_SLOT); break;
-        case 3U: control_request(CS_CONTROL_SCREENSHOT); break;
-        case 4U: control_request(CS_CONTROL_MENU); break;
-        default: break;
-        }
-        break;
-    case MENU_ACTION_UP:
-    case MENU_ACTION_DOWN:
-    case MENU_ACTION_NOOP: return action;
-    default: break; /* No search, reset, info, tab, binding or setting mutation. */
-    }
-    return MENU_ACTION_NOOP;
-#else
-    (void)managed_rewind_toggle;
-    (void)recovery_command;
-    (void)recovery_menu_action;
-    (void)selected;
-    return action;
-#endif
-}
-bool magicx_retroarch_recovery_menu(void) { return ra.managed && ra.recovery_panel; }
+bool magicx_retroarch_recovery_menu(void) { return false; }
 bool magicx_retroarch_playlist_menu(void)
 { return ra.managed && ra.quick_menu && !ra.recovery_panel && ra.disc_count != 0U; }
 bool magicx_retroarch_lifecycle_owned(void)
@@ -1104,15 +960,20 @@ void magicx_retroarch_native_owned_notice(void)
 bool magicx_retroarch_menu_finish_requested(bool quit)
 {
     if (!ra.managed || ra.internal_command || ra.content_closed || !ra.quick_menu) return false;
-    if (ra.recovery_panel) feedback_refresh("Recovery remains paused; choose an explicit action");
-    else control_request(quit ? CS_CONTROL_MENU : CS_CONTROL_QUICK_MENU_CLOSE);
+    /* Native Close Content may ask to finish the menu after its command hook.
+     * That is not a second user choice or permission to resume behind a dialog. */
+    if(ra.native_notice[0]!='\0' || ra.native_exit_confirm!=0U)return true;
+    if (ra.save_error) {
+        if (quit) native_error_exit();
+        else recovery_command(CS_CONTROL_RECOVERY_CONTINUE);
+    } else control_request(quit ? CS_CONTROL_MENU : CS_CONTROL_QUICK_MENU_CLOSE);
     return true;
 }
 unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
 {
 #ifdef HAVE_MENU
     if (!ra.managed) return action;
-    if (ra.recovery_panel) return legacy_recovery_menu_action(action, selected);
+    if(native_notice_action(action))return MENU_ACTION_NOOP;
     if (!ra.quick_menu) return MENU_ACTION_NOOP;
     file_list_t *list = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_state_get_ptr(), 0U);
     if (list == NULL || selected >= list->size) return MENU_ACTION_NOOP;
@@ -1158,6 +1019,19 @@ unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
             return MENU_ACTION_NOOP;
         }
     }
+    if(name!=NULL && strcmp(name,"rewind_enable")==0){
+        if(action==MENU_ACTION_LEFT || action==MENU_ACTION_RIGHT || action==MENU_ACTION_OK || action==MENU_ACTION_START){
+            bool ok=action==MENU_ACTION_START ? managed_rewind_set(false) : managed_rewind_toggle();
+            if(!ok)native_notice("Rewind is unavailable for this core or while an operation is pending.\n"
+                                 "The game and previous save are retained. A/B: dismiss.");
+            else feedback_refresh(config_get_ptr()->bools.rewind_enable?"Rewind enabled":"Rewind disabled");
+        }
+        return MENU_ACTION_NOOP;
+    }
+    if(name!=NULL && (strcmp(name,"rewind_granularity")==0 || strcmp(name,"rewind_buffer_size")==0 || strcmp(name,"rewind_buffer_size_step")==0)){
+        native_notice("Managed rewind uses a bounded 16 MiB history and one-frame granularity.\nA/B: dismiss.");
+        return MENU_ACTION_NOOP;
+    }
     if (name != NULL && strcmp(name, "state_slot") == 0) {
         if (action == MENU_ACTION_LEFT) control_request(CS_CONTROL_SLOT_DOWN);
         else if (action == MENU_ACTION_RIGHT) control_request(CS_CONTROL_SLOT_UP);
@@ -1193,14 +1067,24 @@ unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
     }
     return action;
 #else
-    (void)selected; (void)legacy_recovery_menu_action; return action;
+    (void)selected;(void)native_notice_action;(void)managed_rewind_toggle;(void)managed_rewind_supported;return action;
 #endif
 }
 void magicx_retroarch_menu_toggle(void)
 {
-    if (ra.managed && ra.recovery_panel) {
-        ra.recovery_confirm = 0U;
-        feedback_refresh("Recovery remains paused; choose an explicit action");
+    if(ra.managed && ra.save_error){
+        if(ra.native_notice[0]!='\0'){
+            ra.native_notice[0]='\0';ra.native_exit_confirm=0U;
+#ifdef HAVE_MENU
+            struct menu_state *menu=menu_state_get_ptr();
+            menu->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            /* SELECT is also native Info. Consume the whole modifier chord
+             * until release, just as RetroArch does when opening its menu. */
+            menu->input_driver_flushing_input=2;
+#endif
+        }
+        else if(ra.quick_menu)recovery_command(CS_CONTROL_RECOVERY_CONTINUE);
+        return;
     } else if (ra.managed && ra.quick_menu) control_request(CS_CONTROL_QUICK_MENU_CLOSE);
     else if (ra.managed) control_request(CS_CONTROL_QUICK_MENU);
 }
@@ -1501,8 +1385,10 @@ static bool ra_close(void *context, char error[MAGICX_ERROR_MAX])
      * this writes no SRAM/state and leaves no auxiliary writer to outlive EXIT. */
 #ifdef HAVE_CONFIGFILE
     if (getenv("MAGICX_FACTORY_CONFIG") != NULL && config_get_ptr()->bools.config_save_on_exit &&
-        !config_save_file(path_get(RARCH_PATH_CONFIG)))
-        return error_text(error, "native configuration save failed");
+        !config_save_file(path_get(RARCH_PATH_CONFIG))) {
+        if(!ra.save_error)return error_text(error,"native configuration save failed");
+        fprintf(stderr,"Clove explicit unsaved exit: native configuration was not saved\n");
+    }
 #endif
     managed_rewind_clear();
     config_get_ptr()->bools.rewind_enable=false;ra.rewind_owned=false;
@@ -1922,6 +1808,11 @@ bool magicx_retroarch_init(void)
     memset(&ra, 0, sizeof(ra));
     magicx_controls_init(&ra.controls);
     magicx_controls_init(&ra.status_controls);
+    /* A persisted preference is not ownership of an upstream history buffer.
+     * Establish the factory/session identity with rewind Off, then create the
+     * bounded owned history after the live identity and endpoint are known. */
+    bool rewind_wanted=config_get_ptr()->bools.rewind_enable;
+    managed_rewind_clear();config_get_ptr()->bools.rewind_enable=false;
     if (!load_launch(getenv("MAGICX_BRIDGE_LAUNCH")) || !game_tweaks()) return false;
     native_owned_options();
     magicx_asset_cache_init(&ra.assets, ra.config.qualified_fat_syncfs);
@@ -1985,6 +1876,8 @@ bool magicx_retroarch_init(void)
         magicx_retroarch_deinit();
         return false;
     }
+    if(rewind_wanted && !managed_rewind_set(true))
+        fprintf(stderr,"Clove rewind: persisted preference unavailable; starting safely with rewind Off\n");
     fprintf(stderr, "MagicX endpoint ready: %s (paused until authorized RELEASE)\n",
             ra.config.socket_path);
     return true;
@@ -2138,6 +2031,12 @@ bool magicx_retroarch_command_allowed(unsigned int command)
     case CMD_EVENT_QUIT:
     case CMD_EVENT_UNLOAD_CORE:
         if (magicx_bridge_core_allowed(ra.bridge) || (ra.quick_menu && !ra.recovery_panel && ra_paused(NULL))) {
+            if(ra.save_error){
+                if(cmd==CMD_EVENT_SAVE_STATE)recovery_command(CS_CONTROL_RECOVERY_RETRY);
+                else if(cmd==CMD_EVENT_LOAD_STATE)control_request(CS_CONTROL_LOAD_SLOT);
+                else native_error_exit();
+                return false;
+            }
             control_request(cmd == CMD_EVENT_SAVE_STATE   ? CS_CONTROL_SAVE_SLOT
                             : cmd == CMD_EVENT_LOAD_STATE ? CS_CONTROL_LOAD_SLOT
                                                           : CS_CONTROL_MENU);
@@ -2153,7 +2052,8 @@ bool magicx_retroarch_command_allowed(unsigned int command)
         control_request(CS_CONTROL_SCREENSHOT);
         return false;
     case CMD_EVENT_RESUME:
-        control_request(CS_CONTROL_QUICK_MENU_CLOSE);
+        if(ra.save_error)recovery_command(CS_CONTROL_RECOVERY_CONTINUE);
+        else control_request(CS_CONTROL_QUICK_MENU_CLOSE);
         return false;
     case CMD_EVENT_UNPAUSE:
     case CMD_EVENT_PAUSE_TOGGLE:
@@ -2203,15 +2103,11 @@ bool magicx_retroarch_command_allowed(unsigned int command)
     case CMD_EVENT_DISK_APPEND_IMAGE:
         feedback_refresh("Use the playlist disc selector; checkpoint media stays inserted");
         return false;
+    case CMD_EVENT_REWIND_TOGGLE:
     case CMD_EVENT_REWIND_REINIT:
     case CMD_EVENT_REWIND_INIT:
     case CMD_EVENT_REWIND_DEINIT:
-        if (config_get_ptr()->bools.rewind_enable && managed_rewind_supported()) {
-            config_get_ptr()->bools.rewind_enable=false;
-            (void)managed_rewind_toggle();
-        } else {
-            managed_rewind_clear(); config_get_ptr()->bools.rewind_enable=false; ra.rewind_owned=false;
-        }
+        (void)managed_rewind_set(cmd!=CMD_EVENT_REWIND_DEINIT && config_get_ptr()->bools.rewind_enable);
         return false;
     case CMD_EVENT_MENU_TOGGLE:
         magicx_retroarch_menu_toggle();

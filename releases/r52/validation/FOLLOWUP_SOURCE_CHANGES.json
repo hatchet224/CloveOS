@@ -1,0 +1,201 @@
+{
+  "base_reviewed_source_commit": "7ab4ec99e0f123c932984f98084c347c4798a00f",
+  "files": [
+    {
+      "path": "releases/r52/BUILD_DELTA.md",
+      "bytes": 5908,
+      "sha256": "b503fe4d0d4b2e42e22553167c92cc7639cbefd61b66e8a19b587f1aa7edd8e4"
+    },
+    {
+      "path": "src/console-packaging/generate_tgbdual_variant.py",
+      "bytes": 2765,
+      "sha256": "6031f6203bc5ec0e9b7d9e5de9019218fb03828262d721f99a413966a8bd427b"
+    },
+    {
+      "path": "src/console-packaging/image/console-rc.sh",
+      "bytes": 9407,
+      "sha256": "a5a66044b530c818b4512e0875b28918ded51151eb6ca16d668d8fa5c84f98aa"
+    },
+    {
+      "path": "src/console-packaging/image/console-start.sh",
+      "bytes": 3058,
+      "sha256": "d732c970beeab33b26aa91c358503b3098df9d0d475fa9b29c6512e8d8eab6b6"
+    },
+    {
+      "path": "src/console-packaging/tests/test_startup_diagnostics.py",
+      "bytes": 1359,
+      "sha256": "25a03f37e73d638fefe3f70d04c3798b221ba30e059826cbecc7302b81ae9ce8"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "bytes": 21474,
+      "sha256": "44f3a2a99d1927b273c2d92700655ff4c85dd56da6b2d317aec616b6a57463f6"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/build.h",
+      "bytes": 115,
+      "sha256": "88f7264f9ce0c0bc8f7fe52da52c8486db222982430eaee1e4bde8571d8db06d"
+    },
+    {
+      "path": "src/console-supervisor/src/catalog.c",
+      "bytes": 44552,
+      "sha256": "eb2babd51169e5dc2da97a60415f2465168d851db71f496283f37b535de5df34"
+    },
+    {
+      "path": "src/console-supervisor/src/tools_backend.c",
+      "bytes": 62178,
+      "sha256": "87195837e66b9c327b8006516bc5397f9125c7756ac02c3b407f87da8ed20291"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_r52_native_session.c",
+      "bytes": 20278,
+      "sha256": "f58c327fc13e73e589ed6c2e2832ef289e59aa75612087d0a491ab1d1a1f552e"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_r52_rewind_reload.c",
+      "bytes": 16340,
+      "sha256": "ff9ba4b8c337bd2b984240cc5a7d1ff896536667a42d66b1c8825eb670215ba3"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_tgb_core_choice.c",
+      "bytes": 4588,
+      "sha256": "904b49bceef33875b5956c3ce434404b2e3113c1c4c0079ced31112a362e8ce6"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_tgb_session.c",
+      "bytes": 7362,
+      "sha256": "b225a8cfbeb407f9f19eb8f84d89bb0ab0a497218890a106b757dd3826d88b51"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/install.py",
+      "bytes": 4899,
+      "sha256": "4919d53d431d0385d5a55f4ede4ecf0440585c871a6cb80f018bd19cbed9a461"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_bridge.c",
+      "bytes": 38659,
+      "sha256": "bad14f76ac8696b83d09614ddfbe9d04749596ca7fde84894a99c37e49b40638"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_bridge.h",
+      "bytes": 3693,
+      "sha256": "93a2477bf2ccbaa558d84a420ae182305e8296ac8bb7d4479496e260c140bded"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_retroarch.c",
+      "bytes": 101444,
+      "sha256": "dbf3dc770406094c1217a7a51f0a2bdcb9cbc3938c38253ef1011d735b1c4b3c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/NATIVE_MENU.md",
+      "bytes": 5837,
+      "sha256": "37526f33de2978e88b0ef40a70406150a9a8c72f6edbca1870ecace2f2150cf9"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0012-r52-native-osd-orientation.patch",
+      "bytes": 3564,
+      "sha256": "d6f7d406a410bc8228a5f5992963da3c9fa0f7d09c28bf9ed21674452e9f462a"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/recovery_panel_mock_main.c",
+      "bytes": 3700,
+      "sha256": "6bfde30c0f878bb6cf9d0f00a416ac2fffd3de713f9c8ce3767c0794a875013c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/recovery_panel_mock_prefix.c",
+      "bytes": 2203,
+      "sha256": "e8ae8a8b677acdea358c90e649a4d3b998bdfea315f77f012e6f94c393e0e11c"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_bridge.c",
+      "bytes": 29230,
+      "sha256": "d554c1871a940a46e246234521267bc984ec9446c5ae7a326f519b9f6d19c3c5"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_native_projection.py",
+      "bytes": 6400,
+      "sha256": "4bd2af8cfaf9927bff00cc0bfad7352adbddb4c7cfebc3a31e71830ef2edf9be"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_recovery_panel.py",
+      "bytes": 1473,
+      "sha256": "ba4f1a8e41c02a11a320d5b068f89e3d7a3a1f234b2785fe8d853ec65e29b724"
+    }
+  ],
+  "source_inventory": "RELEASE_SOURCE_MANIFEST.json",
+  "product_version": "CloveOS R52",
+  "common_personal_and_public_followup": true,
+  "physical_acceptance_pending": true,
+  "publication_hold": true,
+  "no_new_SD_writes": true,
+  "do_not_import_other_snapshot_differences": [
+    ".github/workflows/source-checks.yml",
+    ".gitignore",
+    "BUILDING.md",
+    "INSTALL.md",
+    "KNOWN_ISSUES.md",
+    "LICENSE",
+    "provenance/alternative-core-source-pins.json",
+    "provenance/online-library-pins.json",
+    "provenance/reported-core-source-pins.json",
+    "provenance/rgui-fonts.json",
+    "provenance/runtime-downloads.json",
+    "provenance/source-import.json",
+    "README.md",
+    "releases/netplay-controls/BUILD_PROVENANCE.json",
+    "releases/netplay-controls/SOFTWARE_TESTS.json",
+    "releases/netplay-controls/SOURCE_FREEZE.json",
+    "releases/netplay-post-ready/BUILD_PROVENANCE.json",
+    "releases/netplay-post-ready/SOFTWARE_TESTS.json",
+    "releases/netplay-post-ready/SOURCE_FREEZE.json",
+    "releases/onion-link-compatibility/BUILD_PROVENANCE.json",
+    "releases/onion-link-compatibility/SOFTWARE_TESTS.json",
+    "releases/onion-link-compatibility/SOURCE_FREEZE.json",
+    "releases/portmaster-runtime/SOFTWARE_TESTS.json",
+    "releases/portmaster-runtime/SOURCE_FREEZE.json",
+    "releases/r49/compatibility/DOWNLOADS.json",
+    "releases/r49/compatibility/LICENSES/INDEX.json",
+    "releases/r49/compatibility/REVIEW.json",
+    "releases/r49/RETROARCH-SOURCE.json",
+    "releases/r50/validation/SOFTWARE_TESTS.json",
+    "releases/r50/validation/SOURCE_FREEZE.json",
+    "releases/r50-boot-fixture-results.json",
+    "releases/r52/README.md",
+    "releases/r52/validation/PHYSICAL_ACCEPTANCE.json",
+    "releases/r52/validation/SOFTWARE_TESTS.json",
+    "releases/r52/validation/SOURCE_FREEZE.json",
+    "releases/r53/SOURCE_FREEZE.json",
+    "releases/r54/PHYSICAL_ACCEPTANCE.json",
+    "releases/r54/SOFTWARE_TESTS.json",
+    "releases/r54/SOURCE_FREEZE.json",
+    "releases/r55/I18N_GENERATION_TEST.json",
+    "releases/r55/SOFTWARE_TESTS.json",
+    "releases/r55/SOURCE_FREEZE.json",
+    "releases/r56/I18N_GENERATION_TEST.json",
+    "releases/r56/SOFTWARE_TESTS.json",
+    "releases/r56/SOURCE_FREEZE.json",
+    "releases/tgb-shortcuts/SOFTWARE_TESTS.json",
+    "releases/tgb-shortcuts/SOURCE_FREEZE.json",
+    "src/console-launcher/tests/test_language.c",
+    "src/console-launcher/tests/test_preferences.c",
+    "src/console-launcher/tools/build_theme.py",
+    "src/console-launcher/tools/generate-i18n.py",
+    "src/console-launcher/vendor/minimp3.c",
+    "src/console-supervisor/config/ui.json",
+    "src/console-supervisor/tests/PACKAGE_BACKEND_TESTS.json",
+    "src/console-supervisor/third_party/onion-scraper/PROVENANCE.json",
+    "src/console-supervisor/vendor/STB_PIN.json",
+    "src/retroarch-magicx-bridge/abort.exports",
+    "src/retroarch-magicx-bridge/LICENSE",
+    "src/retroarch-magicx-bridge/tests/raw_joypad_mock_main.c",
+    "src/retroarch-magicx-bridge/tests/raw_joypad_mock_prefix.h",
+    "src/retroarch-magicx-bridge/tests/test_verified_input.py",
+    "src/retroarch-magicx-bridge/tests/virtual_input.c",
+    "tools/reconstruct-r48/MANIFEST.json",
+    "tools/reconstruct-r48/MISSING-COMPONENTS.json",
+    "tools/reconstruct-r48/PROVENANCE.md",
+    "tools/reconstruct-r48/SOURCE-RECEIPTS.json"
+  ],
+  "source_archive_base": "Original local 2e4232 source snapshot, not a replacement for newer publication checkout. Manager must import only these 24 selected changed files and rebuild matching publication archive from reviewed source.",
+  "source_archive_candidate_only": true
+}

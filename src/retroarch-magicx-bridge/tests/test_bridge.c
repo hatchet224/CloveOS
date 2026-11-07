@@ -334,6 +334,7 @@ static void test_durable_async_and_replay(void)
         service(&f);
     }
     CHECK(f.job != NULL && f.snapshots == 1U && !atomic_load(&e.done));
+    CHECK(!magicx_bridge_recovery_menu_closed(f.endpoint));
     CHECK(!magicx_bridge_deinit(f.endpoint));
     dir = openat(f.store.game_fd, f.store.staging, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
     CHECK(dir >= 0 && fstatat(dir, "state.bin", &st, 0) == 0 && st.st_size == 0);
@@ -662,9 +663,35 @@ static void test_identity_mismatch_protocol(void)
     puts("IDENTITY_MISMATCH_PROTOCOL_PASS rejected_without_poisoning_reply_identity=1");
     ++tests;
 }
+static void test_settled_native_error_return_and_exit(void)
+{
+    struct fixture f;char error[MAGICX_ERROR_MAX],directory[256];
+    fixture_init(&f,"native-error-return");hello(&f);
+    CHECK(!magicx_bridge_recovery_menu_closed(f.endpoint));
+    uint64_t generation=f.store.highwater+1U;
+    CHECK(request(&f,CS_OP_QUIESCE,generation,"").status==CS_BRIDGE_OK);
+    CHECK(cs_store_stage(&f.store,generation,directory)==CS_STORE_OK);
+    struct cs_bridge_reply wrote=request(&f,CS_OP_WRITE,generation,directory);
+    CHECK(wrote.status==CS_BRIDGE_OK && cs_store_commit(&f.store,wrote.frame)==CS_STORE_OK);
+    CHECK(request(&f,CS_OP_RELEASE,generation,"").status==CS_BRIDGE_OK);
+    CHECK(request(&f,CS_OP_QUICK_MENU,generation,"").status==CS_BRIDGE_OK);
+    /* Recovery's native close does not resume on its own, and synchronizes
+     * the endpoint's logical menu before an independently authorized RELEASE. */
+    CHECK(quick_menu(&f,false,error));
+    CHECK(magicx_bridge_recovery_menu_closed(f.endpoint) && f.paused);
+    CHECK(request(&f,CS_OP_RELEASE,generation,"").status==CS_BRIDGE_OK && !f.paused);
+    f.identity.bios[0]=f.identity.bios[0]=='0'?'1':'0';
+    CHECK(request(&f,CS_OP_QUIESCE,generation+1U,"").status==CS_BRIDGE_FAILED && f.paused);
+    unsigned snapshots=f.snapshots;
+    CHECK(request(&f,CS_OP_EXIT,generation,"").status==CS_BRIDGE_OK && f.closed);
+    CHECK(f.snapshots==snapshots && cs_store_verify_selected(&f.store,generation,directory)==CS_STORE_OK);
+    fixture_close(&f);++tests;
+    puts("NATIVE_ERROR_SETTLED_RETURN_AND_AUTHENTICATED_UNSAVED_EXIT_LAST_COMMIT_RETAINED_PASS");
+}
 int main(void)
 {
     test_identity_mismatch_protocol();
+    test_settled_native_error_return_and_exit();
     test_durable_async_and_replay();
     test_quick_menu_rpc_lifecycle();
     test_serialization_and_io_failures();

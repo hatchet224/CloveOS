@@ -57,7 +57,7 @@ int main(int argc,char **argv)
     for(i=0;i<8U;++i){const char *s=cs_json_string(&identity,names[i]);CHECK(cs_hex_valid(s,64U));memcpy(fields[i],s,65U);}
     const char *expected_config=getenv("CLOVE_TEST_EXPECTED_CONFIG");
     CHECK(expected_config!=NULL && strcmp(config.identity.config,expected_config)==0);
-    CHECK(strcmp(config.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")==0);
+    CHECK((strcmp(config.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")==0 || strcmp(config.identity.core,"b83a869c3b25f1f02e2d06687abd0e1ff992d379ae815b5f7e08d53bcd457301")==0));
     config.card_path="/mnt/SDCARD";config.card_uuid="C028-0002";config.instance=instance;
     config.qualified_fat_syncfs=true;config.max_state_bytes=64U*1024U*1024U;
     CHECK(cs_store_open(&store,&config)==CS_STORE_OK);

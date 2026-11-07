@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "candidates": {
+    "public": "0cef61fa1d0022151e8c3fa3bd326f0748df7bc3b9cd96dc6d87156673403fa2",
+    "personal": "3c7c95e7667eeb0a01e51eedf621fb6df369844dc0acec050cd7cc4014ed0507"
+  },
+  "frontend_sha256": "b5a1f192b6ec4c54af67d5d56a6178805f22fd3c7c883484108d22b357140a62",
+  "selected_source_files_verified": 24,
+  "manifest_entries_verified": {
+    "public": 113,
+    "personal": 113
+  },
+  "replay_and_compiled_module_bytes_match": true,
+  "software_test_groups": [
+    "qualified-export-lifecycle-test",
+    "qualified-export-error-test",
+    "qualified-export-language-test",
+    "release-standard-runtime-test",
+    "release-dual-runtime-test",
+    "rewind-osd-projection-test"
+  ],
+  "accepted_private_brightness_preserved": true,
+  "unified_R52_labels": true,
+  "source_CI_pending": true,
+  "physical_acceptance_pending": true,
+  "SD_accessed": false,
+  "install_cleared": false,
+  "publication_cleared": false,
+  "tester_specific_startup_cause_unconfirmed": true
+}

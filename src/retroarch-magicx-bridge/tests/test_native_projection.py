@@ -65,7 +65,7 @@ static void glDisable(int a){(void)a;}
 static void glViewport(int a,int b,unsigned c,unsigned d){(void)a;(void)b;(void)c;(void)d;}
 static void glDrawArrays(int a,int b,int c){assert(a==GL_TRIANGLE_STRIP&&b==0&&c==4);++draws;}
 '''
-    names=[('gl2_set_projection',gl),('magicx_retroarch_portrait_menu',binding),('gl2_draw_texture',gl)]
+    names=[('gl2_set_projection',gl),('magicx_retroarch_portrait_menu',binding),('gl2_clove_font_dimensions',gl),('gl2_clove_font_mvp',gl),('gl2_draw_texture',gl)]
     for name,source in names:code+='\n'+function(source,name)+'\n'
     code+=r'''
 int main(void){
@@ -85,10 +85,18 @@ gl2_set_projection(&gl,&default_ortho,true);math_matrix_4x4 saved=gl.mvp,plain=g
 unsigned before=draws;gl2_draw_texture(&gl);assert(draws==before+1U);
 for(unsigned i=0;i<16;++i)assert(fabsf(uploaded.data[i]-expected.data[i])<0.00001f);
 assert(gl.rotation==rotation*90U&&memcmp(&gl.mvp,&saved,sizeof(saved))==0&&memcmp(&gl.mvp_no_rot,&plain,sizeof(plain))==0);
+unsigned logical_width,logical_height;gl2_clove_font_dimensions(&gl,&logical_width,&logical_height);
+assert(logical_width==411&&logical_height==317);
+gl2_clove_font_mvp(&gl);
+for(unsigned i=0;i<16;++i)assert(fabsf(uploaded.data[i]-expected.data[i])<0.00001f);
+assert(gl.rotation==rotation*90U&&memcmp(&gl.mvp,&saved,sizeof(saved))==0&&memcmp(&gl.mvp_no_rot,&plain,sizeof(plain))==0);
 }
 /* Refuse to add a portrait transform to a landscape non-board surface. */
 managed=false;gl.video_width=640;gl.video_height=480;gl2_set_projection(&gl,&default_ortho,true);
 gl2_draw_texture(&gl);assert(memcmp(&uploaded,&gl.mvp_no_rot,sizeof(uploaded))==0);
+unsigned logical_width,logical_height;gl2_clove_font_dimensions(&gl,&logical_width,&logical_height);
+assert(logical_width==317&&logical_height==411);gl2_clove_font_mvp(&gl);
+assert(memcmp(&uploaded,&gl.mvp_no_rot,sizeof(uploaded))==0);
 puts("R52_PRODUCTION_GL2_MENU_FIXED_PANEL_ALL_GAME_ROTATIONS_AND_UNCHANGED_GAME_MATRICES_PASS cases=17");return 0;}
 '''
     c=a.output/'projection.c';c.write_text(code,encoding='utf-8',newline='\n')
@@ -98,6 +106,6 @@ puts("R52_PRODUCTION_GL2_MENU_FIXED_PANEL_ALL_GAME_ROTATIONS_AND_UNCHANGED_GAME_
     print(run.stdout.strip())
     (a.output/'RESULT.json').write_text(json.dumps(dict(passed=True,production_GL2_draw_and_projection=True,
         GL_calls_substituted=True,physical_GPU=False,game_rotations=[0,90,180,270],
-        managed_and_unmanaged=True,game_matrices_preserved=True,draw_function_sha256=hashlib.sha256(function(gl,'gl2_draw_texture').encode()).hexdigest()),indent=2)+'\n')
+        managed_and_unmanaged=True,game_matrices_preserved=True,OSD_orientation_and_logical_glyph_dimensions=True,OSD_MVP_function_sha256=hashlib.sha256(function(gl,'gl2_clove_font_mvp').encode()).hexdigest(),draw_function_sha256=hashlib.sha256(function(gl,'gl2_draw_texture').encode()).hexdigest()),indent=2)+'\n')
 
 if __name__=='__main__':main()

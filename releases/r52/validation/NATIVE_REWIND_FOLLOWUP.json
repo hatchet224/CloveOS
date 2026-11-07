@@ -1,0 +1,197 @@
+{
+  "status": "Software-qualified candidate; physical menu/rewind/OSD acceptance pending",
+  "product_version": "CloveOS R52",
+  "public_rootfs_sha256": "0cef61fa1d0022151e8c3fa3bd326f0748df7bc3b9cd96dc6d87156673403fa2",
+  "personal_rootfs_sha256": "3c7c95e7667eeb0a01e51eedf621fb6df369844dc0acec050cd7cc4014ed0507",
+  "reports": {
+    "qualified-export-lifecycle-test/RESULT.json": {
+      "passed": true,
+      "markers": [
+        "PUBLIC_TGB_NATIVE_REWIND_PASS",
+        "SHORTCUT_VM_EXIT=0",
+        "ACTUAL_TGB_SHORTCUT_SESSION_COMPLETE",
+        "MENU_PHYSICAL_CHORD_ORDER_RELEASE_HOLD_AND_UNMAPPED_PASS cases=136",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GB:old",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GB:new",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GBC:old",
+        "ACTUAL_RA_SHORTCUT_PHASE_PASS=tgb:GBC:new",
+        "ACTUAL_OLD_NEW_TGB_LATEST_BATTERY_LINK_SEED_PASS=GB",
+        "ACTUAL_OLD_NEW_TGB_LATEST_BATTERY_LINK_SEED_PASS=GBC",
+        "COLD_REWIND_RELAUNCH_AND_SECOND_SAVE_PASS=GB",
+        "COLD_REWIND_RELAUNCH_AND_SECOND_SAVE_PASS=GBC",
+        "NATIVE_REWIND_A_DISABLE_REENABLE_AND_BOUNDED_SETTINGS_REMAIN_CHECKPOINTABLE_PASS",
+        "MENU_SELECT_FULL_NATIVE_CORE_OPTIONS_CONTROLS_AFTER_CHECKPOINT_RESTORE_PASS"
+      ],
+      "full_GB_GBC_TGB_rewind_cold_relaunch_and_link_seed_qualification": true,
+      "rootfs_sha256": "dd6d97ba8673901153c7c60c5567c73e9cac56390880d0467a6cf412c66b11a1",
+      "actual_sealed_export": true,
+      "new_retroarch_sha256": "b5a1f192b6ec4c54af67d5d56a6178805f22fd3c7c883484108d22b357140a62",
+      "old_retroarch_sha256": "d6effb287377598c5e8d31f62771b040cfab310bf4007f57e54f8bddb6bab7b9",
+      "actual_old_and_new_RA": true,
+      "actual_pinned_TGB_core": true,
+      "actual_default_Gambatte_core": false,
+      "old_slot_15_and_checkpoint_preserved": true,
+      "paused_raw_SRAM_RTC_observation_byte_exact": true,
+      "post_release_SRAM_counter_compared_with_exact_emulated_frame_delta": true,
+      "actual_latest_battery_link_seed": true,
+      "generated_cartridges": true,
+      "virtual_SDL_input": true,
+      "fixture_local_control_server": true,
+      "production_supervisor_raw_chord_and_level_tests": true,
+      "existing_bridge_source_tests_executed": true,
+      "clean_disposable_FAT_unmount_and_check": true,
+      "physical_testing_pending": true,
+      "physical_SD_used_by_VM": false
+    },
+    "qualified-export-error-test/RESULT.json": {
+      "passed": true,
+      "markers": [
+        "SHORTCUT_VM_EXIT=0",
+        "NATIVE_ERROR_RETURN_COMPLETE",
+        "NATIVE_SAVE_ERROR_MENU_SELECT_FULL_RGUI_RESUME_AND_B_DISMISS_PASS",
+        "NATIVE_SAVE_ERROR_CANCEL_AND_CONFIRMED_UNSAVED_EXIT_RETAINS_COMMITTED_STATE_PASS"
+      ],
+      "new_RA_sha256": "b5a1f192b6ec4c54af67d5d56a6178805f22fd3c7c883484108d22b357140a62",
+      "actual_ARM64_RA_and_TGB": true,
+      "real_FAT_checkpoint_artifact_failure": true,
+      "native_RGUI_not_custom_recovery": true,
+      "virtual_SDL_and_fixture_owner": true,
+      "physical_acceptance_pending": true,
+      "no_SD_access": true
+    },
+    "release-standard-runtime-test/RESULT.json": {
+      "passed": true,
+      "rootfs_sha256": "0cef61fa1d0022151e8c3fa3bd326f0748df7bc3b9cd96dc6d87156673403fa2",
+      "exported_public_artifacts": true,
+      "new_frontend_sha256": "b5a1f192b6ec4c54af67d5d56a6178805f22fd3c7c883484108d22b357140a62",
+      "actual_stock_ARM32_peer": true,
+      "actual_pinned_FCEUmm": true,
+      "actual_production_startup_wrapper": true,
+      "synthetic_NES": true,
+      "virtual_SDL": true,
+      "physical_hardware": false,
+      "no_SD_access": true
+    },
+    "release-dual-runtime-test/RESULT.json": {
+      "passed": true,
+      "rootfs_sha256": "0cef61fa1d0022151e8c3fa3bd326f0748df7bc3b9cd96dc6d87156673403fa2",
+      "exported_public_artifacts": true,
+      "actual_unmodified_stock_frontend_sha256": "406597a0b86d56bbdd4751a96efb2be3f8f232757b62c3e63ec59c730119071d",
+      "actual_installed_Clove_frontend": true,
+      "actual_pinned_ARM32_ARM64_TGB": true,
+      "source_wrapper_config_segment_used": true,
+      "stock_display_audio_input_hardware_stubbed": true,
+      "Clove_headless_display": true,
+      "synthetic_serial_link_cartridges": true,
+      "private_SD_or_Miyoo_accessed": false,
+      "physical_wireless_and_trade_acceptance_pending": true
+    },
+    "qualified-export-language-test/RESULT.json": {
+      "passed": true,
+      "markers": [
+        "R52_RUSSIAN_FRESH_DURABLE_LEGACY_UPGRADE_ERROR_UTF8_AND_CYRILLIC_RENDER_PASS",
+        "R52_RUSSIAN_ENGLISH_CONFIRM_PERSIST_RESTART_AND_RESERVED_FALLBACK_PASS",
+        "R50_LANGUAGE_SELECTOR_UTF8_FALLBACK_AND_DATA_BOUNDARIES_PASS",
+        "R52_LANGUAGE_AND_FIRSTBOOT_SOFTWARE_PASS",
+        "R52_LANGUAGE_VM_EXIT=0"
+      ],
+      "original_ARM64_application_code": true,
+      "disposable_FAT32": true,
+      "SDL_device_substitution": true,
+      "physical_SD_writes": false,
+      "physical_device_qualification": false,
+      "executable_hashes": {
+        "qemu-aarch64-static": "dce64b2dc6b005485c7aa735a7ea39cb0006bf7e5badc28b324b2cd0c73d883f",
+        "headless-sdl": "f5b6075101e8f2adf65d02737fb572322d619a55debae350d824da14f7beaed2",
+        "r50_language_tests": "793086b7df7b2503615e26ac2ad8446b338e500c9bdde1dfe3c9c416f8ee778c",
+        "r52_language_tests": "e4261ff1c5ad5bfd8762f7f46678242f3c2b632592c3b1c936814c3892d58973",
+        "launcher_preferences_tests": "90eabeb1f5e6e7a2b1baa979753c41460c2923e970aabfbc4d0aed231dc8a3c4"
+      },
+      "rendered_BMPs": [
+        "es-dialog.bmp",
+        "es-fallback.bmp",
+        "es-language.bmp",
+        "es-settings.bmp",
+        "es-tweaks.bmp",
+        "firstboot-en.bmp",
+        "firstboot-ru-saving.bmp",
+        "firstboot-russian-choice.bmp",
+        "ru-confirm.bmp",
+        "ru-fallback.bmp",
+        "ru-language-error.bmp",
+        "ru-language.bmp",
+        "ru-settings.bmp",
+        "ru-tweaks.bmp"
+      ]
+    },
+    "rewind-osd-projection-test/RESULT.json": {
+      "passed": true,
+      "production_GL2_draw_and_projection": true,
+      "GL_calls_substituted": true,
+      "physical_GPU": false,
+      "game_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "managed_and_unmanaged": true,
+      "game_matrices_preserved": true,
+      "OSD_orientation_and_logical_glyph_dimensions": true,
+      "OSD_MVP_function_sha256": "6b75830147f7a6cd66e0f1820ae6cbd384a79d9cec922eb8880a0b4139de1db0",
+      "draw_function_sha256": "0f712b652ae9c839ae991af25d8fb2becf0f56eebdd5ce8ab7791ae590fdabcf"
+    },
+    "public-release-candidate/RUNTIME_QUALIFICATION_BYTE_IDENTITY.json": {
+      "passed": true,
+      "qualified_runtime_rootfs_sha256": "dd6d97ba8673901153c7c60c5567c73e9cac56390880d0467a6cf412c66b11a1",
+      "final_rootfs_sha256": "0cef61fa1d0022151e8c3fa3bd326f0748df7bc3b9cd96dc6d87156673403fa2",
+      "all_regular_file_differences": [
+        "./system/bin/console-rc",
+        "./system/init/console-rc"
+      ],
+      "qualification_reused_for_unchanged_RA_core_config_and_application_bytes": true,
+      "native_lifecycle": "qualified-export-lifecycle-test/RESULT.json",
+      "native_error": "qualified-export-error-test/RESULT.json",
+      "startup_test_on_final_image": "STARTUP_TEST.json",
+      "corrected_bootstrap_installed_in_actual_executed_location": "/system/bin/console-rc",
+      "incorrect_unused_staging_path_removed": true
+    },
+    "public-release-candidate/STARTUP_TEST.json": {
+      "passed": true,
+      "rootfs_sha256": "0cef61fa1d0022151e8c3fa3bd326f0748df7bc3b9cd96dc6d87156673403fa2",
+      "actual_arm64_launcher": true,
+      "empty_fat32_catalog": true,
+      "repeat_starts": 2,
+      "theme": "Clove",
+      "missing_theme_fallback": true,
+      "screenshot": "public-home.bmp",
+      "physical_handheld": false,
+      "actual_exported_catalog": true,
+      "library_limit_exit2_and_validated_empty_runtime": true,
+      "invalid_volume_fallback_rejected": true,
+      "user_ROM_and_save_sentinels_unchanged": true,
+      "launcher_home_renders_after_fallback": true
+    },
+    "public-release-candidate/POPULATED_CATALOG_TEST.json": {
+      "passed": true,
+      "actual_exported_catalog_source_assertion_fixture": true,
+      "synthetic_systems": 14,
+      "normal_scan_and_published_config_valid": true,
+      "no_physical_SD": true
+    }
+  },
+  "physical_acceptance": {
+    "new_MENU_SELECT_behavior": false,
+    "new_rewind_and_native_error_return": false,
+    "new_physical_Mali_OSD_orientation": false,
+    "previous_Pokemon_link_candidate": "Maintainer accepted both host roles, completed trade/battle, controls, volume and save/reload; does not certify the current candidate"
+  },
+  "startup_tester_report": {
+    "original_build": "R48 confirmed",
+    "retest": "Same failure reported in R51 retest context; exact ZIP not independently verified",
+    "logs_available": false,
+    "cause_confirmed": false,
+    "empty_runtime_fallback": "Resilience only; not established fix for tester-specific game loading failure"
+  },
+  "third_party_redistribution_review_complete": false
+}

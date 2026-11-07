@@ -16,7 +16,9 @@
 #include "magicx_bridge.h"
 #include "magicx_controls.h"
 static struct {
- bool managed,quick_menu,recovery_panel,content_closed;
+ bool managed,quick_menu,recovery_panel,content_closed,save_error,internal_command,settings_page;
+ char native_notice[384];unsigned native_exit_confirm;
+ struct magicx_bridge *bridge;
  unsigned int recovery_confirm;uint32_t recovery_shown_flags;
  struct magicx_control_feedback feedback;
  struct magicx_controls controls;uint64_t next_status;
@@ -36,6 +38,10 @@ static const char *control_path(void) {return socket_path;}
 static uint64_t controls_now(void) {return 1000U;}
 static void feedback_refresh(const char *x) {(void)x;++notifications;}
 static void control_request(unsigned int operation) {op=operation;}
+static void update_game_triggers(bool active) {(void)active;}
+bool magicx_bridge_recovery_menu_closed(struct magicx_bridge *b) {(void)b;return paused;}
+static void native_box(void *data,const char *message) {(void)data;assert(message&&message[0]);++notifications;}
+static const menu_ctx_driver_t native_driver={.render_messagebox=native_box};
 void retroarch_menu_running(void) {++opened;menu.flags|=MENU_ST_FLAG_ALIVE;}
 void retroarch_menu_running_finished(bool quit) {(void)quit;++closed;paused=false;menu.flags&=~MENU_ST_FLAG_ALIVE;}
 bool menu_driver_ctl(enum rarch_menu_ctl_state state,void *data) {(void)data;assert(state==RARCH_MENU_CTL_SET_PENDING_QUICK_MENU);return ctl_ok;}

@@ -30,12 +30,14 @@ persist_log() {
     # The supervisor diagnostic worker archives and persists supervisor.log.
     # Writing its current boot header here would destroy the previous boot's
     # gameplay evidence before that worker gets its first archive request.
-    for name in startup; do
+    for name in startup startup-error; do
         [ -f "/run/console/$name.log" ] || continue
-        [ ! -L "$logdir/bootstrap.log" ] && [ ! -L "$logdir/bootstrap.log.new" ] || continue
-        if tail -c 131072 "/run/console/$name.log" > "$logdir/bootstrap.log.new"; then
+        target=bootstrap.log
+        [ "$name" != startup-error ] || target=startup-error.log
+        [ ! -L "$logdir/$target" ] && [ ! -L "$logdir/$target.new" ] || continue
+        if tail -c 131072 "/run/console/$name.log" > "$logdir/$target.new"; then
             sync
-            mv "$logdir/bootstrap.log.new" "$logdir/bootstrap.log" || :
+            mv "$logdir/$target.new" "$logdir/$target" || :
             sync
         fi
     done
@@ -43,6 +45,7 @@ persist_log() {
 boot_mark stock-hardware-ready
 echo 'console-start: stock hardware initialization completed'
 while :; do
+    rm -f /run/console/startup-error.log
     echo starting-session > /run/console/boot.phase
     if /system/bin/console-rc start; then
         echo supervisor-spawned > /run/console/boot.phase
@@ -54,8 +57,11 @@ while :; do
         result=$?
         echo startup-failed > /run/console/boot.phase
         echo "console-start: bootstrap failed ($result); waiting for physical retry"
+        if [ ! -s /run/console/startup-error.log ]; then
+            tail -c 8192 /run/console/startup.log > /run/console/startup-error.log || :
+        fi
         persist_log
-        if /system/bin/console-boot-status --message 'Startup failed. Press a gamepad button to retry.' --log /run/console/startup.log; then
+        if /system/bin/console-boot-status --message 'Startup failed. Press a gamepad button to retry.' --log /run/console/startup-error.log; then
             echo 'console-start: explicit physical retry'
         else
             echo 'console-start: diagnostic renderer failed; see saved logs'

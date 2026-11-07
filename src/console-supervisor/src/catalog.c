@@ -913,7 +913,7 @@ static void boot_timing(const char *stage, uint64_t *previous)
             stage, ms, *previous != 0U && ms >= *previous ? ms - *previous : 0U);
     *previous = ms;
 }
-int sc_catalog_refresh(void)
+static int refresh_catalog(bool discover)
 {
     struct sc_cpu_policy startup_cpu = {0};
     uint64_t timing = 0U;
@@ -967,6 +967,11 @@ int sc_catalog_refresh(void)
         mkdir(s->catalog, 0700) != 0 || mkdir(s->profiles, 0700) != 0) {
         goto done;
     }
+    /* Exit 2 marks only discovery/staging failures after trusted runtime,
+     * templates and mounted-volume checks. Boot may build a fresh, validated
+     * empty runtime catalog; it never deletes or rewrites the user's ROMs. */
+    result = discover ? 2 : 1;
+    if (discover) {
     /* Existing registered paths win over identical copies. Non-GB registrations
      * retain their prequalified identities without admitting new core choices. */
     for (i = 0U; i < s->seed_count; ++i) {
@@ -1016,6 +1021,10 @@ int sc_catalog_refresh(void)
             }
         }
     }
+    }
+    /* Volume/identity/publication failures are never downgraded to a library
+     * warning. Even the empty recovery generation must pass these checks. */
+    result = 1;
     boot_timing("rom-discovery", &timing);
     {
         char verified_bios[65];
@@ -1067,6 +1076,14 @@ done:
     free(s);
     return result;
 }
+int sc_catalog_refresh(void) { return refresh_catalog(true); }
 #ifndef SC_CATALOG_LIBRARY
-int main(void) { return sc_catalog_refresh(); }
+int main(int argc, char **argv)
+{
+    if (argc == 1) return sc_catalog_refresh();
+    if (argc == 2 && strcmp(argv[1], "--empty-runtime") == 0)
+        return refresh_catalog(false);
+    fprintf(stderr, "usage: console-catalog [--empty-runtime]\n");
+    return 1;
+}
 #endif

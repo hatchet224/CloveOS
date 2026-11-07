@@ -15,7 +15,14 @@ if [ -f /etc/console/BUILD_ID ]; then
 fi
 CONF=/etc/console/cards.conf
 CTL=/system/bin/console-ctl
-die() { echo "console-rc: $*" >&2; exit 1; }
+die() {
+    echo "console-rc: $*" >&2
+    # Freeze the causal tail before the diagnostic renderer appends SDL output.
+    if [ -d /run/console ] && [ ! -L /run/console/startup-error.log ]; then
+        tail -c 8192 /run/console/startup.log > /run/console/startup-error.log || :
+    fi
+    exit 1
+}
 console_pin_configuration || die 'cannot pin immutable startup configuration'
 console_require_root_config "$CONF" || die 'untrusted card configuration'
 . "$CONF"
@@ -165,7 +172,19 @@ case "${1:-}" in
         /system/bin/console-catalog || catalog_result=$?
         save_progress
         stop_progress
-        [ "$catalog_result" -eq 0 ] || die 'qualified game catalog could not be prepared'
+        if [ "$catalog_result" -eq 2 ]; then
+            # Discovery can fail on bounded library limits or invalid directory
+            # entries. Preserve all card files; allow Tools/transfer/settings
+            # from a separately validated empty RAM catalog instead of trapping
+            # startup in a retry loop. An unsafe/unavailable volume still fails.
+            tail -c 8192 /run/console/startup.log > /run/console/startup-error.log
+            /system/bin/console-catalog --empty-runtime || die 'empty library recovery failed validation'
+            echo 'console-rc: library scan incomplete; starting Home with an empty runtime library; card content retained' >&2
+            save_progress
+            /system/bin/console-boot-status --message 'Game scan failed. Files are retained. Continue to Home; use Refresh ROM list to retry.' --log /run/console/startup-error.log || die 'library warning renderer failed'
+        elif [ "$catalog_result" -ne 0 ]; then
+            die 'qualified game catalog could not be prepared'
+        fi
         boot_mark catalog-ready
         echo catalog-ready > /run/console/boot.phase
         /system/bin/console-timezone || echo 'console-clock: timezone restore failed' >&2

@@ -19,6 +19,8 @@ jobs:
         run: python3 tools/test-portable.py
       - name: Check ordinary-file packaging
         run: python3 src/console-packaging/tests/test_package.py
+      - name: Check causal startup diagnostics
+        run: python3 src/console-packaging/tests/test_startup_diagnostics.py
       - name: Build and test original File Explorer
         run: |
           cmake -S src/console-file-explorer -B build/file-tests -DFM_BUILD_APP=OFF -DFM_BUILD_TESTS=ON

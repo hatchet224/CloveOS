@@ -44,7 +44,7 @@ int main(void)
         assert(sc_core_resolve(c,request.target,&selected));
         assert(strcmp(selected.core,"/system/lib/libretro/onion-4.3.1-1/tgbdual_libretro.so")==0);
         assert(strcmp(selected.config,"/etc/console/core-configs/tgbdual-single.cfg")==0);
-        assert(strcmp(selected.profile.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")==0);
+        assert((strcmp(selected.profile.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")==0 || strcmp(selected.profile.identity.core,"b83a869c3b25f1f02e2d06687abd0e1ff992d379ae815b5f7e08d53bcd457301")==0));
         assert(strcmp(selected.profile.identity.config,c->games[i].profile.identity.config)!=0);
         assert(strcmp(selected.profile.identity.bios,c->games[i].profile.identity.bios)==0);
         assert(strcmp(selected.profile.identity.content,c->games[i].profile.identity.content)==0);

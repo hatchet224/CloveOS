@@ -451,7 +451,12 @@ static void dispatch(struct magicx_bridge *b, struct mx_entry *entry)
         fail(b, entry, "FAILED", "another endpoint operation is unsettled");
         return;
     }
-    if (!identify(b, entry)) {
+    /* Retiring the authenticated existing core starts no save writer. Once
+     * every task has settled, a missing/changed asset must not trap an explicit
+     * unsaved exit. All capture/load/release operations still re-identify. */
+    bool retiring = r->command == MX_EXIT && b->hello &&
+        strcmp(b->owner_instance,r->instance)==0 && b->owner_session==r->session;
+    if (!retiring && !identify(b, entry)) {
         return;
     }
     if (r->command == MX_HELLO) {
@@ -982,5 +987,13 @@ bool magicx_bridge_deinit(struct magicx_bridge *b)
         (void)close(b->socket_directory);
     }
     free(b);
+    return true;
+}
+
+bool magicx_bridge_recovery_menu_closed(struct magicx_bridge *b)
+{
+    if(b==NULL || !b->hello || !b->gated || b->io!=NULL || b->release_entry!=NULL ||
+       b->abort_entry!=NULL || !b->host.is_paused(b->host.context))return false;
+    b->quick_menu=false;
     return true;
 }

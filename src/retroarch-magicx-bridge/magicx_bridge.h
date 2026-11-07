@@ -61,7 +61,7 @@ struct magicx_host {
                     char error[MAGICX_ERROR_MAX]);
     bool (*submit)(void *, struct magicx_io *);
     bool (*close_content)(void *, char error[MAGICX_ERROR_MAX]);
-    /* Native restricted RGUI; CLOSE keeps the core paused until RELEASE. */
+    /* Native full RGUI; CLOSE keeps the core paused until RELEASE. */
     bool (*quick_menu)(void *, bool open, char error[MAGICX_ERROR_MAX]);
 };
 
@@ -71,6 +71,9 @@ bool magicx_bridge_input_gated(const struct magicx_bridge *);
 bool magicx_bridge_core_allowed(const struct magicx_bridge *);
 bool magicx_bridge_exited(const struct magicx_bridge *);
 bool magicx_bridge_busy(const struct magicx_bridge *);
+/* Record an already closed native error menu only while paused/gated and all
+ * writers settled. This never grants RELEASE or changes checkpoint identity. */
+bool magicx_bridge_recovery_menu_closed(struct magicx_bridge *);
 void magicx_bridge_begin_shutdown(struct magicx_bridge *);
 /* begin_shutdown + drain the host task queue BEFORE deinit. Returns false
  * without freeing anything if an I/O task still owns this endpoint. */

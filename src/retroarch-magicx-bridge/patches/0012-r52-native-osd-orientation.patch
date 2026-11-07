@@ -1,0 +1,99 @@
+--- a/gfx/drivers/gl2.c
++++ b/gfx/drivers/gl2.c
+@@ -813,6 +813,33 @@
+    return delta_x * scale;
+ }
+ 
++/* Text uses logical landscape pixels on the physically portrait Zero 28 LCD.
++ * Keep all viewport/projection state private to the OSD draw. */
++static void gl2_clove_font_dimensions(gl2_t *gl, unsigned *width, unsigned *height)
++{
++   *width=gl->vp.width;*height=gl->vp.height;
++#ifdef HAVE_MAGICX_BRIDGE
++   if(magicx_retroarch_portrait_menu(gl->video_width,gl->video_height))
++   {unsigned swap=*width;*width=*height;*height=swap;}
++#endif
++}
++static void gl2_clove_font_mvp(gl2_t *gl)
++{
++#ifdef HAVE_MAGICX_BRIDGE
++   if(magicx_retroarch_portrait_menu(gl->video_width,gl->video_height))
++   {
++      math_matrix_4x4 rotation={{0}}, projected;
++      MAT_ELEM_4X4(rotation,0,1)=1.0f;
++      MAT_ELEM_4X4(rotation,1,0)=-1.0f;
++      MAT_ELEM_4X4(rotation,3,3)=1.0f;
++      matrix_4x4_multiply(projected,rotation,gl->mvp_no_rot);
++      gl->shader->set_mvp(gl->shader_data,&projected);
++      return;
++   }
++#endif
++   gl->shader->set_mvp(gl->shader_data,&gl->mvp_no_rot);
++}
++
+ static void gl2_raster_font_draw_vertices(gl2_t *gl,
+       gl2_raster_t *font,
+       const video_coords_t *coords)
+@@ -826,8 +853,7 @@
+    if (gl->shader)
+    {
+       gl->shader->set_coords(gl->shader_data, coords);
+-      gl->shader->set_mvp(gl->shader_data,
+-            &gl->mvp_no_rot);
++      gl2_clove_font_mvp(gl);
+    }
+ 
+    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
+@@ -846,14 +872,16 @@
+    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
+    const char* msg_end  = msg + msg_len;
+-   int x                = roundf(pos_x * gl->vp.width);
+-   int y                = roundf(pos_y * gl->vp.height);
++   unsigned logical_width,logical_height;
++   gl2_clove_font_dimensions(gl,&logical_width,&logical_height);
++   int x                = roundf(pos_x * logical_width);
++   int y                = roundf(pos_y * logical_height);
+    int delta_x          = 0;
+    int delta_y          = 0;
+    float inv_tex_size_x = 1.0f / font->tex_width;
+    float inv_tex_size_y = 1.0f / font->tex_height;
+-   float inv_win_width  = 1.0f / gl->vp.width;
+-   float inv_win_height = 1.0f / gl->vp.height;
++   float inv_win_width  = 1.0f / logical_width;
++   float inv_win_height = 1.0f / logical_height;
+ 
+    switch (text_align)
+    {
+@@ -926,7 +954,10 @@
+    struct font_line_metrics *line_metrics = NULL;
+    int lines                              = 0;
+    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+-   line_height = line_metrics->height * scale / gl->vp.height;
++   unsigned logical_width,logical_height;
++   gl2_clove_font_dimensions(gl,&logical_width,&logical_height);
++   (void)logical_width;
++   line_height = line_metrics->height * scale / logical_height;
+ 
+    for (;;)
+    {
+@@ -1035,6 +1066,8 @@
+    else
+       gl2_raster_font_setup_viewport(gl, font, width, height, full_screen);
+ 
++   unsigned logical_width,logical_height;
++   gl2_clove_font_dimensions(gl,&logical_width,&logical_height);
+    if (    !string_is_empty(msg)
+          && font->font_data
+          && font->font_driver)
+@@ -1048,8 +1081,8 @@
+          color_dark[3] = color[3] * drop_alpha;
+ 
+          gl2_raster_font_render_message(gl, font, msg, scale, color_dark,
+-               x + scale * drop_x / gl->vp.width,
+-               y + scale * drop_y / gl->vp.height,
++               x + scale * drop_x / logical_width,
++               y + scale * drop_y / logical_height,
+                text_align);
+       }
+ 

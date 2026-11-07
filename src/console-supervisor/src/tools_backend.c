@@ -102,7 +102,8 @@ bool sc_tools_game_enabled(struct sc_tools_backend *b, const struct cs_store *st
      * package. Keep that package's enable/disable policy authoritative. */
     if (strcmp(game->core,"/system/lib/libretro/onion-4.3.1-1/tgbdual_libretro.so")==0 &&
         strcmp(game->config,"/etc/console/core-configs/tgbdual-single.cfg")==0 &&
-        strcmp(game->profile.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")==0 &&
+        (strcmp(game->profile.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")==0 ||
+         strcmp(game->profile.identity.core,"b83a869c3b25f1f02e2d06687abd0e1ff992d379ae815b5f7e08d53bcd457301")==0) &&
         (strcmp(game->entry.system,"GB")==0 || strcmp(game->entry.system,"GBC")==0))
         return sp_package_system_enabled(&s,game->entry.system);
     for (size_t i = 0U; i < SP_PACKAGE_COUNT; ++i)

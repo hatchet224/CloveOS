@@ -22,6 +22,7 @@
 static struct cs_store store;static struct cs_bridge bridge;static uint64_t serial;
 static pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
 static struct cs_session_status status={.active=1,.session=1,.sequence=1};
+static int error_exited;
 static unsigned counts[64],pending;static uint64_t pending_token;static int stopping,server;
 static char saved_directory[256];static struct cs_record saved_record;static unsigned saved_counter;
 static struct cs_bridge_reply call(enum cs_operation op,uint64_t generation,const char *directory){
@@ -65,6 +66,13 @@ static void service(void){
  else if(op==CS_CONTROL_LOAD_SLOT){CHECK(saved_directory[0]);struct cs_record record;CHECK(cs_store_read_checkpoint(&store,&saved_record.identity,saved_record.generation,saved_record.manifest,&record)==CS_STORE_OK);call(CS_OP_QUIESCE,store.highwater+1,"");call(CS_OP_LOAD,saved_record.generation,saved_directory);call(CS_OP_RELEASE,saved_record.generation,"");}
  else if(op==CS_CONTROL_MENU){char directory[256];(void)capture(directory);puts("R52_NATIVE_CLOSE_REQUESTS_OWNER_AND_CORE_REMAINS_CAPTUREABLE_PASS");}
  else if(op==CS_CONTROL_SLOT_UP || op==CS_CONTROL_SLOT_DOWN){pthread_mutex_lock(&mutex);status.slot=op==CS_CONTROL_SLOT_UP?(status.slot+1)%16:(status.slot+15)%16;pthread_mutex_unlock(&mutex);}
+ else if(op==CS_CONTROL_RECOVERY_CONTINUE || op==CS_CONTROL_RECOVERY_MENU){
+  if(op==CS_CONTROL_RECOVERY_CONTINUE)call(CS_OP_RELEASE,store.selected.generation,"");
+  else{call(CS_OP_EXIT,store.selected.generation,"");error_exited=1;}
+  pthread_mutex_lock(&mutex);status.recovery=0;status.available=0;status.busy=0;
+  status.active=op==CS_CONTROL_RECOVERY_MENU?0:1;status.quick_menu=0;
+  status.operation=op;status.operation_token=token;++status.sequence;pthread_mutex_unlock(&mutex);
+ }
  else {fprintf(stderr,"UNEXPECTED_CONTROL op=%u\n",op);CHECK(0);}
  if(op>=CS_CONTROL_SAVE_SLOT && op<=CS_CONTROL_SCREENSHOT){pthread_mutex_lock(&mutex);status.operation=op;status.operation_token=token;++status.sequence;pthread_mutex_unlock(&mutex);}
 }
@@ -111,15 +119,55 @@ static void native_walk(int plain) {
  CHECK(observed(CS_CONTROL_LOAD_SLOT)>before);
  puts("R52_ACTUAL_NATIVE_CORE_OPTIONS_CONTROLS_SAVE_LOAD_AND_RESUME_PASS");
 }
+static void inject_settled_save_failure(void){
+ char directory[256],path[512];uint64_t g=store.highwater+1;
+ call(CS_OP_QUIESCE,g,"");CHECK(cs_store_stage(&store,g,directory)==CS_STORE_OK);
+ snprintf(path,sizeof(path),"/mnt/SDCARD/.console/%s/state.bin",directory);
+ CHECK(unlink(path)==0); /* Real FAT I/O failure; never alter the prior commit. */
+ struct cs_request request={CS_OP_WRITE,1,++serial,g};
+ struct cs_bridge_reply reply=cs_bridge_exchange(&bridge,&request,directory,NULL,30000);
+ CHECK(reply.status==CS_BRIDGE_FAILED && reply.writers_closed);
+ pthread_mutex_lock(&mutex);status.recovery=1;status.busy=0;status.quick_menu=0;
+ status.available=CS_RECOVERY_RETRY|CS_RECOVERY_CONTINUE|CS_RECOVERY_OFF|CS_RECOVERY_MENU;
+ ++status.sequence;pthread_mutex_unlock(&mutex);wait_ms(700);
+}
+static void test_native_error_paths(void){
+ uint64_t retained=store.selected.generation;char directory[256];
+ CHECK(cs_store_verify_selected(&store,retained,directory)==CS_STORE_OK);
+ inject_settled_save_failure();
+ unsigned resumed_before=observed(CS_CONTROL_RECOVERY_CONTINUE);
+ pulse((1U<<19)|(1U<<8)); /* MENU+SELECT dismisses the notice to full RGUI. */
+ CHECK(observed(CS_CONTROL_RECOVERY_CONTINUE)==resumed_before && observed(CS_CONTROL_MENU)==0);
+ find_entry("core_options");menu_press(0);menu_press(1);
+ find_entry("resume_content");unsigned resumed=observed(CS_CONTROL_RECOVERY_CONTINUE);
+ menu_press(0);CHECK(observed(CS_CONTROL_RECOVERY_CONTINUE)==resumed+1);
+ CHECK(cs_store_verify_selected(&store,retained,directory)==CS_STORE_OK);
+ wait_ms(300);puts("NATIVE_SAVE_ERROR_MENU_SELECT_FULL_RGUI_RESUME_AND_B_DISMISS_PASS");
+ inject_settled_save_failure();menu_press(1);
+ find_entry("unload_core");unsigned exited=observed(CS_CONTROL_RECOVERY_MENU);
+ menu_press(0);CHECK(observed(CS_CONTROL_RECOVERY_MENU)==exited);
+ menu_press(1);CHECK(observed(CS_CONTROL_RECOVERY_MENU)==exited); /* Cancel exit. */
+ find_entry("core_input_remapping_options");menu_press(0);menu_press(1);
+ find_entry("unload_core");menu_press(0);menu_press(0);
+ CHECK(observed(CS_CONTROL_RECOVERY_MENU)==exited+1 && error_exited);
+ CHECK(cs_store_verify_selected(&store,retained,directory)==CS_STORE_OK);
+ puts("NATIVE_SAVE_ERROR_CANCEL_AND_CONFIRMED_UNSAVED_EXIT_RETAINS_COMMITTED_STATE_PASS");
+}
 static void same_battery(const char *one,const char *two,const char *name,uint64_t advanced){
  char p[512],q[512];snprintf(p,sizeof(p),"/mnt/SDCARD/.console/%s/%s",one,name);if(two==NULL)snprintf(q,sizeof(q),"/tmp/test-core-%s",name);else snprintf(q,sizeof(q),"/mnt/SDCARD/.console/%s/%s",two,name);
  int a=open(p,O_RDONLY|O_CLOEXEC|O_NOFOLLOW),b=open(q,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);CHECK(a>=0&&b>=0);
  unsigned char x[4096],y[4096];ssize_t n,m;int first=1;do{n=read(a,x,sizeof(x));m=read(b,y,sizeof(y));CHECK(n>=0&&m==n);if(first&&advanced!=0){CHECK(n>=3&&strcmp(name,"sram.bin")==0);unsigned count=((unsigned)x[0]+256U*(unsigned)x[1]+(unsigned)advanced)&65535U;x[0]=(unsigned char)count;x[1]=(unsigned char)(count>>8);}if(n>0&&memcmp(x,y,(size_t)n)!=0)fprintf(stderr,"BATTERY_MISMATCH artifact=%s advanced=%" PRIu64 "\n",name,advanced);CHECK(n==0||memcmp(x,y,(size_t)n)==0);first=0;}while(n>0);CHECK(close(a)==0&&close(b)==0);
 }
 static void inspect_paused(void){
- int fd=open("/tmp/test-inspect-request",O_WRONLY|O_CREAT|O_TRUNC,0600);CHECK(fd>=0&&write(fd,"1\n",2)==2&&close(fd)==0);unsigned ack=0;
- for(unsigned tries=0;tries<100&&ack!=1;++tries){wait_ms(30);FILE *f=fopen("/tmp/test-inspect-ack","r");if(f){(void)fscanf(f,"%u",&ack);fclose(f);}}CHECK(ack==1);
+ unsigned request=0,ack=0;FILE *old=fopen("/tmp/test-inspect-ack","r");
+ if(old){(void)fscanf(old,"%u",&request);fclose(old);}CHECK(request<1000000U);++request;
+ char text[32];int size=snprintf(text,sizeof(text),"%u\n",request);
+ int fd=open("/tmp/test-inspect-request",O_WRONLY|O_CREAT|O_TRUNC,0600);
+ CHECK(fd>=0&&write(fd,text,(size_t)size)==size&&close(fd)==0);
+ for(unsigned tries=0;tries<100&&ack!=request;++tries){wait_ms(30);FILE *f=fopen("/tmp/test-inspect-ack","r");if(f){(void)fscanf(f,"%u",&ack);fclose(f);}}
+ CHECK(ack==request);
 }
+
 int main(int argc,char **argv){
  CHECK(argc==2);const int old=strcmp(argv[1],"old")==0,plain=strcmp(argv[1],"plain")==0;
  const char *names[]={"game","content","core","config","bios","retroarch","disc","policy"};
@@ -131,6 +179,10 @@ int main(int argc,char **argv){
  server=socket(AF_UNIX,SOCK_SEQPACKET|SOCK_CLOEXEC,0);CHECK(server>=0);struct sockaddr_un addr={.sun_family=AF_UNIX};strcpy(addr.sun_path,"/run/console/control.sock");unlink(addr.sun_path);CHECK(bind(server,(struct sockaddr*)&addr,sizeof(addr))==0&&chmod(addr.sun_path,0600)==0&&listen(server,8)==0);pthread_t thread;CHECK(pthread_create(&thread,NULL,controls,NULL)==0);
  call(CS_OP_START,0,"");
  char directory[256];
+ if(strcmp(argv[1],"errors")==0){
+  call(CS_OP_RELEASE,0,"");wait_ms(300);(void)capture(directory);
+  call(CS_OP_RELEASE,store.selected.generation,"");test_native_error_paths();goto finish;
+ }
  if(old){call(CS_OP_RELEASE,0,"");wait_ms(600);unsigned first=capture(directory);CHECK(cs_store_slot_save(&store,0)==CS_STORE_OK&&cs_store_slot_save(&store,15)==CS_STORE_OK);fprintf(stderr,"OLD_RA_BATTERY_COUNTER=%u\n",first);}
  else{
   CHECK(cs_store_load(&store)==CS_STORE_OK&&store.has_selected);uint64_t prior=store.selected.generation;CHECK(cs_store_verify_selected(&store,prior,directory)==CS_STORE_OK);saved_record=store.selected;strcpy(saved_directory,directory);
@@ -153,6 +205,28 @@ int main(int argc,char **argv){
   /* Unmapped physical combinations must not become an exit operation. */
   pulse((1U<<19)|1U);pulse((1U<<19)|(1U<<1));pulse((1U<<19)|(1U<<3));CHECK(observed(CS_CONTROL_MENU)==0);
   native_walk(plain);
+  if(!plain && getenv("CLOVE_TEST_PUBLIC_REWIND")){
+   expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("rewind_settings");menu_press(0);
+   find_entry("rewind_enable");menu_press(15);menu_press(1);
+   find_entry("resume_content");menu_press(0);
+   wait_ms(900);unsigned first=capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");
+   wait_ms(900);unsigned forward=capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");CHECK(forward>first);
+   buttons((1U<<19)|(1U<<4));wait_ms(700);buttons(0);wait_ms(50);unsigned reversed=capture(directory);
+   CHECK(reversed<forward);call(CS_OP_RELEASE,store.selected.generation,"");
+   fprintf(stderr,"PUBLIC_TGB_NATIVE_REWIND_PASS first=%u forward=%u reversed=%u\n",first,forward,reversed);
+   for(unsigned toggle=0;toggle<2;++toggle){
+    expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("rewind_settings");menu_press(0);
+    find_entry("rewind_enable");menu_press(0); /* Actual A/OK off, then on. */
+    if(toggle==1){
+     find_entry("rewind_granularity");menu_press(15);menu_press(1);
+     find_entry("rewind_buffer_size");menu_press(15);menu_press(1);
+    }
+    menu_press(1);find_entry("resume_content");menu_press(0);
+    wait_ms(300);(void)capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");
+   }
+   puts("NATIVE_REWIND_A_DISABLE_REENABLE_AND_BOUNDED_SETTINGS_REMAIN_CHECKPOINTABLE_PASS");
+  }
+
   if(plain){
    char changed[256],restored[256],factory[256];strcpy(changed,saved_directory);uint64_t changed_generation=saved_record.generation;
    call(CS_OP_QUIESCE,store.highwater+1,"");call(CS_OP_LOAD,prior,original);
@@ -168,7 +242,8 @@ int main(int argc,char **argv){
   puts("R52_ACTUAL_NATIVE_MENU_AND_OLD_CHECKPOINT_PRESERVATION_PASS");
   expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("unload_core");unsigned closing=observed(CS_CONTROL_MENU);menu_press(0);CHECK(observed(CS_CONTROL_MENU)>closing);
  }
+ finish:
  if(store.has_selected){int out=open("/tmp/latest-battery-path",O_WRONLY|O_CREAT|O_TRUNC,0600);char path[512];CHECK(cs_store_verify_selected(&store,store.selected.generation,directory)==CS_STORE_OK);int size=snprintf(path,sizeof(path),"/mnt/SDCARD/.console/%s/sram.bin\n",directory);CHECK(out>=0&&write(out,path,(size_t)size)==size&&close(out)==0);}
- call(CS_OP_EXIT,store.selected.generation,"");CHECK(cs_store_sync(&store)==CS_STORE_OK);
+ if(!error_exited)call(CS_OP_EXIT,store.selected.generation,"");CHECK(cs_store_sync(&store)==CS_STORE_OK);
  pthread_mutex_lock(&mutex);stopping=1;pthread_mutex_unlock(&mutex);CHECK(pthread_join(thread,NULL)==0);close(server);unlink("/run/console/control.sock");cs_bridge_close(&bridge);cs_store_close(&store);puts("REAL_HOTKEY_SESSION_CLIENT_PASS");return 0;
 }
