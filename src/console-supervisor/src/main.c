@@ -58,6 +58,7 @@ struct supervisor {
     struct sc_outbox daemon_out, hook_out, ui_out;
     struct cs_evdev menu;
     struct cs_hotkeys hotkeys;
+    struct sc_menu_chords menu_chords;
     struct cl_history history;
     struct cl_ui_memory memory;
     struct sc_cpu_policy cpu_policy;
@@ -1431,6 +1432,10 @@ static void menu_input(struct supervisor *s, uint64_t now) {
         bool held;
         if (cs_evdev_open(&s->menu, NULL, s->config.menu_input_name, s->config.menu_code, &held)) {
             cs_hotkeys_reset(&s->hotkeys, held);
+            unsigned char bitmap[CS_EVDEV_KEY_BYTES];
+            memset(&s->menu_chords,0,sizeof(s->menu_chords));
+            if(cs_evdev_key_bitmap(&s->menu,bitmap))
+                sc_menu_chords_seed(&s->menu_chords,bitmap,s->menu.code,now);
             s->menu_held = held;
             s->menu_initial = held;
             s->menu_released = !held;
@@ -1509,11 +1514,17 @@ static void menu_input(struct supervisor *s, uint64_t now) {
                         continue; /* A bitmap observation already delivered this edge. */
                 }
                 if (events[i].type == EV_SYN && events[i].code == SYN_DROPPED) {
+                    memset(&s->menu_chords,0,sizeof(s->menu_chords));
                     cs_hotkeys_reset(&s->hotkeys, true);
                     s->boot_override = true;
                     s->menu_held = true;
                     s->menu_released = false;
                 }
+                bool active_chords=s->status.active &&
+                    (s->status.state==CS_GAME_RUNNING || s->status.state==CS_QUICK_MENU);
+                if(!s->menu.dropped && events[i].type==EV_KEY)
+                    sc_menu_chords_event(&s->menu_chords,&s->hotkeys,events[i].code,
+                        events[i].value,s->menu.code,event_at,active_chords);
                 enum cs_evdev_decoded kind = cs_evdev_decode(&s->menu, &events[i], &value);
                 if (kind == CS_EVDEV_RESYNC) {
                     bool held;
@@ -1525,10 +1536,14 @@ static void menu_input(struct supervisor *s, uint64_t now) {
                     s->menu_held = held;
                     s->menu_released = !held;
                     cs_hotkeys_reset(&s->hotkeys, held);
+                    unsigned char bitmap[CS_EVDEV_KEY_BYTES];
+                    if(cs_evdev_key_bitmap(&s->menu,bitmap))
+                        sc_menu_chords_seed(&s->menu_chords,bitmap,s->menu.code,now);
                 } else if (kind == CS_EVDEV_KEY) {
                     fprintf(stderr, "MENU edge: value=%d at_ms=%llu state=%s\n", value,
                             (unsigned long long)event_at, cs_state_name(s->status.state));
                     cs_hotkeys_menu(&s->hotkeys, value != 0, value == 2, event_at);
+                    sc_menu_chords_consume(&s->menu_chords,&s->hotkeys,active_chords);
                     s->menu_held = value != 0;
                     if (!s->menu_held) {
                         s->menu_released = true;
@@ -1570,7 +1585,9 @@ static void menu_input(struct supervisor *s, uint64_t now) {
         if (s->menu.fd >= 0 && drained && !s->menu.dropped) {
             bool held;
             uint64_t sampled;
-            if (cs_evdev_key_state(&s->menu, &held) && sc_now(&sampled) && sampled >= now) {
+            unsigned char bitmap[CS_EVDEV_KEY_BYTES];
+            if (cs_evdev_key_bitmap(&s->menu,bitmap) && sc_now(&sampled) && sampled >= now) {
+                held=(bitmap[s->menu.code/8U]&(1U<<(s->menu.code%8U)))!=0U;
                 now = sampled;
                 if (sc_menu_reconcile(&s->hotkeys, held, now, &s->menu_sampled_at)) {
                     s->menu_held = held;
@@ -1579,6 +1596,9 @@ static void menu_input(struct supervisor *s, uint64_t now) {
                             (unsigned int)held, (unsigned long long)now,
                             cs_state_name(s->status.state));
                 }
+                sc_menu_chords_seed(&s->menu_chords,bitmap,s->menu.code,now);
+                sc_menu_chords_consume(&s->menu_chords,&s->hotkeys,s->status.active &&
+                    (s->status.state==CS_GAME_RUNNING || s->status.state==CS_QUICK_MENU));
             }
         }
     }
@@ -1722,7 +1742,7 @@ static bool launch_glo_app(struct supervisor *s)
             const char *extension = strrchr(game.content, '.');
             if ((strcmp(game.entry.system, "GB") != 0 && strcmp(game.entry.system, "GBC") != 0) ||
                 extension == NULL || (strcasecmp(extension, ".gb") != 0 && strcasecmp(extension, ".gbc") != 0)) {
-                remember_error(s, "Pokémon link requires an unpacked .gb or .gbc cartridge in Games.");
+                remember_error(s, "PokÃ©mon link requires an unpacked .gb or .gbc cartridge in Games.");
                 return false;
             }
         }

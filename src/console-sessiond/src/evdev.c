@@ -32,14 +32,16 @@ static bool bit(const unsigned char *bytes, unsigned int index)
 {
     return (bytes[index / 8U] & (unsigned char)(1U << (index % 8U))) != 0U;
 }
+bool cs_evdev_key_bitmap(const struct cs_evdev *input, unsigned char keys[CS_EVDEV_KEY_BYTES])
+{
+    memset(keys,0,CS_EVDEV_KEY_BYTES);
+    return ioctl(input->fd,CS_IOCTL_REQUEST(EVIOCGKEY(CS_EVDEV_KEY_BYTES)),keys)>=0;
+}
 bool cs_evdev_key_state(const struct cs_evdev *input, bool *held)
 {
-    unsigned char keys[BIT_BYTES(KEY_CNT)];
-    memset(keys, 0, sizeof(keys));
-    if (ioctl(input->fd, CS_IOCTL_REQUEST(EVIOCGKEY(sizeof(keys))), keys) < 0) {
-        return false;
-    }
-    *held = bit(keys, input->code);
+    unsigned char keys[CS_EVDEV_KEY_BYTES];
+    if (!cs_evdev_key_bitmap(input,keys)) return false;
+    *held = bit(keys,input->code);
     return true;
 }
 static bool open_device(struct cs_evdev *input, const char *path, const char *name,

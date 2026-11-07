@@ -1,5 +1,7 @@
 # CloveOS test status
 
+- **Menu shortcuts and TGB rewind:** the [managed shortcut correction candidate](releases/tgb-shortcuts/README.md) addresses companion-key fallthrough, opens native Quick Menu settings and qualifies normal TGB rewind. GB/GBC TGB/Gambatte software tests pass; physical acceptance remains pending.
+
 - **Bananaguy Classic runtime loader failure:** the official Godot runtime requires newer C++ symbols than the vendor library provides. The [isolated native-runtime correction candidate](releases/portmaster-runtime/README.md) passes software loading and launcher cleanup tests; physical gameplay remains unverified.
 
 - The [R56 candidate](releases/r56/README.md) exposes TGB Dual for normal GB/GBC play with isolated configuration, save/resume and Netplay-save-seeding software tests. Physical normal-core and cross-device trade acceptance remain pending. Ports Collection replaces the earlier duplicate PortMaster launch entries.

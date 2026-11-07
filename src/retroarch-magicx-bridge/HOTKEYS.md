@@ -8,14 +8,18 @@ independent truncating state writer remains blocked.
 | Gesture | Endpoint behavior |
 | --- | --- |
 | MENU tap | Supervisor checkpoints state, SRAM, RTC and coherent screenshot, closes content and opens GameSwitcher. |
-| MENU hold | Supervisor authenticates OPEN_QUICK_MENU; native RGUI displays the restricted managed action list. |
-| MENU + R2 | SAVE_SLOT request; paired daemon commits a new generation and updates selected numbered slot only after durability. |
-| MENU + L2 | LOAD_SLOT request; paired daemon resolves the selected slot and verifies its generation. |
-| MENU + Left / Right | SLOT_DOWN / SLOT_UP; numbered slots 0–15 are supervisor-owned. |
-| MENU + SELECT | SCREENSHOT request using the same generation-linked capture protocol. |
-| MENU + START | Durable save and return-to-MainUI request. |
-| MENU + R1 | Native fast-forward, with chord consumption so MENU release cannot exit. |
-| MENU + L1 | Native slow-motion, with chord consumption. Rewind remains disabled by the qualified core policy. |
+| MENU hold | Existing supervisor Library action; a companion key consumes the hold. |
+| MENU double tap | Existing supervisor previous-game action; companion keys consume the gesture. |
+| MENU + R2 | SAVE_SLOT request; daemon commits a new generation before updating the selected numbered slot. |
+| MENU + L2 | LOAD_SLOT request; daemon resolves and verifies the selected slot generation. |
+| MENU + Left / Right | SLOT_DOWN / SLOT_UP through the supervisor; no native independent slot mutation. |
+| MENU + SELECT | Open/close authenticated native RGUI Quick Menu. |
+| MENU + START | Toggle Core / 4:3 aspect ratio. |
+| MENU + X | Toggle FPS display. |
+| MENU + R1 | Native fast-forward, consuming the chord. |
+| MENU + L1 | Native rewind when explicitly enabled for the pinned normal single-player TGB core; otherwise no rewind. |
+| MENU + Volume Up / Down | Existing board brightness adjustment. |
+| MENU + an unmapped button | No new action; consume the chord so release does not become MENU tap/hold/double. |
 
 The protected runtime controller schema 2 adds measured START/SELECT indices to
 schema 1's D-pad, face, shoulder, MENU and volume mapping. The bridge resolves the
@@ -24,12 +28,23 @@ changing any bind. It forces raw SDL_Joystick input for managed sessions because
 SDL_GameController semantic enums do not equal the raw indices measured by the
 launcher. Ordinary unmanaged RetroArch retains GameController behavior.
 
-The native Quick Menu contains Resume, Save Selected Slot, Load Selected Slot,
-Take Screenshot and Save and Exit to MainUI. Left/right request slot changes;
-B requests close. The action filter prevents navigation into native settings,
-search, tab, reset, cheat, remap, replay or override callbacks. Core options and
-serialization identities remain frozen. CLOSE leaves the core gated and paused
-until authenticated RELEASE. PREPARE closes an open menu before capturing.
+The native RGUI Quick Menu contains Resume, Save Selected Slot, Load Selected Slot,
+Take Screenshot, Save and Exit to MainUI, an optional authenticated disc selector,
+and Settings. B closes through the supervisor and authenticated RELEASE resumes
+the game. The Settings page has Rewind, Show FPS, Aspect ratio and Back controls.
+These are bounded runtime controls, not the unrestricted RetroArch settings tree.
+The action filter continues to block arbitrary search, tabs, reset, cheats,
+remaps, replay, core-option edits and competing override/writer callbacks.
+
+Rewind is off by default and can be enabled per session only for the exact pinned
+normal single-player TGB core, with link disabled and Netplay inactive. Its 16 MiB
+RAM buffer and granularity are fixed. Unsupported cores show Unavailable. LOAD
+discards the old timeline before restore and rebuilds history only after state,
+SRAM and RTC restoration; failed buffer setup leaves rewind off. Core exit frees
+the buffer. The serialization format and frozen core options are unchanged.
+The executable digest must still be recorded exactly in the root-owned
+serialization-compatibility record and binary manifest; compatibility needs
+old-to-new checkpoint, SRAM/RTC, slots and link-seed qualification before install.
 
 WRITE captures the software core frame at the same paused runloop boundary as
 native RASTATE serialization and SRAM/RTC. RGB565, 0RGB1555 and XRGB8888 frames
@@ -53,8 +68,8 @@ save success and never trigger implicit retry.
 The reference OnionOS card configuration read without writes used RGUI,
 MENU+SELECT for Quick Menu, R2/L2 save/load, Left/Right slot changes and R1
 fast-forward. Rewind was bound but disabled; screenshot/exit hotkeys were unset.
-The requested hold-MENU and MENU+SELECT screenshot mapping is an intentional
-adaptation. Neither the native tests nor null-video QEMU tests establish a
+The supervisor-owned tap/hold/double gestures remain CloveOS adaptations;
+MENU+SELECT uses the native Quick Menu. Neither the native tests nor null-video QEMU tests establish a
 physical Zero 28 display/input result.
 
 The read-only local control query40/reply41 exposes the daemon's actual selected

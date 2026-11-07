@@ -1,0 +1,91 @@
+{
+  "base_source_commit": "20a3e16704b3f8c4e00199915584c4a277bb2f6a",
+  "files": [
+    {
+      "path": "src/console-sessiond/include/sessiond/evdev.h",
+      "sha256": "9703fbdfe50a32b042d58b8d29ecf9068e8b4196ffcdbb70700d9363c95b0d57",
+      "base_git_blob": "193a0429f7b1a407d32604122cec8060d47f941c"
+    },
+    {
+      "path": "src/console-sessiond/src/evdev.c",
+      "sha256": "b4e58db8cb5694f9b8dd1f9fd6ca9d7cff1fe59b634e46c537862ed14d512065",
+      "base_git_blob": "dcbf2a1f465f66e296d6def49714492632917e79"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "ea4f4d367460967f4425f479dfc11ffea9364704b528899a5b967f56446ea519",
+      "base_git_blob": "21b01b5d8f694d2f23b6c7649ffc3685eaec509f"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/menu_observer.h",
+      "sha256": "93199c724a3f2260996cb5fcfc934a6e5a8fd1a2148dda9bb1393ffc60630c23",
+      "base_git_blob": "f4907f4c32d83e9d01ac4e331fcebe5525ce18c7"
+    },
+    {
+      "path": "src/console-supervisor/src/main.c",
+      "sha256": "390c3e0336f0198e8e2023761d73149d743c242847fabbda810ff316e4cb8322",
+      "base_git_blob": "a2ee8ca0ac4201f1c8ec379dd2ba2b73b43d26db"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_menu_chords.c",
+      "sha256": "070461b5fe10612a30e237f9e8dff8379745a87a1e6bd5792df3b9852f61f007",
+      "base_git_blob": null
+    },
+    {
+      "path": "src/console-supervisor/tests/test_tgb_shortcuts.c",
+      "sha256": "8abb4060f672f9f799e5941677e742f52a1772abb398e760e41c476c95e0a7da",
+      "base_git_blob": null
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/HOTKEYS.md",
+      "sha256": "a1debb9600fd5af881fac313adc3e06a8866a8a589eaa0c57e68e2441affd44e",
+      "base_git_blob": "3f7bc2797e7db4035017ec78c46b500bfbfd2a6f"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/INTEGRATION.md",
+      "sha256": "b76065ab1588e5318b73ff10caee3b2d4245ee8cc23acdee3a0455abf6bb9d7a",
+      "base_git_blob": "4ecd79d7b5177f48d606a7a2c137c11e875e24e0"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/README.md",
+      "sha256": "74835ffde0d078516d9811d18805a09ad2d49ed7659ca6e9a6c0d974213df428",
+      "base_git_blob": "5035000dea39b1bf9c75e5dcc2dd3ff618b25b21"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/install.py",
+      "sha256": "3b6f4b83662cb773e5f5014e7d27d00b24aff7d3458a10ef24ad8ba56a2b0ebb",
+      "base_git_blob": "35847c7a659610501c1d6f38f3969c216172446e"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/magicx_retroarch.c",
+      "sha256": "35159a9bbb2ef9fc1e7d7b9d841ab4b9b9244cccd157adf64fe5d70c69e071a2",
+      "base_git_blob": "999a0202cdea60a53e9ce6b0d8245830b8282d4d"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/patches/0010-owned-menu-settings-and-slot-hotkeys.patch",
+      "sha256": "be1b22a4d2823cb31f6aac0ddd98c7aaefb8d17c942f640a411316fbae720081",
+      "base_git_blob": null
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/SHORTCUT_VALIDATION.md",
+      "sha256": "969fd5844ce306e1eccf030a8a201e32647d38e7be7ec7657a3a2d94cceb6d0f",
+      "base_git_blob": null
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/make_shortcut_cartridges.py",
+      "sha256": "8a0eee4caa4b0344536a5a60be5758242d935f3bc497aa932ef3bfe2559a8b38",
+      "base_git_blob": null
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/test_retroarch.c",
+      "sha256": "c5dcabe40a733cb531e5b14efecc0d351b96797f35412026c82da7e1e8e6d93a",
+      "base_git_blob": "5391b57ae4d41492fcb4a2d2d3618dfecb99f3ac"
+    },
+    {
+      "path": "src/retroarch-magicx-bridge/tests/virtual_input.c",
+      "sha256": "e27c12b897e04d927055aa8d7a3b437fde2d79a5dc209431cd57bad7f07bb13d",
+      "base_git_blob": null
+    }
+  ],
+  "private_data_included": false
+}

@@ -96,6 +96,20 @@ settings_t *config_get_ptr(void)
     check_main();
     return &settings;
 }
+/* Driver/config dependencies are fixtures; serialization/task/storage remain
+ * the pinned implementations. These declarations match the current binding. */
+void audio_set_float(enum audio_action action, float value)
+{
+    check_main();
+    CHECK(action == AUDIO_ACTION_VOLUME_GAIN && value >= 0.0f);
+}
+bool config_get_array(config_file_t *conf, const char *entry, char *value, size_t size)
+{
+    (void)entry; (void)value; (void)size;
+    check_main();
+    CHECK(conf == NULL);
+    return false;
+}
 runloop_state_t *runloop_state_get_ptr(void)
 {
     check_main();

@@ -40,8 +40,9 @@ def main():
     sdl_patch = module / "patches" / "0003-moss-mali-sdl2.patch"
     meter_patch = module / "patches" / "0008-magicx-level-meter.patch"
     r49_patch = module / "patches" / "0009-r49-psx-power-netplay.patch"
+    owned_menu_patch = module / "patches" / "0010-owned-menu-settings-and-slot-hotkeys.patch"
     patches = [patch, video_patch, sdl_patch, texture_patch, diagnostic_patch, audio_state_patch,
-               psp_sampling_patch, meter_patch, r49_patch]
+               psp_sampling_patch, meter_patch, r49_patch, owned_menu_patch]
     # Later patches depend on the preceding hooks. Validate the complete
     # sequence on disposable copies before changing the user's checkout.
     with tempfile.TemporaryDirectory(prefix="magicx-patch-check-") as scratch:

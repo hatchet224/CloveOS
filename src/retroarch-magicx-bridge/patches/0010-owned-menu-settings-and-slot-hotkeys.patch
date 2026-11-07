@@ -1,0 +1,74 @@
+--- a/runloop.c
++++ b/runloop.c
+@@ -6631,12 +6631,24 @@
+          }
+       }
+       /* Wrap-around to -1 (Auto) */
+       else if (state_slot + addition > 999)
+          state_slot = -2;
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++      if (check2 && magicx_retroarch_requested())
++      {
++         /* Native hotkeys otherwise change RetroArch's independent slot int
++          * directly, bypassing command_event(). Managed slots belong to the
++          * supervisor and must follow its selected-slot/status protocol. */
++         command_event(addition > 0 ? CMD_EVENT_SAVE_STATE_INCREMENT
++                                    : CMD_EVENT_SAVE_STATE_DECREMENT, NULL);
++         check2 = false;
++      }
++#endif
++
+       if (check2)
+       {
+          size_t _len;
+          char msg[128];
+          int cur_state_slot                = state_slot + addition;
+ 
+--- a/menu/menu_displaylist.c
++++ b/menu/menu_displaylist.c
+@@ -7197,32 +7197,24 @@
+ #endif
+          break;
+       case DISPLAYLIST_CONTENT_SETTINGS:
+ #ifdef HAVE_MAGICX_BRIDGE
+          if (magicx_retroarch_requested())
+          {
+-            /* Managed sessions never expose mutable native settings. The
+-             * menu action filter routes these five selections to sessiond. */
+-            static const struct { const char *title; enum msg_hash_enums label; } entries[] = {
+-               {"Resume Game", MENU_ENUM_LABEL_RESUME_CONTENT},
+-               {"Save Selected Slot", MENU_ENUM_LABEL_SAVE_STATE},
+-               {"Load Selected Slot", MENU_ENUM_LABEL_LOAD_STATE},
+-               {"Take Screenshot", MENU_ENUM_LABEL_TAKE_SCREENSHOT},
+-               {"Save and Exit to MainUI", MENU_ENUM_LABEL_CLOSE_CONTENT}
+-            };
+-            size_t i;
+-            for (i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i)
+-               if (menu_entries_append(list, magicx_retroarch_menu_label((unsigned int)i),
+-                     msg_hash_to_str(entries[i].label), entries[i].label,
+-                     MENU_SETTING_ACTION, 0, 0, NULL))
+-                  ++count;
+-            const char *disc_label = magicx_retroarch_menu_label(5U);
+-            if (disc_label[0] != '\0' && menu_entries_append(list, disc_label,
+-                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX), MENU_ENUM_LABEL_DISK_INDEX,
+-                  MENU_SETTING_ACTION, 0, 0, NULL))
+-               ++count;
++            /* Native RGUI presents the daemon-owned actions and a bounded
++             * runtime Settings page. The action filter owns every mutation. */
++            static const enum msg_hash_enums labels[]={MENU_ENUM_LABEL_RESUME_CONTENT,
++               MENU_ENUM_LABEL_SAVE_STATE,MENU_ENUM_LABEL_LOAD_STATE,
++               MENU_ENUM_LABEL_TAKE_SCREENSHOT,MENU_ENUM_LABEL_CLOSE_CONTENT};
++            for(unsigned int i=0U;i<8U;++i){
++               const char *title=magicx_retroarch_menu_label(i);
++               enum msg_hash_enums label=i<5U?labels[i]:MENU_ENUM_LABEL_VALUE_NO_ITEMS;
++               if(title[0]=='\0')break;
++               if(menu_entries_append(list,title,msg_hash_to_str(label),label,
++                     MENU_SETTING_ACTION,0,0,NULL))++count;
++            }
+             break;
+          }
+ #endif
+          count = menu_displaylist_parse_load_content_settings(list,
+                settings, false);
+ 

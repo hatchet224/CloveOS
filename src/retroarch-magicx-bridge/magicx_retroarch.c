@@ -21,6 +21,7 @@
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+#include "../state_manager.h"
 #include "../tasks/tasks_internal.h"
 #include "magicx_bridge.h"
 #include "magicx_controls.h"
@@ -74,6 +75,7 @@ struct mx_ra {
     void (*psp_fps)(float *, float *, float *);
     bool managed, internal_command, content_closed, quick_menu, recovery_panel, first_frame_entered, priming_load;
     bool restore_render_warmup;
+    bool settings_page, rewind_owned;
     bool swap_triggers, triggers_swapped, hide_hints, levels_observed;
     unsigned int osd_width, fast_forward_rate, meter_level, meter_max;
     uint64_t next_level_poll, meter_until;
@@ -86,6 +88,10 @@ struct mx_ra {
 };
 static struct mx_ra ra = {.controls = {.fd = -1}};
 static bool ra_paused(void *context);
+static bool managed_rewind_supported(void);
+static bool managed_rewind_toggle(void);
+static void managed_rewind_clear(void);
+static bool managed_rewind_reseed(void);
 static bool disc_index(unsigned int *index)
 {
     const struct retro_disk_control_ext_callback *disk = &runloop_state_get_ptr()->system.disk_control.cb;
@@ -258,10 +264,24 @@ static void control_request(uint32_t operation)
 }
 const char *magicx_retroarch_menu_label(unsigned int index)
 {
-    static char labels[6][112];
+    static char labels[8][112];
     static const char *const titles[] = {"Resume Game", "Save Slot", "Load Slot",
                                         "Take Screenshot", "Save and Exit to MainUI"};
     const char *phase = "";
+    if(index>=8U)return "";
+    if(!ra.recovery_panel && ra.settings_page){
+        settings_t *settings=config_get_ptr();
+        if(index==0U){
+            const char *state=!managed_rewind_supported()?"Unavailable for this core":
+                (settings->bools.rewind_enable?"On":"Off");
+            (void)snprintf(labels[index],sizeof(labels[index]),"Rewind: %s",state);
+        }else if(index==1U)(void)snprintf(labels[index],sizeof(labels[index]),"Show FPS: %s",settings->bools.video_fps_show?"On":"Off");
+        else if(index==2U)(void)snprintf(labels[index],sizeof(labels[index]),"Aspect ratio: %s",settings->uints.video_aspect_ratio_idx==ASPECT_RATIO_4_3?"4:3":"Core");
+        else if(index==3U)strcpy(labels[index],"Back to Quick Menu");
+        else return "";
+        return labels[index];
+    }
+    if(!ra.recovery_panel && index==(ra.disc_count!=0U?6U:5U))return "Settings";
     if (index == 5U) {
         unsigned int active;
         if (ra.recovery_panel || ra.disc_count == 0U) return "";
@@ -591,6 +611,84 @@ static bool loaded_single_content(void)
         (r->flags & RUNLOOP_FLAG_IS_INITED) != 0U && path_is_empty(RARCH_PATH_SUBSYSTEM) &&
         content != NULL && content[0] == '/' && strchr(content, '#') == NULL;
 }
+/* Rewind is an explicitly owned, bounded RAM feature for the pinned normal
+ * single-player TGB core. It creates no independent on-card save writer. */
+#define MAGICX_REWIND_BYTES (16U*1024U*1024U)
+static bool managed_rewind_supported(void)
+{
+#ifdef HAVE_REWIND
+    core_option_manager_t *options=runloop_state_get_ptr()->core_options;
+    if(!ra.managed || ra.content_closed || !loaded_single_content() || ra.disc_count!=0U ||
+       strcmp(ra.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")!=0 ||
+       !magicx_core_basename(path_get(RARCH_PATH_CORE),"tgbdual_libretro.so") ||
+       options==NULL || options->size!=1U)return false;
+#ifdef HAVE_NETWORKING
+    if(netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED,NULL))return false;
+#endif
+    const char *value=core_option_manager_get_val(options,options->opts[0].opt_idx);
+    return options->opts[0].key!=NULL && strcmp(options->opts[0].key,"tgbdual_gblink_enable")==0 &&
+           value!=NULL && strcmp(value,"disabled")==0;
+#else
+    return false;
+#endif
+}
+static void managed_rewind_clear(void)
+{
+#ifdef HAVE_REWIND
+    runloop_state_t *runloop=runloop_state_get_ptr();
+    state_manager_event_deinit(&runloop->rewind_st,&runloop->current_core);
+#endif
+}
+static bool managed_rewind_reseed(void)
+{
+#ifdef HAVE_REWIND
+    settings_t *settings=config_get_ptr();runloop_state_t *runloop=runloop_state_get_ptr();
+    managed_rewind_clear();
+    if(!settings->bools.rewind_enable)return true;
+    if(!ra.rewind_owned || !managed_rewind_supported())return false;
+    state_manager_event_init(&runloop->rewind_st,MAGICX_REWIND_BYTES);
+    return runloop->rewind_st.state!=NULL && runloop->rewind_st.size!=0U;
+#else
+    return false;
+#endif
+}
+static bool managed_rewind_toggle(void)
+{
+#ifdef HAVE_REWIND
+    settings_t *settings=config_get_ptr();
+    if(!ra.quick_menu || !ra_paused(NULL) || magicx_bridge_busy(ra.bridge) ||
+       ra.recovery_panel || ra.controls.fd>=0 ||
+       ra.feedback.phase==MX_FEEDBACK_QUEUED || ra.feedback.phase==MX_FEEDBACK_BUSY ||
+       !managed_rewind_supported())return false;
+    if(settings->bools.rewind_enable){
+        managed_rewind_clear();settings->bools.rewind_enable=false;ra.rewind_owned=false;
+        fprintf(stderr,"Clove rewind: disabled; RAM history discarded\n");return true;
+    }
+    settings->sizes.rewind_buffer_size=MAGICX_REWIND_BYTES;
+    settings->uints.rewind_granularity=1U;
+    settings->bools.rewind_enable=true;ra.rewind_owned=true;
+    if(!managed_rewind_reseed()){
+        managed_rewind_clear();settings->bools.rewind_enable=false;ra.rewind_owned=false;
+        fprintf(stderr,"Clove rewind: core/buffer initialization unavailable; remains disabled\n");return false;
+    }
+    fprintf(stderr,"Clove rewind: qualified single TGB enabled; buffer_bytes=%u state_bytes=%zu\n",
+            MAGICX_REWIND_BYTES,runloop_state_get_ptr()->rewind_st.size);
+    return true;
+#else
+    return false;
+#endif
+}
+static bool managed_rewind_valid(void)
+{
+#ifdef HAVE_REWIND
+    settings_t *settings=config_get_ptr();
+    return ra.rewind_owned && managed_rewind_supported() &&
+        settings->sizes.rewind_buffer_size==MAGICX_REWIND_BYTES &&
+        settings->uints.rewind_granularity==1U && runloop_state_get_ptr()->rewind_st.state!=NULL;
+#else
+    return false;
+#endif
+}
 static bool qualified_settings(char error[MAGICX_ERROR_MAX])
 {
     settings_t *s = config_get_ptr();
@@ -610,7 +708,7 @@ static bool qualified_settings(char error[MAGICX_ERROR_MAX])
          (r->system.disk_control.cb.get_image_index != NULL && r->system.disk_control.cb.get_image_index() != 0U) ||
          (r->system.disk_control.cb.get_eject_state != NULL && r->system.disk_control.cb.get_eject_state())))
         return error_text(error, "checkpoint requires one fixed inserted media image");
-    if (s->bools.rewind_enable || s->bools.run_ahead_enabled || s->bools.preemptive_frames_enable ||
+    if ((s->bools.rewind_enable && !managed_rewind_valid()) || s->bools.run_ahead_enabled || s->bools.preemptive_frames_enable ||
         s->bools.savestate_auto_save || s->bools.savestate_auto_load ||
         s->bools.savestate_auto_index || s->uints.autosave_interval != 0U ||
         s->bools.block_sram_overwrite || s->bools.cheevos_enable ||
@@ -741,6 +839,8 @@ static bool ra_quick_menu(void *context, bool open, char error[MAGICX_ERROR_MAX]
         if (settings == NULL || menu == NULL || menu->driver_data == NULL ||
             strcmp(settings->arrays.menu_driver, "rgui") != 0 || !ra_paused(NULL)) return error_text(error, "restricted Quick Menu requires RGUI and pause");
         ra.quick_menu = true;
+        ra.settings_page = false;
+        fprintf(stderr,"Clove Quick Menu: opened through authenticated paused session\n");
         retroarch_menu_running();
         if ((menu->flags & MENU_ST_FLAG_ALIVE) == 0U ||
             !menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL)) {
@@ -754,6 +854,8 @@ static bool ra_quick_menu(void *context, bool open, char error[MAGICX_ERROR_MAX]
          * only daemon RELEASE is authorized to resume the frozen core. */
         retroarch_menu_running_finished(false);
         ra.quick_menu = false;
+        ra.settings_page = false;
+        fprintf(stderr,"Clove Quick Menu: closed; awaiting authenticated release\n");
         if (!ra_set_paused(NULL, true)) return error_text(error, "Quick Menu pause restoration failed");
     }
     update_game_triggers(open);
@@ -859,6 +961,27 @@ unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
     if (!ra.managed) return action;
     if (ra.recovery_panel) return recovery_menu_action(action, selected);
     if (!ra.quick_menu) return MENU_ACTION_NOOP;
+    if(ra.settings_page){
+        if(action==MENU_ACTION_CANCEL || (selected==3U && action==MENU_ACTION_OK)){
+            ra.settings_page=false;fprintf(stderr,"Clove settings: returned to Quick Menu\n");menu_state_get_ptr()->selection_ptr=ra.disc_count!=0U?6U:5U;
+            feedback_refresh(NULL);return MENU_ACTION_NOOP;
+        }
+        if(action==MENU_ACTION_UP || action==MENU_ACTION_DOWN || action==MENU_ACTION_NOOP)return action;
+        if(action==MENU_ACTION_OK || action==MENU_ACTION_LEFT || action==MENU_ACTION_RIGHT){
+            settings_t *settings=config_get_ptr();
+            if(selected==0U)feedback_refresh(managed_rewind_toggle()?"Rewind setting changed":"Rewind unavailable; game remains paused");
+            else if(selected==1U){settings->bools.video_fps_show=!settings->bools.video_fps_show;feedback_refresh(NULL);}
+            else if(selected==2U){
+                settings->uints.video_aspect_ratio_idx=settings->uints.video_aspect_ratio_idx==ASPECT_RATIO_4_3?ASPECT_RATIO_CORE:ASPECT_RATIO_4_3;
+                video_driver_set_aspect_ratio();feedback_refresh(NULL);
+            }
+        }
+        return MENU_ACTION_NOOP;
+    }
+    if(selected==(ra.disc_count!=0U?6U:5U) && action!=MENU_ACTION_CANCEL){
+        if(action==MENU_ACTION_OK){ra.settings_page=true;fprintf(stderr,"Clove settings: opened bounded runtime settings\n");menu_state_get_ptr()->selection_ptr=0U;feedback_refresh(NULL);}
+        return action==MENU_ACTION_UP || action==MENU_ACTION_DOWN || action==MENU_ACTION_NOOP?action:MENU_ACTION_NOOP;
+    }
     if (selected == 5U && ra.disc_count != 0U &&
         (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)) {
         unsigned int active;
@@ -897,6 +1020,8 @@ unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
     }
     return MENU_ACTION_NOOP;
 #else
+    (void)managed_rewind_toggle;
+    (void)recovery_command;
     (void)recovery_menu_action;
     (void)selected;
     return action;
@@ -908,7 +1033,7 @@ void magicx_retroarch_menu_toggle(void)
         ra.recovery_confirm = 0U;
         feedback_refresh("Recovery remains paused; choose an explicit action");
     } else if (ra.managed && ra.quick_menu) control_request(CS_CONTROL_QUICK_MENU_CLOSE);
-    else if (ra.managed) control_request(CS_CONTROL_HOTKEY_CONSUMED);
+    else if (ra.managed) control_request(CS_CONTROL_QUICK_MENU);
 }
 static uint64_t ra_frame(void *context)
 {
@@ -1122,9 +1247,14 @@ static bool ra_restore(void *context, const struct magicx_blob blobs[MAGICX_ARTI
         if (ra.frames == 0U || !ra_paused(NULL))
             return error_text(error, "core initialization frame did not complete paused");
     }
+    /* An authorized LOAD must never retain rewind frames from the previous
+     * timeline. Recreate history only from the fully restored SRAM/RTC state. */
+    bool rewind_wanted=config_get_ptr()->bools.rewind_enable && ra.rewind_owned;
+    if(rewind_wanted)managed_rewind_clear();
     if (!content_deserialize_state(state.data, state.size) ||
         !restore_memory(RETRO_MEMORY_SAVE_RAM, &blobs[1]) ||
         !restore_memory(RETRO_MEMORY_RTC, &blobs[2])) {
+        if(rewind_wanted){config_get_ptr()->bools.rewind_enable=false;ra.rewind_owned=false;}
         return error_text(error,
                           "core rejected exact RASTATE generation or SRAM/RTC restore policy");
     }
@@ -1133,6 +1263,10 @@ static bool ra_restore(void *context, const struct magicx_blob blobs[MAGICX_ARTI
         ra.disc_fault = true;
         return error_text(error, "core restored a different disc than the checkpoint recorded");
     }
+    if(rewind_wanted && !managed_rewind_reseed()){
+        config_get_ptr()->bools.rewind_enable=false;ra.rewind_owned=false;
+        fprintf(stderr,"Clove rewind: restore succeeded; history unavailable, rewind disabled\n");
+    }else if(rewind_wanted)fprintf(stderr,"Clove rewind: history reseeded after authenticated restore\n");
     ra.frames = frame;
     ra.restore_render_warmup = magicx_core_basename(path_get(RARCH_PATH_CORE), "mupen64plus_next_libretro.so");
     return true;
@@ -1191,6 +1325,8 @@ static bool ra_close(void *context, char error[MAGICX_ERROR_MAX])
     if (magicx_bridge_busy(ra.bridge)) {
         return error_text(error, "checkpoint task still owns artifacts");
     }
+    managed_rewind_clear();
+    config_get_ptr()->bools.rewind_enable=false;ra.rewind_owned=false;
     ra.internal_command = true;
     /* The command guard suppresses CMD_EVENT_SAVE_FILES even during deinit.
      * Automatic state/SRAM writers are forbidden by qualified_settings(). */
@@ -1794,7 +1930,6 @@ bool magicx_retroarch_command_allowed(unsigned int command)
         control_request(CS_CONTROL_SCREENSHOT);
         return false;
     case CMD_EVENT_MENU_TOGGLE:
-        magicx_retroarch_hotkey_consumed();
         magicx_retroarch_menu_toggle();
         return false;
     case CMD_EVENT_STATISTICS_TOGGLE:
@@ -1813,7 +1948,9 @@ bool magicx_retroarch_command_allowed(unsigned int command)
     case CMD_EVENT_VOLUME_DOWN:
     case CMD_EVENT_SET_FRAME_LIMIT:
     case CMD_EVENT_VIDEO_SET_BLOCKING_STATE:
+        return true;
     case CMD_EVENT_FPS_TOGGLE:
+        magicx_retroarch_hotkey_consumed();
         return true;
     default:
         return false; /* State, reset, menu, disk, rewind, autosave, and core mutation are owned

@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "base_source_commit": "20a3e16704b3f8c4e00199915584c4a277bb2f6a",
+  "actual_old_and_new_RetroArch": true,
+  "actual_core_phases": [
+    "tgb:GB:old",
+    "tgb:GB:new",
+    "tgb:GBC:old",
+    "tgb:GBC:new",
+    "gambatte:GB:old",
+    "gambatte:GB:new",
+    "gambatte:GBC:old",
+    "gambatte:GBC:new"
+  ],
+  "generated_cartridges": true,
+  "virtual_SDL_input": true,
+  "fixture_local_control_server": true,
+  "production_raw_chord_cases": 136,
+  "old_paused_SRAM_RTC_exact_restores": 4,
+  "old_slot_15_preserved": true,
+  "owned_slot_save_load_and_menu_settings_resume": true,
+  "TGB_rewind_and_load_reseed": true,
+  "actual_link_helper_new_battery_seeding": [
+    "GB",
+    "GBC"
+  ],
+  "brightness_and_menu_gesture_source_regressions": true,
+  "full_VM_exit": 0,
+  "physical_handheld_acceptance_passed": false,
+  "private_card_logs_ROMs_BIOS_saves_art_not_included": true
+}

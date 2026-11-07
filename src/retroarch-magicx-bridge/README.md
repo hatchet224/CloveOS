@@ -26,9 +26,11 @@ git clone https://github.com/libretro/RetroArch.git RetroArch-magicx
 cd RetroArch-magicx
 git checkout --detach 0792144fe3a7b59908b0afdb2c01722e79040360
 python3 /path/to/retroarch-magicx-bridge/install.py --retroarch "$PWD"
-./configure --enable-threads --enable-dynamic
-make -j2 HAVE_MAGICX_BRIDGE=1
+./configure --enable-threads --enable-dynamic --enable-rewind
+make -j2 HAVE_MAGICX_BRIDGE=1 HAVE_REWIND=1
 ```
+
+After changing rewind build support, clean and rebuild all objects: its compile flag changes the runloop structure layout. `rewind_enable` remains off by default; only the qualified runtime control may enable it.
 
 Add the existing board's video/audio/input/build options to configure. Keep the normal menu-capable Linux build; the managed profile suppresses gameplay menu commands while the endpoint owns the session. `HAVE_MAGICX_BRIDGE=1` is a make option, not a new configure switch. Without it, the upstream changes compile out. The installer copies the module/support sources as RetroArch/magicx/ and applies the diff; it does not commit anything.
 
@@ -55,7 +57,7 @@ export MAGICX_BRIDGE_LAUNCH=/etc/console/launch.json
 
 The endpoint starts after CLI content initialization and holds the core paused before ordinary gameplay frames. It publishes `<socket>.identity.json` only after actual identity calculation and socket initialization. A matching HELLO/LOAD/RELEASE controls advancement. Without MAGICX_BRIDGE_LAUNCH, ordinary RetroArch behavior remains available. Invalid requested setup fails initialization instead of silently launching unmanaged gameplay.
 
-This first qualified binding supports a plain, direct, single-file non-disc core with standard RETRO_MEMORY_SAVE_RAM/RTC and native RASTATE v1 serialization. Disc callbacks, subsystems, replay, achievements, rewind/runahead/preemptive frames, asynchronous libretro audio callbacks, competing saves, automatic overrides, and companion configuration control are rejected. Cores that need external save writers, additional memory regions, wall-clock RTC repair, or other state container blocks need an explicit new qualification/policy adapter. A core may still reject serialization; that produces FAILED and leaves the old committed generation intact.
+This first qualified binding supports a plain, direct, single-file non-disc core with standard RETRO_MEMORY_SAVE_RAM/RTC and native RASTATE v1 serialization. Disc callbacks, subsystems, replay, achievements, unowned rewind/runahead/preemptive frames, asynchronous libretro audio callbacks, competing saves, automatic overrides, and companion configuration control are rejected. Cores that need external save writers, additional memory regions, wall-clock RTC repair, or other state container blocks need an explicit new qualification/policy adapter. A core may still reject serialization; that produces FAILED and leaves the old committed generation intact.
 
 ## Identities and enrollment
 

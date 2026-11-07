@@ -2,6 +2,7 @@
 #define SESSIOND_EVDEV_H
 #include "sessiond/power_input.h"
 #include <linux/input.h>
+#define CS_EVDEV_KEY_BYTES ((KEY_CNT + 7U) / 8U)
 struct cs_evdev {
     int fd;
     unsigned int code;
@@ -16,6 +17,8 @@ void cs_evdev_close(struct cs_evdev *input);
 bool cs_evdev_open(struct cs_evdev *input, const char *path, const char *expected_name,
                    unsigned int code, bool *held);
 bool cs_evdev_key_state(const struct cs_evdev *input, bool *held);
+/* Fresh whole-key observation for the MENU chord observer; no event grab. */
+bool cs_evdev_key_bitmap(const struct cs_evdev *input, unsigned char keys[CS_EVDEV_KEY_BYTES]);
 /* Bounded drain. On SYN_DROPPED, suppress events through SYN_REPORT and reconcile. */
 bool cs_evdev_drain(struct cs_evdev *input, struct cs_power_input *power, uint64_t now_ms,
                     bool *reconciled, bool *held, bool *more, cs_evdev_sink sink, void *context);
