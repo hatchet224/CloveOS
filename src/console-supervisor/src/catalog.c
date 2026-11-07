@@ -78,6 +78,7 @@ struct state {
     uint64_t hashed;
     uint64_t indexed;
     bool scan_failed;
+    bool partial, capacity_reached;
     bool staging_created;
     char generation[512], catalog[512], profiles[512], bios[65];
 };
@@ -258,7 +259,8 @@ static bool pin(struct state *s)
     return found && cs_store_check_media(&s->volume) == CS_STORE_OK;
 }
 static int name_compare(const void *a, const void *b) { return strcmp(a, b); }
-static bool names(const char *path, char (*out)[256], size_t *count)
+static const struct system_template *path_template(const struct state *s, const char *path);
+static bool names(const char *path, char (*out)[256], size_t *count, struct state *scan)
 {
     int fd = sc_open_absolute(path, true);
     DIR *d;
@@ -274,17 +276,37 @@ static bool names(const char *path, char (*out)[256], size_t *count)
         (void)close(fd);
         return false;
     }
-    while ((e = readdir(d)) != NULL) {
-        if (e->d_name[0] == '.') {
+    for (;;) {
+        errno = 0;
+        e = readdir(d);
+        if (e == NULL) { if (errno != 0) ok = false; break; }
+        if (e->d_name[0] == '.') continue;
+        if (scan != NULL) {
+            char candidate[512];
+            struct stat st;
+            const char *ext = strrchr(e->d_name, '.');
+            int n = snprintf(candidate, sizeof(candidate), "%s/%s", path, e->d_name);
+            if (n < 0 || (size_t)n >= sizeof(candidate)) { scan->partial = true; continue; }
+            /* Artwork, text and unrelated directories must not consume the
+             * bounded ROM-name array or make a valid same-card library fail. */
+            if (path_template(scan, candidate) == NULL &&
+                (ext == NULL || strcasecmp(ext, ".m3u") != 0)) continue;
+            if (fstatat(fd, e->d_name, &st, AT_SYMLINK_NOFOLLOW) != 0) { ok = false; break; }
+            if (!S_ISREG(st.st_mode)) continue;
+        }
+        if (strlen(e->d_name) >= 256U || !ascii(e->d_name)) {
+            if (scan != NULL) {
+                scan->partial = true;
+                fprintf(stderr, "catalog: unsupported filename skipped; use printable ASCII without quote/backslash; files retained\n");
+            }
             continue;
         }
         if (++visited > MAX_NAMES) {
-            fprintf(stderr, "catalog: directory exceeds %u visible entries; previous catalog retained\n", MAX_NAMES);
-            ok = false;
+            if (scan != NULL) {
+                scan->partial = true;
+                fprintf(stderr, "catalog: directory exceeds %u eligible ROM entries; retaining bounded scanned subset\n", MAX_NAMES);
+            } else ok = false;
             break;
-        }
-        if (strlen(e->d_name) >= 256U || !ascii(e->d_name)) {
-            continue;
         }
         strcpy(out[(*count)++], e->d_name);
     }
@@ -382,8 +404,9 @@ static bool hash_rom(struct state *s, const char *path, char out[65])
     }
     /* An explicit aggregate ceiling contains pathological duplicate directories. */
     if (s->hashed + (uint64_t)before.st_size > UINT64_C(32) * 1024U * 1024U * 1024U) {
-        s->scan_failed = true;
-        fprintf(stderr, "catalog: 32GiB ROM hashing budget reached; previous catalog retained\n");
+        s->partial = true;
+        s->capacity_reached = true;
+        fprintf(stderr, "catalog: 32GiB new-ROM hashing budget reached; retaining validated scanned subset\n");
         (void)close(fd);
         return false;
     }
@@ -680,7 +703,7 @@ static bool load_seeds(struct state *s)
     static const char *const required[] = {"title", "system", "context", "content_path", "core_path", "config_path", "profile"};
     memcpy(s->systems, supported, sizeof(s->systems));
     if (entries == NULL || !protected_directory(STOCK) ||
-        !protected_directory("/etc/console/profiles") || !names(STOCK, entries, &count) || count > SC_CATALOG_MAX) goto done;
+        !protected_directory("/etc/console/profiles") || !names(STOCK, entries, &count, NULL) || count > SC_CATALOG_MAX) goto done;
     for (i = 0U; i < count; ++i) {
         struct seed *seed = &s->seeds[s->seed_count];
         char path[512], profile[512];
@@ -764,8 +787,10 @@ static bool emit(struct state *s, const struct cs_json *entry, const struct cs_i
         }
     }
     if (s->count == SC_CATALOG_MAX) {
-        fprintf(stderr, "catalog: more than %u unique qualified games; previous catalog retained\n", SC_CATALOG_MAX);
-        return false;
+        s->partial = true;
+        s->capacity_reached = true;
+        fprintf(stderr, "catalog: more than %u unique qualified games; retaining validated scanned subset\n", SC_CATALOG_MAX);
+        return true;
     }
     for (i = 0U; i < 8U; ++i) {
         if (!set(&profile, keys[i], values[i], CS_JSON_STRING)) {
@@ -860,10 +885,10 @@ static bool enroll(struct state *s, const char *path, const struct seed *preferr
             if (dot == NULL) return true;
             len = (size_t)(dot - filename);
         }
-        if (len == 0U || len >= sizeof(title)) {
-            fprintf(stderr, "catalog: title exceeds bounded UI field: %s\n", path);
-            return true;
-        }
+        if (len == 0U) return true;
+        /* The filesystem path stays exact; only the presentation title is
+         * shortened to the existing bounded UI field. No file is renamed. */
+        if (len >= sizeof(title)) len = sizeof(title) - 1U;
         memcpy(title, filename, len);
         title[len] = '\0';
         if (!set(&entry, "title", title, CS_JSON_STRING) ||
@@ -991,16 +1016,16 @@ static int refresh_catalog(bool discover)
     if (entries == NULL || discs == NULL) {
         goto done;
     }
-    for (i = 0U; i < SYSTEM_COUNT; ++i) {
+    for (i = 0U; i < SYSTEM_COUNT && !s->capacity_reached; ++i) {
         if (!s->systems[i].loaded) continue;
         if (snprintf(path, sizeof(path), "%s/Roms/%s", s->base.card_path, s->systems[i].system) >=
                 (int)sizeof(path) ||
-            !names(path, entries, &count)) {
+            !names(path, entries, &count, s)) {
             goto done;
         }
         fprintf(stderr, "catalog: scanning %s (%zu candidates, %zu enrolled, %" PRIu64 " bytes hashed)\n",
                 s->systems[i].system, count, s->count, s->hashed);
-        for (j = 0U; j < count; ++j) {
+        for (j = 0U; j < count && !s->capacity_reached; ++j) {
             char rom[512];
             if (snprintf(rom, sizeof(rom), "%s/%s", path, entries[j]) >= (int)sizeof(rom)) {
                 continue;
@@ -1056,12 +1081,14 @@ static int refresh_catalog(bool discover)
     printf("catalog: %zu prequalified games; qualified single-file discovery enabled, bounded at %u; "
            "hashed=%" PRIu64 " bytes; indexed=%" PRIu64 " bytes (registration only)\n",
            s->count, SC_CATALOG_MAX, s->hashed, s->indexed);
-    result = 0;
+    result = s->partial ? SC_CATALOG_PARTIAL : SC_CATALOG_OK;
+    if (s->partial)
+        fprintf(stderr, "catalog: PARTIAL usable library published: %zu games. Limits: %u unique games, %u eligible entries/folder, 32GiB new hashes; filename policy ASCII. Files retained.\n", s->count, SC_CATALOG_MAX, MAX_NAMES);
 done:
     boot_timing("finish", &timing);
     if (!sc_cpu_policy_restore(&startup_cpu))
         fprintf(stderr, "catalog: startup CPU policy restore failed\n");
-    if (result != 0) {
+    if (result != SC_CATALOG_OK && result != SC_CATALOG_PARTIAL) {
         fprintf(stderr,
                 "catalog: enrollment failed; card untouched; possibly published runtime generation "
                 "retained (%s)\n",

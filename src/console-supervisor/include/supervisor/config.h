@@ -3,6 +3,7 @@
 #include "sessiond/json.h"
 #include "supervisor/wire.h"
 #define SC_CATALOG_MAX 1024U
+enum sc_catalog_result { SC_CATALOG_OK=0, SC_CATALOG_FAILED=1, SC_CATALOG_DISCOVERY_FAILED=2, SC_CATALOG_PARTIAL=3 };
 struct sc_game
 {
     struct cl_entry entry;

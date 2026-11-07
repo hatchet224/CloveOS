@@ -39,11 +39,43 @@ remain available. It does not remove or move ROMs or saves. Missing/unsafe volum
 policy failures and failed publication remain hard errors. The original causal
 tail is saved before diagnostic SDL output in `.tmp_update/logs/startup-error.log`;
 `bootstrap.log` and `boot-progress.log` remain the full bounded startup evidence.
-The tester confirmed R48; their R51 retest is pending. The actual cause is
-unknown. This is resilience against a reproduced discovery limit, not evidence
-of a current R51/R52 regression or proof that copied ROMs caused that report.
+The tester initially confirmed R48 and subsequently reported the same symptom
+after an R51-context retest; the exact ZIP is not independently verified. They
+removed the same SD card and copied ROMs through a PC card reader. The actual
+cause remains unknown; further tester logs are unavailable. Do not infer an SDL
+or setterm root cause from the diagnostic tail.
 
 Software qualification uses actual exported ARM64 binaries, real pinned cores,
 original generated cartridges and a disposable FAT under QEMU, with virtual SDL
 input and a fixture control owner. Hardware MENU+SELECT parity, Mali orientation,
 rewind interaction and this new fallback still require physical acceptance.
+
+
+Bulk-copy resilience follow-up (software candidate): keep the existing 1,024
+unique-game, 4,096 eligible-file-per-directory and 32 GiB newly-hashed-ROM bounds.
+Exceeding discovery limits now publishes the validated subset with status 3 and
+an explicit partial-library warning; missing/unsafe volumes, policy failures and
+failed atomic publication remain fatal. Bootstrap enters Home with that usable
+subset. Refresh publishes the validated page before its Information warning.
+Unrelated files and directories do not consume eligible ROM-name slots. Long
+printable ASCII filenames retain their exact path; only their display title is
+truncated to 96 bytes. Protected enrollment still rejects non-ASCII, control,
+quote and backslash filenames; skipped relevant files produce a visible warning
+and remain untouched. This does not add Unicode launch authorization.
+
+Presentation discovery filters eligible files before its existing bounded name
+buffer. The supervisor also reconciles qualified flat catalog paths into the
+same fixed library array, allowing unregistered rows to yield to registered ones.
+Hidden/managed disc children and nested paths are not promoted through that
+reconciliation. No array capacities, configuration schema or parser limits were
+increased, and no ROM or save relocation/deletion is performed.
+
+Reproduce with tools/create-bulk-catalog-fixture.py in a new disposable directory;
+it generates an original emulator-test cartridge from source, plus copy layouts.
+No generated ROM binary belongs in source or release attachments. The actual
+clean R51 scanner reproduces first scan success followed by failure after copying
+1,024 additional unique generated games onto the same FAT card. This is a local
+reproduced failure path, not a diagnosis of the remote tester. Tests distinguish
+actual ARM64 scanner/disk/launcher/core execution under QEMU, disposable FAT and
+virtual SDL, source boundary injection for the 32 GiB counter, and pending physical
+handheld acceptance. Final artifact receipts identify which candidate was tested.

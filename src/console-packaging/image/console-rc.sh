@@ -182,6 +182,9 @@ case "${1:-}" in
             echo 'console-rc: library scan incomplete; starting Home with an empty runtime library; card content retained' >&2
             save_progress
             /system/bin/console-boot-status --message 'Game scan failed. Files are retained. Continue to Home; use Refresh ROM list to retry.' --log /run/console/startup-error.log || die 'library warning renderer failed'
+        elif [ "$catalog_result" -eq 3 ]; then
+            tail -c 8192 /run/console/startup.log > /run/console/startup-error.log
+            /system/bin/console-boot-status --message 'Some games skipped: 1024 games, 4096 ROMs/folder, 32GiB new hashes; ASCII names. Scanned games remain available.' --log /run/console/startup-error.log || die 'library warning renderer failed'
         elif [ "$catalog_result" -ne 0 ]; then
             die 'qualified game catalog could not be prepared'
         fi

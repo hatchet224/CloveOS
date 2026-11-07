@@ -1,0 +1,62 @@
+{
+  "base_reviewed_source_commit": "82ea3680362fb750ab4969e55cb8acc44e912045",
+  "source_freeze": "bulk-source-freeze-v2",
+  "files": [
+    {
+      "path": "releases/r52/BUILD_DELTA.md",
+      "bytes": 8093,
+      "sha256": "6b7bb5fed51b7fba2b391e22e788eb30fb6e11856006804f0d80cecf36876ae1"
+    },
+    {
+      "path": "src/console-packaging/image/console-rc.sh",
+      "bytes": 9784,
+      "sha256": "a2410cfdd3615fa25b0837d61c2c5feb5a2089fd000e41c3aded6d1d786b4944"
+    },
+    {
+      "path": "src/console-sessiond/src/library.c",
+      "bytes": 21375,
+      "sha256": "eed1ff948d5c20f649357a5f60f76931aa2b80181d1c95a7ad99fa4da88648f0"
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "bytes": 22064,
+      "sha256": "37440bca8a9ec161b8f371b099bbde016ed16badae05f7e3bbf04e6c0162d590"
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/config.h",
+      "bytes": 1841,
+      "sha256": "e4ef4bb078ad58ac3eb856dbe3583825879847771f95169fe25d9fa1cd446de8"
+    },
+    {
+      "path": "src/console-supervisor/src/catalog.c",
+      "bytes": 46430,
+      "sha256": "5d8c2ae529aa2a35da81f2c7f1a314973030ba2b457be6c967cd8badf18e4916"
+    },
+    {
+      "path": "src/console-supervisor/src/disk.c",
+      "bytes": 57767,
+      "sha256": "02194902a3566d3b7ae41fe7513c17b09ed51dddad67e9566a70270b7bcb71af"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_bulk_notice_render.c",
+      "bytes": 3373,
+      "sha256": "c0ea394d61e074152c991c081ca7b2c86d38d3b44ed973e1595a6d6195d741b6"
+    },
+    {
+      "path": "src/console-supervisor/tests/test_catalog_bulk.c",
+      "bytes": 5096,
+      "sha256": "921770cf5b3dd89331f1103c84ef1b2dbfb37008c95db2edaeae46b400e2a159"
+    },
+    {
+      "path": "tools/create-bulk-catalog-fixture.py",
+      "bytes": 1747,
+      "sha256": "aa155a805bbeb6741a814f4d624972bd43c622f1b20d5c6b40fa849c4c0695cd"
+    }
+  ],
+  "do_not_import_other_snapshot_differences": true,
+  "previous_reviewed_native_delta_unchanged": true,
+  "software_qualification_in_progress": true,
+  "no_SD_writes": true,
+  "source_only_base": "rewind-source-freeze",
+  "excluded_local_build_dependency_trees": true
+}

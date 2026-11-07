@@ -254,6 +254,16 @@ static void walk(struct scan *s, const struct system_spec *system, const char *p
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_name[0] == '.')
             continue;
+        /* PC-created artwork/text and non-ROM folders must not exhaust the
+         * presentation window before eligible games are considered. Keep
+         * regular-file/no-symlink and same-device checks before admission. */
+        if (fstatat(fd, entry->d_name, &st, AT_SYMLINK_NOFOLLOW) != 0 || st.st_dev != s->device)
+            continue;
+        bool candidate = (S_ISREG(st.st_mode) &&
+                          ((!playlists_only && extension(entry->d_name, system->ext)) || extension(entry->d_name, "m3u"))) ||
+                         (S_ISDIR(st.st_mode) && depth == 0U && !playlists_only &&
+                          strcasecmp(entry->d_name, "Imgs") != 0);
+        if (!candidate) continue;
         if (++s->visited > 16384U || count == 2048U) {
             s->out->truncated = true;
             break;

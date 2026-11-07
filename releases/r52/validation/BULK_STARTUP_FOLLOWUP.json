@@ -1,0 +1,23 @@
+{
+  "status": "Source frozen; final sealed-export software fixture in progress; no new physical acceptance",
+  "actual_R51_reproduced_case": "Initial same-card library succeeds, after copy to1025 distinct generated games next scan fails",
+  "R52_change": "Retain a validated bounded partial catalog, ignore unrelated artwork/text before name bounds, preserve exact content paths, visibly report partial boot/Refresh results",
+  "bounds": {
+    "registered_games": 1024,
+    "eligible_ROM_entries_per_folder": 4096,
+    "new_ROM_hash_bytes_per_scan": 34359738368,
+    "enrollment_filename_policy": "Printable ASCII without quote/backslash; valid long display titles truncated without renaming files"
+  },
+  "preliminary_passed": [
+    "1025-game counterexample and retained1024 subset",
+    "mixed artwork, long and unsupported names",
+    "manual Refresh page before explicit partial Information",
+    "hash budget unit boundary",
+    "full FAT after firstboot scanner"
+  ],
+  "preliminary_remaining": "Final retained-game emulation was blocked by test Linux scratch ENOSPC; corrected sealed-export rerun pending, no overall pass claimed",
+  "tester_specific_cause_confirmed": false,
+  "tester_logs_unavailable": true,
+  "user_files_moved_or_deleted": false,
+  "physical_SD_accessed_by_tests": false
+}

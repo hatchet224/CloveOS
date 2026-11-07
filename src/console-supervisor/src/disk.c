@@ -361,6 +361,34 @@ static bool library_snapshot(const struct sc_config *c, struct cl_history *out,
         (void)snprintf(entry->context, sizeof(entry->context), "TF%u%s", rom->card + 1U,
                        registered == NULL ? " - CORE / PROFILE SETUP NEEDED" : "");
     }
+    /* The separately validated catalog is authoritative for execution. Do not
+     * lose a qualified flat game merely because raw presentation discovery hit
+     * its smaller window. Never expose hidden managed-disc children here.
+     * All arrays retain their existing capacities; unregistered rows yield to
+     * authenticated catalog entries when the presentation array is full. */
+    for (i = 0U; i < c->game_count; ++i) {
+        const struct sc_game *game = &c->games[i];
+        size_t root = strlen(c->base.card_path), slot;
+        const char *folder, *file;
+        if (!sc_tools_system_visible(selection, game->entry.system) ||
+            strncmp(game->content, c->base.card_path, root) != 0 ||
+            strncmp(game->content + root, "/Roms/", 6U) != 0) continue;
+        folder = game->content + root + 6U;file = strchr(folder, '/');
+        if (file == NULL || file[1] == '.' || strchr(file + 1U, '/') != NULL) continue;
+        for (slot = 0U; slot < entry_count; ++slot)
+            if (strcmp(entries[slot].identity.game, game->entry.identity.game) == 0) break;
+        if (slot < entry_count || !sc_game_files_check(game, c->retroarch, false)) continue;
+        if (entry_count < CS_LIBRARY_MAX) slot = entry_count++;
+        else {
+            for (slot = entry_count; slot > 0U; --slot)
+                if (!entries[slot - 1U].launch_registered) break;
+            if (slot == 0U) continue;
+            --slot;
+        }
+        entries[slot] = game->entry;
+        entries[slot].discovered = true;entries[slot].launch_registered = true;
+        (void)snprintf(entries[slot].context, sizeof(entries[slot].context), "TF1");
+    }
     if (c->library_secondary[0] == '\0') {
         if (cache->entries == NULL) cache->entries = calloc(CS_LIBRARY_MAX, sizeof(*entries));
         if (cache->entries != NULL) {
@@ -960,6 +988,8 @@ static void *thread_main(void *context)
             --d->job_count;
         }
         (void)pthread_mutex_unlock(&d->mutex);
+        bool catalog_partial = false;
+        uint64_t catalog_partial_token = 0U;
         r = calloc(1U, sizeof(*r));
         if (r == NULL || (!closing && !activity_job && request == NULL))
         {
@@ -1032,7 +1062,9 @@ static void *thread_main(void *context)
         }
         if (request->type==SC_UI_LIBRARY && request->data.history.revision==UINT64_MAX) {
             r->replacement=calloc(1U,sizeof(*r->replacement));
-            bool refreshed=r->replacement!=NULL && sc_catalog_refresh()==0 &&
+            int scan_result=r->replacement!=NULL ? sc_catalog_refresh() : SC_CATALOG_FAILED;
+            bool refreshed=r->replacement!=NULL &&
+                (scan_result==SC_CATALOG_OK || scan_result==SC_CATALOG_PARTIAL) &&
                 sc_config_load("/run/console/config/supervisor.json",r->replacement);
             if(refreshed){
                 (void)pthread_mutex_lock(&d->mutex);d->catalog_waiting=true;d->catalog_accepted=false;(void)pthread_mutex_unlock(&d->mutex);
@@ -1048,6 +1080,8 @@ static void *thread_main(void *context)
                 strcpy(r->message.data.text,"ROM refresh failed. The previous list is retained.");
                 free(request);publish(d,r);continue;
             }
+            catalog_partial = scan_result == SC_CATALOG_PARTIAL;
+            catalog_partial_token = request->token;
             free(cache.entries);memset(&cache,0,sizeof(cache));
         }
         if (request->type == SC_UI_TOOL && request->data.tool_request.operation >= CL_TOOL_LOAD_SCRAPER &&
@@ -1065,6 +1099,17 @@ static void *thread_main(void *context)
         }
         free(request);
         publish(d, r);
+        /* Queue the existing Information/error presentation AFTER the valid
+         * replacement and library page, so Refresh cannot imply completeness.
+         * No second catalog or new menu protocol is introduced. */
+        if (catalog_partial) {
+            r = calloc(1U, sizeof(*r));
+            if (r != NULL) {
+                sc_message_init(&r->message, SC_UI_ERROR, catalog_partial_token);
+                strcpy(r->message.data.text, "ROM list refreshed partially. Scanned games are usable. Limits: 1024 games, 4096 ROMs/folder, 32GiB new hashes; ASCII filenames required.");
+                publish(d, r);
+            }
+        }
     }
 }
 bool sc_disk_activity(struct sc_disk *d, const struct sc_activity_update *update)

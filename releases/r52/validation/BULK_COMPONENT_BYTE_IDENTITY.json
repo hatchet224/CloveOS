@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "variants": {
+    "public": {
+      "rootfs_sha256": "ed3f06fcabea21e97ea8c9ee477c5729fa2433da6dbd5e2e320534de6b09e4f1",
+      "changed_files": [
+        "./etc/console/BINARY_MANIFEST.json",
+        "./system/bin/GameSwitcher",
+        "./system/bin/console-catalog",
+        "./system/bin/console-launcher",
+        "./system/bin/console-netplay-status",
+        "./system/bin/console-ports",
+        "./system/bin/console-rc",
+        "./system/bin/console-supervisor"
+      ],
+      "RetroArch_sha256": "b5a1f192b6ec4c54af67d5d56a6178805f22fd3c7c883484108d22b357140a62",
+      "all_core_bytes_unchanged": true,
+      "private_helpers_and_all_unlisted_content_preserved": true
+    },
+    "personal": {
+      "rootfs_sha256": "2f839e5ca28e67e0b42fc4535f576779ad63636ad225e5da8074c3df39e64d67",
+      "changed_files": [
+        "./etc/console/BINARY_MANIFEST.json",
+        "./system/bin/GameSwitcher",
+        "./system/bin/console-catalog",
+        "./system/bin/console-launcher",
+        "./system/bin/console-netplay-status",
+        "./system/bin/console-ports",
+        "./system/bin/console-rc",
+        "./system/bin/console-supervisor"
+      ],
+      "RetroArch_sha256": "b5a1f192b6ec4c54af67d5d56a6178805f22fd3c7c883484108d22b357140a62",
+      "all_core_bytes_unchanged": true,
+      "private_helpers_and_all_unlisted_content_preserved": true
+    }
+  },
+  "prior_component_runtime_tests": [
+    "qualified-export-lifecycle-test",
+    "qualified-export-error-test",
+    "release-standard-runtime-test",
+    "release-dual-runtime-test"
+  ],
+  "no_new_physical_acceptance_claim": true
+}
