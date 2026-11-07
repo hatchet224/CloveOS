@@ -10,6 +10,7 @@
 #include "supervisor/cpu_policy.h"
 #include "supervisor/menu_observer.h"
 #include "supervisor/diagnostic_policy.h"
+#include "supervisor/netplay_status.h"
 #include "supervisor/file_service.h"
 #include "supervisor/lan_services.h"
 #include "supervisor/core_choice.h"
@@ -1003,6 +1004,21 @@ static void reap(struct supervisor *s) {
                         result == 28 ? "Pokemon link setup timed out. MainUI is available; check .tmp_update/logs/easy-netplay.log." :
                         result == 27 ? "Pokemon link needs a normal in-game battery save before first use. Check the netplay log for details." :
                                        "Easy Netplay ended unexpectedly.";
+                    char detailed[161], failed_stage[80]={0};
+                    if(s->link_running && (result==26 || result==28 || result==139)) {
+                        struct stat st;
+                        int fd=open("/run/console/easy-netplay.failed-stage",O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC);
+                        bool valid=fd>=0 && fstat(fd,&st)==0 && S_ISREG(st.st_mode) &&
+                            st.st_uid==geteuid() && st.st_nlink==1U && st.st_size>0 &&
+                            st.st_size<(off_t)sizeof(failed_stage) && read(fd,failed_stage,sizeof(failed_stage)-1U)==st.st_size;
+                        if(fd>=0)(void)close(fd);
+                        failed_stage[strcspn(failed_stage,"\r\n")]='\0';
+                        if(valid) {
+                            const struct sc_netplay_stage *stage=sc_netplay_stage(failed_stage);
+                            (void)snprintf(detailed,sizeof(detailed),CL_TR("Stopped at: %s. Details: .tmp_update/logs/easy-netplay.log"),CL_TR(stage->label));
+                            text=detailed;
+                        }
+                    }
                     remember_error(s, text);
                 } else if (!s->easy_netplay && !s->level_term && result != 0)
                     remember_error(s, s->file_explorer_running ?
@@ -1423,7 +1439,7 @@ static bool startup_menu_cancel_allowed(const struct supervisor *s)
     if(fd<0)return true;
     bool running=fstat(fd,&st)==0 && S_ISREG(st.st_mode) && st.st_uid==geteuid() &&
         st.st_nlink==1U && st.st_size>0 && st.st_size<(off_t)sizeof(phase) &&
-        read(fd,phase,sizeof(phase)-1U)==st.st_size && strcmp(phase,"emulator-running\n")==0;
+        read(fd,phase,sizeof(phase)-1U)==st.st_size && !sc_netplay_menu_cancel(phase);
     (void)close(fd);return !running;
 }
 
@@ -1761,9 +1777,12 @@ static bool launch_glo_app(struct supervisor *s)
             (void)snprintf(profile, sizeof(profile), "%s\n%s\n%s",
                            game.profile.identity.content, game.profile.identity.core, game.profile.identity.retroarch);
             cs_sha256_hex(profile, strlen(profile), proof);
+            char language[2] = {(char)('0'+(cl_language_get()==CL_SPANISH?1:0)), '\0'};
             char *args[] = {onion ? "/system/bin/console-onion-easy-netplay" : "/system/bin/console-easy-netplay", host ? "host" : "join",
                             link ? game.profile.identity.content : proof, game.config, game.core, game.content,
-                            link ? "link" : NULL, NULL};
+                            onion ? (link ? "link" : "standard") : NULL,
+                            s->selected_theme[0]!='\0' ? s->selected_theme : s->config.ui_config.theme_path,
+                            language, game.entry.title, NULL};
             if(onion && link)(void)unlink("/run/console/easy-netplay.phase");
             started = sc_spawn(args[0], args, -1, -1, NULL, &s->level_pid);
         } else if (automatic_lan) {

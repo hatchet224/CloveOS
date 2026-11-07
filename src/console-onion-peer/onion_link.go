@@ -31,7 +31,14 @@ func startupGuard(budget time.Duration) func() {
 	})
 	return func() { timer.Stop() }
 }
-func linkPhase(stage string) { fmt.Fprintln(os.Stderr, "pokemon-link: phase="+stage) }
+func linkPhase(stage string) {
+	fmt.Fprintln(os.Stderr, "pokemon-link: phase="+stage)
+	// A fixed RAM path, enabled only by the production wrapper. Protocol data
+	// and private log text are never rendered as trusted UI messages.
+	if os.Getenv("CLOVE_NETPLAY_STATUS") == "1" {
+		_ = atomicRAMFile("/run/console/easy-netplay/status", []byte(stage+"\n"))
+	}
+}
 
 type LinkSession struct {
 	Role, Registry, ROM, Hash, OwnSave, PeerROM, PeerSave, PeerAddress string
@@ -226,6 +233,37 @@ func remoteExists(address, remote string) (bool, error) {
 	}
 	return false, errors.New("Onion link marker check failed")
 }
+func checkLinkPeerCore(role, address string, fields map[string]string, row Core) error {
+	name := path.Base(fields["[core]"])
+	_, expectedCRC, err := fileDigest(row.ARM32)
+	if err != nil {
+		return err
+	}
+	if name == "tgbdual_libretro.so" {
+		if !strings.EqualFold(expectedCRC, fields["[corechksum]"]) {
+			return errors.New("Onion TGB Dual core revision differs")
+		}
+		return nil
+	}
+	// Stock's Pokemon client creates its cookie before reading the host's
+	// selected core, so its ordinary GLO default can still say Gambatte.
+	// Verify the actual known TGB file read-only; never use the advertised
+	// Gambatte revision as evidence of link-core compatibility.
+	if role != "host" || name != "gambatte_libretro.so" {
+		return errors.New("Onion Pokemon link requires TGB Dual")
+	}
+	payload, err := fetch(address, "/mnt/SDCARD/RetroArch/.retroarch/cores/tgbdual_libretro.so", 26214400)
+	if err != nil {
+		return fmt.Errorf("cannot verify stock client's TGB Dual: %w", err)
+	}
+	digest := sha256.Sum256(payload)
+	if hex.EncodeToString(digest[:]) != row.SHA32 {
+		return errors.New("stock client's actual TGB Dual differs from pinned Onion revision")
+	}
+	fmt.Fprintln(os.Stderr, "pokemon-link: stock GLO Gambatte cookie; actual pinned TGB Dual verified read-only")
+	return nil
+}
+
 func linkPair(address, folder string) {
 	var state LinkSession
 	readJSON(path.Join(folder, "link-session.json"), &state)
@@ -242,9 +280,6 @@ func linkPair(address, folder string) {
 	die(e)
 	fields, e := cookie(data)
 	die(e)
-	if path.Base(fields["[core]"]) != "tgbdual_libretro.so" {
-		die(errors.New("Onion Pokemon link requires TGB Dual"))
-	}
 	linkPhase("checking-peer-tgbdual-version")
 	var found bool
 	for _, row := range cores(state.Registry) {
@@ -253,9 +288,7 @@ func linkPair(address, folder string) {
 			_, crc, e := fileDigest(row.ARM32)
 			die(e)
 			fmt.Fprintf(os.Stderr, "pokemon-link: tgbdual expected_crc=%s peer_crc=%s\n", crc, fields["[corechksum]"])
-			if !strings.EqualFold(crc, fields["[corechksum]"]) {
-				die(errors.New("Onion TGB Dual core revision differs"))
-			}
+			die(checkLinkPeerCore(state.Role, address, fields, row))
 			found = true
 		}
 	}
@@ -279,6 +312,9 @@ func linkPair(address, folder string) {
 	size, e := gbSRAM(rom)
 	die(e)
 	state.PeerROM = remote
+	if os.Getenv("CLOVE_NETPLAY_STATUS") == "1" {
+		_ = atomicRAMFile("/run/console/easy-netplay/peer-name", []byte(strings.TrimSuffix(path.Base(remote), path.Ext(remote))))
+	}
 	state.PeerSave = saveLeaf(remote)
 	state.PeerAddress = address
 	state.PeerSRAM = size
@@ -336,6 +372,7 @@ func linkPair(address, folder string) {
 }
 func crc32IEEE(data []byte) uint32 { return crc32.ChecksumIEEE(data) }
 func persistLink(state LinkSession, sram, rtc []byte) error {
+	linkPhase("committing-own-save")
 	if len(sram) != state.OwnSRAM || len(rtc) != 4 {
 		return errors.New("updated link battery has wrong size")
 	}
@@ -389,6 +426,7 @@ func linkReady(folder string) {
 	die(os.Remove(path.Join(folder, "inbox/host_ready")))
 }
 func linkFinish(folder string) {
+	linkPhase("returning-saves")
 	var state LinkSession
 	readJSON(path.Join(folder, "link-session.json"), &state)
 	if state.Role == "host" {
@@ -405,8 +443,10 @@ func linkFinish(folder string) {
 		if len(other) != state.PeerSRAM {
 			die(errors.New("returned peer battery size differs"))
 		}
+		linkPhase("sending-peer-save")
 		die(put(state.PeerAddress, "/tmp/"+state.PeerSave+"_rcvd", other))
 	} else {
+		linkPhase("waiting-save-return")
 		die(notify(state.PeerAddress, "ready_to_receive"))
 		_, e := waitFile(path.Join(folder, "inbox/ready_to_send"), 40)
 		die(e)

@@ -27,7 +27,7 @@ jobs:
       - name: Build managed File Explorer with SDL
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libsdl2-dev pkg-config
+          sudo apt-get install -y --no-install-recommends libsdl2-dev libsdl2-ttf-dev pkg-config
           cmake -S src/console-file-explorer -B build/file-app -DBUILD_TESTING=OFF
           cmake --build build/file-app --target console-file-explorer -j2
       - name: Check Linux library scanning
@@ -37,4 +37,6 @@ jobs:
           ctest --test-dir build/library-tests -R '^library_linux$' --output-on-failure
       - name: Check Onion-compatible room and file exchange
         working-directory: src/console-onion-peer
-        run: GO111MODULE=off go test onion_peer.go onion_link.go onion_lan.go onion_peer_test.go startup_deadline_test.go onion_curl_test.go onion_address_test.go
+        run: GO111MODULE=off go test .
+      - name: Build native Netplay panel and test localized stages
+        run: python3 tools/test-netplay-panel.py

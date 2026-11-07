@@ -1,0 +1,86 @@
+{
+  "base_source_commit": "b9e9c473aeca82859bfe61591161aa0aaae80c73",
+  "files": [
+    {
+      "path": "src/console-onion-peer/onion_link.go",
+      "sha256": "239799d17d266dcc54aaf60755488556b5fac2234fac83ff0bf403a020291489",
+      "bytes": 18355
+    },
+    {
+      "path": "src/console-onion-peer/onion_stock_client_test.go",
+      "sha256": "a29acd9088656f22c487b516ad2f9848ea1603d3e05912c53fd9802b476dd26f",
+      "bytes": 2165
+    },
+    {
+      "path": "src/console-onion-peer/onion_wrapper_test.go",
+      "sha256": "b9e1d831d7f34f075fa598a2c45f0e93beeeabc7d223f98188d3ff26517017a6",
+      "bytes": 5319
+    },
+    {
+      "path": "src/console-onion-peer/LINK_COMPATIBILITY_VALIDATION.md",
+      "sha256": "e375910195b62221e8b50c8583cc99b80ad00126e0ea1e1f0a86d1323f52e4e6",
+      "bytes": 5019
+    },
+    {
+      "path": "src/console-supervisor/CMakeLists.txt",
+      "sha256": "9ed9e209d08f5037cba400874c366fb79a9055ae071662d177c7b91f60f5aa13",
+      "bytes": 19522
+    },
+    {
+      "path": "src/console-supervisor/src/main.c",
+      "sha256": "7cfea163074675d99634a07786684c1b42c2a9b248c492e7f1356285049ef0dc",
+      "bytes": 110383
+    },
+    {
+      "path": "src/console-supervisor/src/netplay_status.c",
+      "sha256": "996b2fd1feab9b5be834bc49b2a12e42e648c06874215a67282645b5f9fdbfd9",
+      "bytes": 7671
+    },
+    {
+      "path": "src/console-supervisor/include/supervisor/netplay_status.h",
+      "sha256": "b4b9ab455a24bd7d8e96b83235c1542cf2091be73833167bbe5851e547311a97",
+      "bytes": 3515
+    },
+    {
+      "path": "src/console-supervisor/tests/test_netplay_status.c",
+      "sha256": "e1fbc1c504f34814e19d9878fc4d7a077470bd49122376b95f581bf4060b40bd",
+      "bytes": 1293
+    },
+    {
+      "path": "src/console-supervisor/tests/test_level_router.c",
+      "sha256": "1ee2741d7856a5d9971b1f7c5546e3fc2300170ceee47808eff72b88f05b6081",
+      "bytes": 14187
+    },
+    {
+      "path": "src/console-supervisor/init/console-onion-easy-netplay",
+      "sha256": "e5eda7b90764ba11ebc856512f85db747c9d4ccc3aba37f40d4d8deadb19f8c6",
+      "bytes": 14282
+    },
+    {
+      "path": "src/console-supervisor/NETPLAY_STATUS.md",
+      "sha256": "60a17519721b5f3489c4a9331362086172800fa673fe36bb129b6b5c2a756085",
+      "bytes": 3193
+    },
+    {
+      "path": "src/console-launcher/locales/es.json",
+      "sha256": "f36483b395473ddb9803956fafc2bbe914342d51c684f971556b68270dad9095",
+      "bytes": 50157
+    },
+    {
+      "path": "src/console-launcher/src/i18n.c",
+      "sha256": "7c6d8b2e5257da3515c2599dc43cff147f74c1379c48673c9c5de17d76069468",
+      "bytes": 53891
+    }
+  ],
+  "private_inputs_included": false,
+  "manager_owns_git_and_publication": true,
+  "CI_add_Go_tests": [
+    "onion_stock_client_test.go",
+    "onion_wrapper_test.go"
+  ],
+  "CI_add_C_targets": [
+    "console-netplay-status",
+    "netplay_status_tests"
+  ],
+  "physical_wireless_trade_and_save_acceptance_pending": true
+}

@@ -240,11 +240,12 @@ int main(void)
     s->status.state=CS_MENU_READY;s->status.active=false;s->status.unsettled=false;
     s->level_pid=456;s->ra_pid=0;strcpy(s->launch.auxiliary,"onion4");
     static const char *const phases[]={"initializing\n","pairing-cartridges-and-saves\n",
-        "starting-emulator\n","waiting-emulator-listen\n","sending-ready\n","emulator-running\n"};
-    for(size_t phase=0U;phase<6U;++phase){
+        "starting-emulator\n","waiting-emulator-listen\n","sending-ready\n","emulator-running\n",
+        "returning-saves\n","restoring-network\n"};
+    for(size_t phase=0U;phase<8U;++phase){
         int fd=open("/run/console/easy-netplay.phase",O_WRONLY|O_CREAT|O_TRUNC|O_NOFOLLOW,0600);assert(fd>=0);
         assert(write(fd,phases[phase],strlen(phases[phase]))==(ssize_t)strlen(phases[phase])&&close(fd)==0);
-        assert(startup_menu_cancel_allowed(s)==(phase!=5U));
+        assert(startup_menu_cancel_allowed(s)==(phase<5U));
         int fds[2];assert(pipe2(fds,O_NONBLOCK|O_CLOEXEC)==0);
         cs_evdev_init(&s->menu);s->menu.fd=fds[0];s->menu.code=KEY_BACK;
         cs_hotkeys_reset(&s->hotkeys,false);
@@ -255,12 +256,13 @@ int main(void)
         if(phase==5U){e.code=BTN_SELECT;e.time.tv_usec=100000;
             assert(write(fds[1],&e,sizeof(e))==(ssize_t)sizeof(e));}
         unsigned int before=terminated;test_clock=now+701U;menu_input(s,test_clock);
-        assert(terminated==before+(phase==5U?0U:1U));
+        assert(terminated==before+(phase>=5U?0U:1U));
         close(fds[1]);cs_evdev_close(&s->menu);
     }
     assert(unlink("/run/console/easy-netplay.phase")==0);
     assert(startup_menu_cancel_allowed(s));
     puts("R55_NETPLAY_MENU_SETUP_CANCEL_GAMEPLAY_CHORD_PASS current_onion_phase=1 no_wrong_subdirectory_probe=1 physical_emulator_input_pending=1");
+    puts("NETPLAY_PRODUCTION_MENU_OBSERVER_SAVE_RETURN_AND_WIFI_RESTORE_CANNOT_CANCEL_PASS");
     free(s);
     puts("LEVEL_ROUTER_PASS running-game/native-Quick-Menu/menu allowed; actual raw volume path and brightness chord consumed; checkpoint/shutdown/aux barriers preserved");
     puts("LEVEL_CLOCK_RACE_PASS post-read MENU edge retained; brightness-up routed; future and stale edges rejected");

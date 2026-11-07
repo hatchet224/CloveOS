@@ -13,9 +13,13 @@ client_ip=192.168.100.101
 peer_port=55436
 radio=wlan0
 
-[ "$#" = 5 ] || { [ "$#" = 6 ] && [ "$6" = link ]; } || exit 2
+[ "$#" = 5 ] || { [ "$#" = 6 ] && [ "$6" = link ]; } || [ "$#" = 9 ] || exit 2
 role=$1 proof=$2 config=$3 core=$4 content=$5
 mode=${6:-standard}
+case "$mode" in standard|link) ;; *) exit 2 ;; esac
+theme=${7:-/system/share/console/themes/Silky}
+language=${8:-0}
+game=${9:-${content##*/}}
 registry=/system/share/console/onion-4.3.1-1/cores.json
 case "$role" in host|join) ;; *) exit 2 ;; esac
 if [ "$mode" = link ]; then core_name=tgbdual_libretro.so
@@ -29,13 +33,21 @@ else case "$core" in
  *) exit 26 ;;
 esac;fi
 mkdir "$session" || exit 22
+rm -f "$root/easy-netplay.failed-stage"
 exec </dev/null >>"$root/easy-netplay.log" 2>&1
 ra= ap= peer= ready_peer= pairing= station= notice= recover= prior_ssid= prior_state= dhcp_server=
 phase=initializing
+export CLOVE_NETPLAY_STATUS=1
 mark_phase() {
     phase=$1
     printf 'pokemon-link: wrapper_phase=%s role=%s mode=%s\n' "$phase" "$role" "$mode"
     printf '%s\n' "$phase" >"$root/easy-netplay.phase"
+    printf '%s\n' "$phase" >"$session/status.pending"
+    mv "$session/status.pending" "$session/status"
+}
+show_notice() {
+    [ -z "$notice" ] || return 0
+    /system/bin/console-netplay-status "$role" "$mode" "$theme" "$language" "$game" & notice=$!
 }
 mark_phase initializing
 
@@ -107,10 +119,14 @@ restore_station() {
 }
 cleanup() {
     result=$?
+    final_phase=$phase
     trap - EXIT
     trap '' INT TERM
     printf 'pokemon-link: final_phase=%s result=%s\n' "$phase" "$result"
-    stop_child "$notice"
+    if [ "$result" != 0 ]; then
+        if [ -f "$session/status" ]; then "$bb" head -c 80 "$session/status" >"$root/easy-netplay.failed-stage"
+        else printf '%s\n' "$phase" >"$root/easy-netplay.failed-stage"; fi
+    fi
     stop_child "$dhcp_server"
     stop_child "$peer"
     stop_child "$ready_peer"
@@ -119,9 +135,12 @@ cleanup() {
     stop_child "$station"
     stop_child "$ap"
     if [ -n "$recover" ]; then
+        mark_phase restoring-network
+        show_notice
         "$bb" ifconfig "$radio" 0.0.0.0 || :
         restore_station || result=23
     fi
+    stop_child "$notice";notice=
     if [ "$mode" = link ]; then
         # Copy only a bounded text tail before the transient session is removed.
         # The normal diagnostic archive retains this alongside phase/helper errors.
@@ -130,9 +149,12 @@ cleanup() {
         rm -f "$session/player1.gb" "$session/player2.gb" "$session/own.srm" "$session/own.rtc" "$session/link-session.json" "$session/retroarch.log"
         for temporary in "$session"/.link-*;do [ ! -f "$temporary" ] || rm -f "$temporary";done
     fi
-    rm -f "$session/export.json" "$session/retroarch.cookie" "$session/remote.cookie" "$session/options.cfg" "$session/retroarch.cfg"
+    rm -f "$session/export.json" "$session/retroarch.cookie" "$session/remote.cookie" "$session/options.cfg" "$session/retroarch.cfg" "$session/status" "$session/status.pending" "$session/peer-name"
     rm -f "$session/hostapd.conf" "$session/join.conf" "$session/wpa/$radio" "$session/ap/$radio"
     rmdir "$session/wpa" "$session/ap" "$session" 2>/dev/null || :
+    # Keep the failure phase for the post-exit diagnostic, after the live
+    # restoring-network phase has protected the whole cleanup from MENU.
+    if [ "$result" != 0 ]; then printf '%s\n' "$final_phase" >"$root/easy-netplay.phase"; fi
     exit "$result"
 }
 trap cleanup EXIT
@@ -143,15 +165,27 @@ trap 'exit 0' INT TERM
 [ -r "$registry" ] || exit 26
 if [ "$core_name" = tgbdual_libretro.so ]; then
     player=1; [ "$role" != join ] || player=2
-    printf 'tgbdual_gblink_enable = "disabled"\ntgbdual_single_screen_mp = "player %s only"\ntgbdual_audio_output = "Game Boy #%s"\n' "$player" "$player" >"$session/options.cfg"
+    link_cable=disabled; [ "$mode" != link ] || link_cable=enabled
+    printf 'tgbdual_gblink_enable = "%s"\ntgbdual_single_screen_mp = "player %s only"\ntgbdual_audio_output = "Game Boy #%s"\n' "$link_cable" "$player" "$player" >"$session/options.cfg"
     /bin/busybox awk '!/^core_options_path[[:space:]]*=/' "$config" >"$session/retroarch.cfg"
     printf 'core_options_path = "%s/options.cfg"\n' "$session" >>"$session/retroarch.cfg"
     config=$session/retroarch.cfg
 fi
 if [ "$mode" = link ]; then
     expected_core=$(/system/bin/console-onion-peer link-init "$registry" "$content" "$session" "$role") || exit 27
-    printf 'tgbdual_gblink_enable = "enabled"\n' >>"$session/options.cfg"
-    for setting in savefiles_in_content_dir savestates_in_content_dir sort_savefiles_enable sort_savefiles_by_content_enable sort_savestates_enable sort_savestates_by_content_enable game_specific_options config_save_on_exit auto_overrides_enable history_list_enable savestate_auto_save savestate_auto_load netplay_public_announce netplay_use_mitm_server netplay_nat_traversal; do
+    link_flags='savefiles_in_content_dir savestates_in_content_dir sort_savefiles_enable sort_savefiles_by_content_enable sort_savestates_enable sort_savestates_by_content_enable game_specific_options config_save_on_exit auto_overrides_enable history_list_enable savestate_auto_save savestate_auto_load netplay_public_announce netplay_use_mitm_server netplay_nat_traversal'
+    # RetroArch keeps the first duplicate key. Remove the inherited values
+    # before adding this session's isolated save paths and control settings.
+    "$bb" awk -v keys="$link_flags savefile_directory savestate_directory autosave_interval netplay_ip_port input_enable_hotkey_btn input_menu_toggle_btn libretro_directory core_info_cache_enable" '
+        BEGIN { n=split(keys,list," ");for(i=1;i<=n;i++)replace[list[i]]=1 }
+        /^[[:space:]]*[A-Za-z0-9_]+[[:space:]]*=/ {
+            key=$0;sub(/^[[:space:]]*/,"",key);sub(/[[:space:]]*=.*/,"",key)
+            if(key in replace)next
+        }
+        { print }
+    ' "$config" >"$config.pending" || exit 27
+    mv "$config.pending" "$config" || exit 27
+    for setting in $link_flags; do
         printf '%s = "false"\n' "$setting" >>"$config"
     done
     printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\nautosave_interval = "0"\nnetplay_ip_port = "55435"\ninput_enable_hotkey_btn = "19"\ninput_menu_toggle_btn = "8"\n' "$session" "$session" >>"$config"
@@ -163,20 +197,14 @@ if [ "$mode" = link ];then
     printf 'libretro_directory = "%s"\ncore_info_cache_enable = "false"\n' "$(/bin/busybox dirname "$core")" >>"$config"
 fi
 # Check the backend binaries before touching the radio.
-for program in hostapd hostapd_cli wpa_cli wpa_supplicant console-onion-peer; do
+for program in hostapd hostapd_cli wpa_cli wpa_supplicant console-onion-peer console-netplay-status; do
     [ -x "/system/bin/$program" ] || exit 22
 done
 [ -f "$root/wpa.conf" ] && [ ! -L "$root/wpa.conf" ] && wpa_available || exit 22
 original=$(system_wpa status) || exit 22
 prior_state=$(printf '%s\n' "$original" | "$bb" sed -n 's/^wpa_state=//p')
 prior_ssid=$(printf '%s\n' "$original" | "$bb" sed -n 's/^ssid=//p')
-if [ "$role" = host ]; then
-    if [ "$mode" = link ]; then message='Pokémon link: starting hotspot and waiting for player 2...';
-    else message='Easy Netplay: starting the local hotspot...'; fi
-else
-    message='Easy Netplay: looking for a compatible nearby host...'
-fi
-/system/bin/console-boot-status --progress --message "$message" & notice=$!
+show_notice
 
 # Identify the station DHCP process before changing either service.
 dhcp=
@@ -199,6 +227,7 @@ fi
 "$bb" ifconfig "$radio" 0.0.0.0 up || exit 22
 
 if [ "$role" = host ]; then
+    mark_phase starting-hotspot
     mkdir "$session/ap"
     printf '%s\n' "interface=$radio" 'driver=nl80211' "ctrl_interface=$session/ap" \
         'ssid=MiyooMini+APOnionOS' 'hw_mode=g' 'channel=1' 'wpa=2' 'wpa_key_mgmt=WPA-PSK' \
@@ -231,6 +260,7 @@ if [ "$role" = host ]; then
         wait_until 80 netplay_listening || exit 22
     fi
 else
+    mark_phase joining-hotspot
     mkdir "$session/wpa"
     printf 'ctrl_interface=%s/wpa\nupdate_config=0\n' "$session" >"$session/join.conf"
     wpa_supplicant -D nl80211 -i "$radio" -c "$session/join.conf" & station=$!
@@ -264,6 +294,8 @@ wait "$ra" || status=$?
 ra=
 if [ "$mode" = link ] && [ "$status" = 0 ]; then
     "$bb" grep -Eq '\[Netplay\].*joined as player 2|\[Netplay\].*joined with input devices' "$session/retroarch.log" || exit 20
+    mark_phase returning-saves
+    show_notice
     link_task link-finish "$session"
 fi
 exit "$status"

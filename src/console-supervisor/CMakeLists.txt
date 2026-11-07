@@ -238,6 +238,17 @@ endif()
 add_executable(console-boot-status ../console-packaging/image/console-boot-status.c)
 target_link_libraries(console-boot-status PRIVATE console_launcher)
 
+add_executable(console-netplay-status src/netplay_status.c)
+target_include_directories(console-netplay-status PRIVATE include)
+target_link_libraries(console-netplay-status PRIVATE console_launcher)
+install(TARGETS console-netplay-status RUNTIME DESTINATION bin)
+if(BUILD_TESTING)
+    add_executable(netplay_status_tests tests/test_netplay_status.c)
+    target_include_directories(netplay_status_tests PRIVATE include)
+    target_compile_options(netplay_status_tests PRIVATE -UNDEBUG)
+    target_link_libraries(netplay_status_tests PRIVATE console_launcher_history)
+endif()
+
 if(BUILD_TESTING)
     # Requires the isolated 14-system generated FAT32 fixture; not a host test.
     add_executable(boot_catalog_tests tests/test_boot_catalog.c src/config.c src/catalog_index.c)

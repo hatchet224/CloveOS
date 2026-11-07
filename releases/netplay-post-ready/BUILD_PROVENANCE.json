@@ -1,0 +1,28 @@
+{
+  "base_source_commit": "b9e9c473aeca82859bfe61591161aa0aaae80c73",
+  "Go_version": "go version go1.27.3 windows/amd64",
+  "Go_flags": [
+    "CGO_ENABLED=0",
+    "GOOS=linux",
+    "GOARCH=arm64",
+    "-trimpath",
+    "-ldflags=-s -w"
+  ],
+  "C_toolchain": "Zig 0.13.0 / Clang 18.1.6; aarch64-linux-gnu.2.29; Cortex-A53; CMake MinSizeRel",
+  "dependency_pins": "Existing unchanged CloveOS published dependency pins",
+  "outputs": {
+    "console-onion-peer": {
+      "bytes": 3670176,
+      "sha256": "006a97e1343fadc00b9b3c8aa97565c63be99be5563e94c4a0053576c5fff01c"
+    },
+    "console-supervisor": {
+      "bytes": 2564864,
+      "sha256": "453c04ee397fd23972dfc8860347fcb6b6d29635edd62afff0ffc9af8365c2a7"
+    },
+    "console-netplay-status": {
+      "bytes": 211672,
+      "sha256": "97031eac547f46fe2cc8f485c747a7fadf84033cddb4e9a4d92af77706c2e643"
+    }
+  },
+  "wrapper_sha256": "e5eda7b90764ba11ebc856512f85db747c9d4ccc3aba37f40d4d8deadb19f8c6"
+}

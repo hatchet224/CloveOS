@@ -1,5 +1,7 @@
 # CloveOS test status
 
+- **Pokemon link startup and UI:** [the post-ready correction](releases/netplay-post-ready/README.md) fixes duplicate session settings and the stock client cookie check, and adds themed live progress. Actual emulator software tests pass; physical wireless/trade acceptance remains pending.
+
 - **Onion Pokemon link startup:** the [compatibility correction](releases/onion-link-compatibility/README.md) addresses stock curl uploads and fallback client addresses. Software tests pass; physical cross-device trade acceptance remains pending.
 
 - **Menu shortcuts and TGB rewind:** the [managed shortcut correction candidate](releases/tgb-shortcuts/README.md) addresses companion-key fallthrough, opens native Quick Menu settings and qualifies normal TGB rewind. GB/GBC TGB/Gambatte software tests pass; physical acceptance remains pending.

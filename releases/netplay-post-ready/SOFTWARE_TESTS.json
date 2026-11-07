@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "source_base_commit": "b9e9c473aeca82859bfe61591161aa0aaae80c73",
+  "actual_installed_ARM64_crash_reproduced_exit": 139,
+  "actual_fixed_ARM64_host_join_120_frames": true,
+  "both_SRAM_files_saved": true,
+  "actual_stock_ARM32_and_Clove_ARM64_240_frame_pairs": [
+    "GB:stock-host",
+    "GB:Clove-host",
+    "GBC:stock-host",
+    "GBC:Clove-host"
+  ],
+  "exact_final_wrapper_config_block_matches_actual_emulator_fixtures": true,
+  "real_Linux_helper_and_curl_tests": true,
+  "production_wrapper_radio_mock_tests": true,
+  "actual_ARM64_status_surfaces": 28,
+  "final_title_adjustment_targeted_surfaces": 8,
+  "final_title_renderer_matches_frozen_output": true,
+  "theme_assets_from_installed_rootfs": true,
+  "English_and_Spanish": true,
+  "Menu_cancel_save_return_guard_and_brightness_regressions": true,
+  "original_kernel_candidate_check": "Recorded separately with the private image",
+  "physical_wireless_and_complete_trade_acceptance_passed": false,
+  "private_logs_games_BIOS_saves_theme_assets_or_binaries_included": false
+}
