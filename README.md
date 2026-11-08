@@ -2,7 +2,7 @@
 
 CloveOS is a controller-first Linux firmware project for the **MagicX Mini Zero 28**, inspired by the OnionOS experience.
 
-**R52 source is ready; its clean full-card download is being prepared for [Releases](https://github.com/hatchet224/CloveOS/releases).** The final native settings changes passed seven sealed-payload software suites. See [native qualification](releases/r52/native-authority/QUALIFICATION.json) and [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for the scope and remaining hardware checks.
+**[Download CloveOS R52](https://github.com/hatchet224/CloveOS/releases/tag/r52)**, an experimental full-card release with matching source and checksums. The final native settings changes passed seven sealed-payload software suites. See [native qualification](releases/r52/native-authority/QUALIFICATION.json) and [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for the scope and remaining hardware checks.
 
 R52 adds Russian and fresh-install language selection, consistent native RetroArch menu access during normal play and Netplay, and a correction for the sideways Netplay menu. It includes the Pokémon link hosting, controls, volume and save-return fixes, normal TGB Dual selection, the brightness/wake correction, and the PortMaster runtime correction. Custom Clove RetroArch settings and action locks are retired: native settings, rewinding, saves, Undo, remaps, overrides and content changes use RetroArch's callbacks and persistent profiles. Genuine upstream, core, build and hardware limits still apply. The final integration has software coverage; physical menu, rewind, orientation, performance and fresh wireless interoperability acceptance remain pending.
 
