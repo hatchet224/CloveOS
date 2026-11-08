@@ -1,0 +1,60 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# A persistent native profile: seed session defaults once, preserve every edit.
+set -eu
+umask 077
+bb=/bin/busybox
+test "$#" = 5
+mode=$1 role=$2 factory=$3 core=$4 runtime=$5
+case "$mode:$role" in standard:host|standard:join|link:host|link:join) ;; *) exit 2 ;; esac
+case "$runtime" in /run/console/netplay-runtime|/run/console/easy-netplay|/run/console/easy-netplay/link) ;; *) exit 2 ;; esac
+digest=$("$bb" sha256sum "$core");digest=${digest%% *}
+case "$digest" in ''|*[!0-9a-f]*) exit 2 ;; esac
+test "${#digest}" = 64
+base=/mnt/SDCARD/.console/retroarch
+profile=$base/netplay/$digest/$mode-$role
+for directory in "$base" "$base/netplay" "$base/netplay/$digest" "$profile" "$profile/config" "$profile/remaps" "$profile/saves" "$profile/states";do
+    test ! -L "$directory";"$bb" mkdir -p "$directory"
+done
+config=$profile/retroarch.cfg
+test ! -L "$config"
+options=$profile/core-options.cfg
+if [ ! -e "$options" ];then
+    source=$("$bb" awk -F '"' '/^[[:space:]]*core_options_path[[:space:]]*=/ {print $2;exit}' "$factory")
+    pending=$("$bb" mktemp "$profile/.options.XXXXXX")
+    if [ -f "$source" ];then "$bb" cat "$source" >"$pending"
+    if [ "$source" = "$factory" ];then "$bb" awk '!/^[[:space:]]*(user_language|assets_directory)[[:space:]]*=/' "$pending" >"$pending.clean";"$bb" mv "$pending.clean" "$pending";fi;fi
+    if [ "$mode" = link ];then
+        "$bb" awk '!/^tgbdual_(gblink_enable|single_screen_mp|audio_output)[[:space:]]*=/' "$pending" >"$pending.clean"
+        "$bb" mv "$pending.clean" "$pending"
+        player=1;[ "$role" != join ] || player=2
+        printf 'tgbdual_gblink_enable = "enabled"\ntgbdual_single_screen_mp = "player %s only"\ntgbdual_audio_output = "Game Boy #%s"\n' "$player" "$player" >>"$pending"
+    fi
+    "$bb" mv "$pending" "$options"
+fi
+if [ ! -e "$config" ];then
+    source=$factory;[ ! -f "$base/retroarch.cfg" ] || source=$base/retroarch.cfg
+    pending=$("$bb" mktemp "$profile/.config.XXXXXX")
+    "$bb" awk '!/^[[:space:]]*(core_options_path|rgui_config_directory|input_remapping_directory|savefile_directory|savestate_directory|config_save_on_exit|savestate_auto_save|savestate_auto_load|global_core_options|game_specific_options|netplay_ip_port|netplay_public_announce|netplay_use_mitm_server|netplay_nat_traversal|history_list_enable|libretro_info_path|libretro_directory|core_info_cache_enable)[[:space:]]*=/' "$source" >"$pending"
+    {
+        printf 'core_options_path = "%s"\nrgui_config_directory = "%s/config"\ninput_remapping_directory = "%s/remaps"\n' "$options" "$profile" "$profile"
+        printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\n' "$profile" "$profile"
+        language=0;case "${CLOVE_UI_LANGUAGE:-0}" in 1) language=3 ;; 2) language=9 ;; esac
+        # Existing native profiles retain their selected language; a factory
+        # seed inherits the frontend language only on its first creation.
+        if [ "$source" = "$factory" ];then printf 'user_language = "%s"\nassets_directory = "/opt/console/share/retroarch/assets"\n' "$language";fi
+        printf 'config_save_on_exit = "true"\nsavestate_auto_save = "false"\nsavestate_auto_load = "false"\nglobal_core_options = "true"\ngame_specific_options = "true"\n'
+        printf 'netplay_ip_port = "55435"\nnetplay_public_announce = "false"\nnetplay_use_mitm_server = "false"\nnetplay_nat_traversal = "false"\nhistory_list_enable = "false"\n'
+        printf 'libretro_info_path = "/system/share/console/core-info"\nlibretro_directory = "/system/lib/libretro"\ncore_info_cache_enable = "false"\n'
+    } >>"$pending"
+    # Hardware calibration supplies initial defaults only. It never overwrites
+    # native remaps, a changed hotkey modifier or an edited joypad selection.
+    if [ -f "$runtime/controls.cfg" ];then
+        "$bb" awk 'FILENAME==ARGV[1] {key=$0;sub(/[[:space:]]*=.*/,"",key);replace[key]=1;next}
+            {key=$0;sub(/^[[:space:]]*/,"",key);sub(/[[:space:]]*=.*/,"",key);if(!(key in replace))print}' "$runtime/controls.cfg" "$pending" >"$pending.clean"
+        "$bb" cat "$runtime/controls.cfg" >>"$pending.clean"
+        "$bb" mv "$pending.clean" "$pending"
+    fi
+    "$bb" mv "$pending" "$config"
+fi
+printf '%s\n' "$config"

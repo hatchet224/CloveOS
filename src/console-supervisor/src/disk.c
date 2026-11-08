@@ -631,6 +631,11 @@ static void job(const struct sc_config *c, struct sc_tools_backend *tools,
         cs_store_close(&store);
         return;
     }
+    if(request->type==SC_REMOVE || request->type==SC_DELETE_STATES){
+        r->native_maintenance=true;r->message=*request;
+        r->ok=cs_hex_valid(request->data.text,64U) && sc_native_maintenance(c,request->data.text,request->type==SC_DELETE_STATES);
+        cs_store_close(&store);return;
+    }
     if (request->type == SC_UI_INPUT_VERIFIED)
     {
         enum cs_store_status saved = cl_input_record_save(&store, &request->data.verification);
@@ -694,6 +699,7 @@ static void job(const struct sc_config *c, struct sc_tools_backend *tools,
     if (request->type == SC_UI_HISTORY || request->type == SC_QUERY)
     {
         sc_message_init(&r->message, SC_UI_HISTORY, request->token);
+        sc_native_history(c,history);
         r->message.data.history = *history;
         const char *paths[CL_HISTORY_MAX] = {0};
         uint64_t totals[CL_HISTORY_MAX] = {0};
@@ -725,6 +731,7 @@ static void job(const struct sc_config *c, struct sc_tools_backend *tools,
         {
             r->automatic_candidate = true;
         }
+        if(automatic_resume && sc_native_current(c,&r->native_resume) && !r->native_resume.menu)r->native_candidate=true;
         r->ok = true;
     }
     else if (request->type == SC_UI_PROBE)
@@ -744,11 +751,23 @@ static void job(const struct sc_config *c, struct sc_tools_backend *tools,
         states = &r->message.data.states;
         states->identity = entry.identity;
         states->qualified_identity = entry.identity;
-        if (game != NULL) entry.identity = game->profile.identity;
+        if (game != NULL) {
+            struct cl_entry legacy;
+            if(sc_native_legacy_entry(&store,game,&legacy))entry=legacy;
+            else entry.identity=game->profile.identity;
+        }
         states->history_revision = request->data.probe.revision;
         states->game_status = CL_MISSING;
         states->latest_status = CL_UNKNOWN;
         states->previous_status = CL_UNKNOWN;
+        if(game==NULL && entry.native_state){
+            struct clove_native_record native;
+            if(sc_native_by_key(c,entry.identity.game,&native)){
+                states->game_status=CL_READY;states->native_available=true;states->latest_status=CL_MISSING;
+                sc_native_states(&native,states);
+                r->ok=true;goto done;
+            }
+        }
         for (i = 0U; i < history->count; ++i)
         {
             if (cs_identity_equal(&history->entries[i].identity, &entry.identity))
@@ -783,7 +802,7 @@ static void job(const struct sc_config *c, struct sc_tools_backend *tools,
         states->previous = entry.previous;
         if (game != NULL && sc_tools_game_enabled(tools, &store, game))
         {
-            states->qualified_identity = game->profile.identity;
+            states->qualified_identity = entry.identity;
             if (request->token == UINT64_MAX) {
                 /* Unknown content can still require a complete ISO read here.
                  * Persist the attempt BEFORE that work: a later queued log
@@ -796,20 +815,21 @@ static void job(const struct sc_config *c, struct sc_tools_backend *tools,
             if (sc_game_files_check(game, c->retroarch, request->token == UINT64_MAX))
             {
                 states->game_status = CL_READY;
+                states->native_available = true;
                 /* This supervisor-only preflight authenticates launch files.
                  * The chosen immutable checkpoint is validated by the daemon
                  * and LOAD; unrelated manual slots cannot authorize launch. */
                 if (request->token == UINT64_MAX) { r->ok = true; goto done; }
                 states->latest_status =
-                    cl_history_probe(&store, &entry, &game->profile.identity, &entry.latest);
+                    cl_history_probe(&store, &entry, &entry.identity, &entry.latest);
                 states->previous_status =
-                    cl_history_probe(&store, &entry, &game->profile.identity, &entry.previous);
-                states->manual_count = CL_MANUAL_MAX;
-                for (i = 0U; i < CL_MANUAL_MAX; ++i)
+                    cl_history_probe(&store, &entry, &entry.identity, &entry.previous);
+                states->manual_count = CS_MANUAL_SLOTS;
+                for (i = 0U; i < CS_MANUAL_SLOTS; ++i)
                 {
                     struct cs_record slot;
                     enum cs_store_status saved =
-                        cs_store_slot_read(&store, &game->profile.identity, (unsigned int)i, &slot);
+                        cs_store_slot_read(&store, &entry.identity, (unsigned int)i, &slot);
                     states->manual[i].slot = (unsigned int)i;
                     (void)snprintf(states->manual[i].label, sizeof(states->manual[i].label),
                                    "Slot %02u", (unsigned int)i);
@@ -826,9 +846,11 @@ static void job(const struct sc_config *c, struct sc_tools_backend *tools,
                         strcpy(states->manual[i].reference.manifest, slot.manifest);
                     }
                 }
+                struct clove_native_record native;
+                if(sc_native_game(c,game,&native))sc_native_states(&native,states);
                 (void)snprintf(states->compatibility, sizeof(states->compatibility),
                                "Registered launch files present. START verifies full content/core; "
-                               "HELLO checks live config/BIOS before release.");
+                               "Native settings remain editable; legacy state artifacts are verified on selection.");
             }
             else
             {

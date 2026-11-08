@@ -1,0 +1,14 @@
+--- a/state_manager.c
++++ b/state_manager.c
+@@ -637,7 +637,11 @@
+          rewind_buffer_size);
+ 
+    if (!rewind_st->state)
++   {
+       RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
++      rewind_st->size = 0;
++      return; /* Allocation failure must not dereference a NULL history. */
++   }
+ 
+    state_manager_push_where(rewind_st->state, &state);
+ 

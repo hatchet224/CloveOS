@@ -1,0 +1,49 @@
+--- a/libretro-common/file/config_file.c
++++ b/libretro-common/file/config_file.c
+@@ -1,3 +1,6 @@
++#ifdef HAVE_MAGICX_BRIDGE
++#include "../../magicx/magicx_retroarch.h"
++#endif
+ /* Copyright  (C) 2010-2020 The RetroArch team
+  *
+  * ---------------------------------------------------------------------------------------
+@@ -1410,19 +1413,33 @@
+       else
+       {
+          void* buf  = NULL;
+-         FILE *file = (FILE*)fopen_utf8(path, "wb");
+-         if (!file)
++         const char *write_path=path;
++#ifdef HAVE_MAGICX_BRIDGE
++         char pending[8192]={0};
++         if(!magicx_native_save_begin(path,pending,sizeof(pending)))return false;
++         write_path=pending;
++#endif
++         FILE *file = (FILE*)fopen_utf8(write_path, "wb");
++         if (!file) {
++#ifdef HAVE_MAGICX_BRIDGE
++            (void)magicx_native_save_finish(path,pending,false);
++#endif
+             return false;
++         }
+ 
+          buf        = calloc(1, 0x4000);
+          setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+ 
+          config_file_dump(conf, file, sort);
+ 
+-         if (file != stdout)
+-            fclose(file);
+-         if (buf)
+-            free(buf);
++         bool complete=ferror(file)==0;
++         if (file != stdout && fclose(file)!=0)complete=false;
++         if (buf)free(buf);
++#ifdef HAVE_MAGICX_BRIDGE
++         if(!magicx_native_save_finish(path,pending,complete))return false;
++#else
++         if(!complete)return false;
++#endif
+ 
+          /* Only update modified flag if config file
+           * is actually written to disk */

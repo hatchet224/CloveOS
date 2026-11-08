@@ -54,9 +54,9 @@ static unsigned capture(char relative[256]){
  struct cs_bridge_reply reply=call(CS_OP_WRITE,g,relative);CHECK(cs_store_commit(&store,reply.frame)==CS_STORE_OK);
  CHECK(cs_store_verify_selected(&store,g,relative)==CS_STORE_OK);
  char path[512];snprintf(path,sizeof(path),"/mnt/SDCARD/.console/%s/sram.bin",relative);
- int fd=open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);unsigned char bytes[3];CHECK(fd>=0 && read(fd,bytes,3)==3 && close(fd)==0 && bytes[2]==0x5a);
+ int fd=open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);unsigned char bytes[6];CHECK(fd>=0 && read(fd,bytes,6)==6 && close(fd)==0 && bytes[2]==0x5a && bytes[4]>=37U && bytes[4]<60U && (bytes[5]==0U || bytes[5]==64U));
  pthread_mutex_lock(&mutex);status.generation=g;++status.sequence;status.quick_menu=0;pthread_mutex_unlock(&mutex);
- unsigned word=(unsigned)bytes[0]+256U*(unsigned)bytes[1];fprintf(stderr,"HOTKEY_CAPTURE generation=%" PRIu64 " counter=%u\n",g,word);return word;
+ fprintf(stderr,"RTC_GAME_REGISTERS seconds=%u halt=%u\n",bytes[4],bytes[5]);unsigned word=(unsigned)bytes[0]+256U*(unsigned)bytes[1];fprintf(stderr,"HOTKEY_CAPTURE generation=%" PRIu64 " counter=%u\n",g,word);return word;
 }
 static void service(void){
  pthread_mutex_lock(&mutex);unsigned op=pending;uint64_t token=pending_token;pending=0;pthread_mutex_unlock(&mutex);if(!op)return;

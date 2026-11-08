@@ -1,0 +1,109 @@
+{
+  "product": "CloveOS R52",
+  "scope": "Native RetroArch authority follow-up; software qualification only",
+  "base_source_commit": "35b378549326da7d7a03b77dd5f1684fc93f66a6",
+  "rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+  "retroarch_sha256": "aba9831904bc05f3224fef34f221824570a9f7c2e7093e55d720b90120006620",
+  "sealed_software_suites_passed": true,
+  "receipts": {
+    "qualified-fullfat-test": {
+      "passed": true,
+      "actual_native_RA": true,
+      "actual_TGB": true,
+      "full_disposable_FAT": true,
+      "read_only_mount": false,
+      "no_physical_SD": true,
+      "rootfs_overlay_not_release": true,
+      "actual_sealed_production_binaries": true,
+      "export_rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+      "source_complete": false,
+      "RA_sha256": "aba9831904bc05f3224fef34f221824570a9f7c2e7093e55d720b90120006620"
+    },
+    "qualified-gambatte-failure-cold-test": {
+      "passed": true,
+      "actual_native_RA": true,
+      "actual_TGB": false,
+      "actual_Gambatte": true,
+      "actual_cartridge_RTC_HALT_checked": true,
+      "no_physical_SD": true,
+      "rootfs_overlay_not_release": true,
+      "actual_sealed_production_binaries": true,
+      "export_rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+      "source_complete": false,
+      "RA_sha256": "aba9831904bc05f3224fef34f221824570a9f7c2e7093e55d720b90120006620"
+    },
+    "qualified-legacy-import-test": {
+      "passed": true,
+      "actual_native_RA": true,
+      "actual_TGB": true,
+      "no_physical_SD": true,
+      "rootfs_overlay_not_release": true,
+      "actual_sealed_production_binaries": true,
+      "export_rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+      "source_complete": false,
+      "RA_sha256": "aba9831904bc05f3224fef34f221824570a9f7c2e7093e55d720b90120006620"
+    },
+    "qualified-link-runtime-test": {
+      "passed": true,
+      "actual_native_RA": true,
+      "actual_TGB": true,
+      "no_physical_SD": true,
+      "rootfs_overlay_not_release": true,
+      "actual_sealed_production_binaries": true,
+      "export_rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+      "source_complete": false,
+      "Linux_Go_native_profile_tests": true
+    },
+    "qualified-regression-test": {
+      "passed": true,
+      "actual_native_RA": false,
+      "actual_TGB": false,
+      "no_physical_SD": true,
+      "rootfs_overlay_not_release": true,
+      "actual_sealed_production_binaries": true,
+      "export_rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+      "source_complete": false,
+      "Linux_Go_native_profile_tests": true,
+      "actual_parent_branches_with_fixture_children": true,
+      "physical_device": false
+    },
+    "qualified-archive-test": {
+      "passed": true,
+      "actual_native_RA": true,
+      "actual_TGB": true,
+      "no_physical_SD": true,
+      "rootfs_overlay_not_release": true,
+      "actual_sealed_production_binaries": true,
+      "export_rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+      "source_complete": false,
+      "RA_sha256": "aba9831904bc05f3224fef34f221824570a9f7c2e7093e55d720b90120006620"
+    },
+    "qualified-zero-rewind-test": {
+      "passed": true,
+      "actual_native_RA": true,
+      "actual_TGB": true,
+      "no_physical_SD": true,
+      "rootfs_overlay_not_release": true,
+      "actual_sealed_production_binaries": true,
+      "export_rootfs_sha256": "808bd03b3ce3df16cca5ae3edd0fbc6f38ee532e14d5482f7bf7e699e6756615",
+      "source_complete": false,
+      "RA_sha256": "aba9831904bc05f3224fef34f221824570a9f7c2e7093e55d720b90120006620"
+    }
+  },
+  "portable_suites": [
+    "sessiond",
+    "standby",
+    "library_data"
+  ],
+  "physical_acceptance": false,
+  "SD_write_performed": false,
+  "GitHub_publication_performed": false,
+  "binary_redistribution_review_complete": false,
+  "limitations": [
+    "Virtual SDL/input replace physical input/display; no physical Mali or radio acceptance",
+    "Parent power/reap branches use real child processes but hardware power is not exercised",
+    "Pinned TGB RTC HALT is unsupported upstream; positive RTC HALT coverage uses Gambatte",
+    "Netplay loopback is not a new Miyoo interoperability or wireless performance certification",
+    "Existing build, upstream and core capability limits remain; no claim all upstream features are compiled"
+  ]
+}

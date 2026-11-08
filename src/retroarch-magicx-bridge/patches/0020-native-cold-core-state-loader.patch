@@ -1,0 +1,20 @@
+--- a/command.c
++++ b/command.c
+@@ -109,6 +109,7 @@
+ void magicx_native_state_loaded(void) { command_post_state_loaded(); }
+ bool magicx_native_load_path(const char *path)
+ {
++   magicx_native_prepare_state();
+    bool loaded = core_info_current_supports_savestate() && content_load_state(path, false, false);
+    if (loaded) { command_post_state_loaded(); content_wait_for_load_state_task(); task_queue_check(); }
+    return loaded;
+@@ -1429,6 +1430,9 @@
+          msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
+          savestate_name_auto);
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   magicx_native_prepare_state();
++#endif
+    if ((content_load_state(savestate_name_auto, false, true)))
+       RARCH_LOG("[State]: %s \"%s\" %s.\n",
+             msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),

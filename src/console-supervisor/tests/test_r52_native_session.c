@@ -54,9 +54,9 @@ static unsigned capture(char relative[256]){
  struct cs_bridge_reply reply=call(CS_OP_WRITE,g,relative);CHECK(cs_store_commit(&store,reply.frame)==CS_STORE_OK);
  CHECK(cs_store_verify_selected(&store,g,relative)==CS_STORE_OK);
  char path[512];snprintf(path,sizeof(path),"/mnt/SDCARD/.console/%s/sram.bin",relative);
- int fd=open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);unsigned char bytes[3];CHECK(fd>=0 && read(fd,bytes,3)==3 && close(fd)==0 && bytes[2]==0x5a);
+ int fd=open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);unsigned char bytes[6];CHECK(fd>=0 && read(fd,bytes,6)==6 && close(fd)==0 && bytes[2]==0x5a && bytes[4]>=37U && bytes[4]<60U && (bytes[5]==0U || bytes[5]==64U));
  pthread_mutex_lock(&mutex);status.generation=g;++status.sequence;status.quick_menu=0;pthread_mutex_unlock(&mutex);
- unsigned word=(unsigned)bytes[0]+256U*(unsigned)bytes[1];fprintf(stderr,"HOTKEY_CAPTURE generation=%" PRIu64 " counter=%u\n",g,word);return word;
+ fprintf(stderr,"RTC_GAME_REGISTERS seconds=%u halt=%u\n",bytes[4],bytes[5]);unsigned word=(unsigned)bytes[0]+256U*(unsigned)bytes[1];fprintf(stderr,"HOTKEY_CAPTURE generation=%" PRIu64 " counter=%u\n",g,word);return word;
 }
 static void service(void){
  pthread_mutex_lock(&mutex);unsigned op=pending;uint64_t token=pending_token;pending=0;pthread_mutex_unlock(&mutex);if(!op)return;
@@ -205,26 +205,30 @@ int main(int argc,char **argv){
   /* Unmapped physical combinations must not become an exit operation. */
   pulse((1U<<19)|1U);pulse((1U<<19)|(1U<<1));pulse((1U<<19)|(1U<<3));CHECK(observed(CS_CONTROL_MENU)==0);
   native_walk(plain);
-  if(!plain && getenv("CLOVE_TEST_PUBLIC_REWIND")){
+  if(getenv("CLOVE_TEST_PUBLIC_REWIND")){
    expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("rewind_settings");menu_press(0);
-   find_entry("rewind_enable");menu_press(15);menu_press(1);
-   find_entry("resume_content");menu_press(0);
-   wait_ms(900);unsigned first=capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");
-   wait_ms(900);unsigned forward=capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");CHECK(forward>first);
-   buttons((1U<<19)|(1U<<4));wait_ms(700);buttons(0);wait_ms(50);unsigned reversed=capture(directory);
-   CHECK(reversed<forward);call(CS_OP_RELEASE,store.selected.generation,"");
-   fprintf(stderr,"PUBLIC_TGB_NATIVE_REWIND_PASS first=%u forward=%u reversed=%u\n",first,forward,reversed);
+   find_entry("rewind_enable");menu_press(9);menu_press(15);
+   menu_press(1);find_entry("resume_content");menu_press(0);
+   for(unsigned setting_case=0;setting_case<3;++setting_case){
+    expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("rewind_settings");menu_press(0);
+    find_entry("rewind_buffer_size_step");menu_press(15);
+    find_entry("rewind_buffer_size");menu_press(15);
+    find_entry("rewind_granularity");menu_press(15);
+    menu_press(1);find_entry("resume_content");menu_press(0);
+    wait_ms(900);unsigned first=capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");
+    wait_ms(900);unsigned forward=capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");CHECK(forward>first);
+    buttons((1U<<19)|(1U<<4));wait_ms(350);buttons(0);wait_ms(50);unsigned reversed=capture(directory);
+    CHECK(reversed<forward);call(CS_OP_RELEASE,store.selected.generation,"");
+    fprintf(stderr,"NATIVE_USER_REWIND_VALUES_CASE_PASS case=%u first=%u forward=%u reversed=%u\n",setting_case,first,forward,reversed);
+   }
+   /* Toggle through the actual native A callback without resetting parameters. */
    for(unsigned toggle=0;toggle<2;++toggle){
     expect_chord(8,CS_CONTROL_QUICK_MENU);find_entry("rewind_settings");menu_press(0);
-    find_entry("rewind_enable");menu_press(0); /* Actual A/OK off, then on. */
-    if(toggle==1){
-     find_entry("rewind_granularity");menu_press(15);menu_press(1);
-     find_entry("rewind_buffer_size");menu_press(15);menu_press(1);
-    }
+    find_entry("rewind_enable");menu_press(0);
     menu_press(1);find_entry("resume_content");menu_press(0);
     wait_ms(300);(void)capture(directory);call(CS_OP_RELEASE,store.selected.generation,"");
    }
-   puts("NATIVE_REWIND_A_DISABLE_REENABLE_AND_BOUNDED_SETTINGS_REMAIN_CHECKPOINTABLE_PASS");
+   puts("NATIVE_MULTIPLE_BUFFER_INTERVAL_STEP_VALUES_WITH_REAL_REWIND_CHECKPOINT_PASS");
   }
 
   if(plain){

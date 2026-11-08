@@ -1,11 +1,13 @@
 # R52 candidate source delta
 
+The native-authority follow-up supersedes the owner-restricted menu and fixed-rewind descriptions below. See [the current source contract](../../src/retroarch-magicx-bridge/NATIVE_MENU.md). Historical paragraphs describe earlier candidates, not this new unreleased payload. The product remains R52.
+
 Base CloveOS source commit: `2e423200dd02a401750fe2092945897917339c22`.
 RetroArch commit: `0792144fe3a7b59908b0afdb2c01722e79040360`.
 
 Apply `src/retroarch-magicx-bridge/install.py` to a clean exact RetroArch checkout. Keep the existing AArch64 Cortex-A53, glibc 2.29, SDL2/Mali configuration and dependency pins. Enable `HAVE_MAGICX_BRIDGE=1 HAVE_REWIND=1 HAVE_LANGEXTRA=1 HAVE_NO_LANGEXTRA=0 HAVE_OVERLAY=1 HAVE_CHEATS=1`; rebuild all objects after changing feature macros. Native menu/panel hooks are patch 0011. Normal managed native settings use `console-managed-retroarch`, installed by the supervisor CMake target.
 
-Original program toolchain: Zig 0.13.0, `aarch64-linux-gnu.2.29`, Cortex-A53, CMake MinSizeRel with explicit `-Os -DNDEBUG`. Assertion fixtures use `-UNDEBUG`. Existing Go helpers and emulator cores retain their exact baseline pins and bytes. Generate the three-language table with `python3 src/console-launcher/tools/generate-i18n.py` and build the supervisor, launcher, GameSwitcher, catalog, ports, file explorer, Netplay input/status and dependency-linked tools against the matching source and pinned dependencies.
+Original program toolchain: Zig 0.13.0, `aarch64-linux-gnu.2.29`, Cortex-A53, CMake MinSizeRel with explicit `-Os -DNDEBUG`. Assertion fixtures use `-UNDEBUG`. Emulator cores retain their exact baseline pins and bytes. The native-authority follow-up rebuilds the original peer helper from its matching source, as described in NATIVE_BUILD.md. Generate the three-language table with `python3 src/console-launcher/tools/generate-i18n.py` and build the supervisor, launcher, GameSwitcher, catalog, ports, file explorer, Netplay input/status and dependency-linked tools against the matching source and pinned dependencies.
 
 Install RGUI fonts with `python3 src/console-packaging/install_rgui_fonts.py --cache <verified-input-cache> --root <staged-root>`. See `provenance/rgui-fonts.json` for the exact upstream commit, compressed-input hashes, decoded-output hashes and CC BY 4.0 license. The runtime has no zlib; the build losslessly decodes the RZIP containers into raw bitmap payloads. Include the COPYING and modification notice from staging in the image and list all font and notice hashes in its complete binary manifest.
 
@@ -79,3 +81,5 @@ reproduced failure path, not a diagnosis of the remote tester. Tests distinguish
 actual ARM64 scanner/disk/launcher/core execution under QEMU, disposable FAT and
 virtual SDL, source boundary injection for the 32 GiB counter, and pending physical
 handheld acceptance. Final artifact receipts identify which candidate was tested.
+
+Current native-authority build and qualification details: [NATIVE_BUILD.md](native-authority/NATIVE_BUILD.md), [QUALIFICATION.json](native-authority/QUALIFICATION.json), and [LOCK_AUDIT.json](native-authority/LOCK_AUDIT.json).

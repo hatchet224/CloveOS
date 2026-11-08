@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "exact_RA_pin": "0792144fe3a7b59908b0afdb2c01722e79040360",
+  "tracked_files": 24,
+  "module_files": 31,
+  "compatibility_header_checked": true,
+  "line_endings_normalized_for_platform_checkout": true,
+  "differences": [],
+  "patches": {
+    "0001-magicx-checkpoint-hooks.patch": "d847ac97444c8aa1e48e2fe40ad39e2cabe6f40a8fecee486cf9b4607c47d53d",
+    "0002-magicx-portrait-gl-handoff.patch": "b16b5cb7f3603e2dd420b69f57f8a91ce15b684911d3f10ff74cdf8df1184bcb",
+    "0003-moss-mali-sdl2.patch": "41b9cecb08e6c55f2811b4be4b6b302ea385be7fc7ec8f22b38c3d562fc039e6",
+    "0004-magicx-gles-texture-init.patch": "fb7e1ce5cb5b273a195b37d5e68f81f93147804fb1a03108e8b905e44df76c79",
+    "0005-magicx-first-frame-diagnostics.patch": "e383aa4dd91afc7243ed51cbad0406c590c5a216cf561c27b38df9d1a98ab631",
+    "0006-magicx-audio-state-overhead.patch": "86db919f43af7462fdb3371cd13a3586b9039ed82cdb670c5ab1345f65a31e25",
+    "0007-magicx-psp-output-sampling.patch": "6609c7f32c8be339a9dd7aaea325948453733bc2a3f5e664e4bcbecd4ac8e54f",
+    "0008-magicx-level-meter.patch": "f18f66af05e8e95d5e8acff99523856cf981c15fd85a7a7e519013983c8854f1",
+    "0009-r49-psx-power-netplay.patch": "205f6b2f5b35f3c25aa11a5d1ae7801ed17dcaf370c6316300c0ba829cb755a6",
+    "0010-owned-menu-settings-and-slot-hotkeys.patch": "be1b22a4d2823cb31f6aac0ddd98c7aaefb8d17c942f640a411316fbae720081",
+    "0011-r52-native-menu-panel.patch": "68c98765485917c410b2135f27bd9cfe5ff5cc242821bfad75b03e57160bcdd3",
+    "0012-r52-native-osd-orientation.patch": "d6f7d406a410bc8228a5f5992963da3c9fa0f7d09c28bf9ed21674452e9f462a",
+    "0013-native-rewind-allocation-failure.patch": "68195bd2bc1e7af3cd9f7bfbbd64bcb02cafe8a4505c2517a3ce9e6b5913221c",
+    "0014-native-authority-autoload.patch": "cd8b0ac95f4404b3401187d9d0ac7377c9587c143b50134d51922b11475badff",
+    "0015-native-handheld-button-namespace.patch": "f9aa8eadf5b515d01895ba03e0f91e02c351c177cf6380115a43ad1498649580",
+    "0016-native-state-compatibility-callbacks.patch": "f02aa1026ed4f426786c40b485aeeb88710925cdaaa9f1d52ad72f70687b14b2",
+    "0017-native-save-publication.patch": "40bab8e0a82d9fb3c00c28e4c8f540154b896fcc3e14386e8c24984b40a89616",
+    "0018-native-config-publication.patch": "f448470628f460eb06e8da6e38b5942e72515f038f6e58820f28f7d3d2a4ec32",
+    "0019-native-build-and-autosave-result.patch": "dae11cd54280611f302560b96765905e6dbfc82611875b456c4c50b9691e17c2",
+    "0020-native-cold-core-state-loader.patch": "9a4e910cc83378ed4108b99481fb871034ab6cebba4f16087260080f15db0928",
+    "0021-native-rewind-ring-allocation-floor.patch": "c0b9e902515aad839ba9569d5bc5096d0432e27e7908658dbec5d028d821b753"
+  }
+}

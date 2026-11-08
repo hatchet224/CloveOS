@@ -528,7 +528,13 @@ enum cl_history_result cl_history_regenerate(struct cs_store *store,
         *entry = entries[i];
         entry->play_sequence = next->highwater - i;
         for (size_t j = 0; j < old->count; ++j) {
-            if (!cs_identity_equal(&entry->identity, &old->entries[j].identity)) continue;
+            const struct cs_identity *saved=&old->entries[j].identity;
+            if(strcmp(entry->identity.game,saved->game)||strcmp(entry->identity.core,saved->core)||
+               strcmp(entry->identity.content,saved->content))continue;
+            /* Regeneration changes presentation/order, not the identity of
+             * existing committed states. Native migration validates those
+             * original records instead of relabeling their artifacts. */
+            entry->identity=*saved;
             entry->latest = old->entries[j].latest;
             entry->previous = old->entries[j].previous;
             break;

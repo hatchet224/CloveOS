@@ -69,20 +69,14 @@ launch_link() {
     local player=1
     [ "$role" != join ] || player=2
     local run=$session/link
-    "$bb" awk '
-        !/^(libretro_info_path|libretro_directory|core_info_cache_enable|savefile_directory|savestate_directory|savefiles_in_content_dir|savestates_in_content_dir|sort_savefiles_enable|sort_savefiles_by_content_enable|sort_savestates_enable|sort_savestates_by_content_enable|core_options_path|global_core_options|game_specific_options|config_save_on_exit|auto_overrides_enable|history_list_enable|autosave_interval|savestate_auto_save|savestate_auto_load|netplay_ip_port|netplay_public_announce|netplay_use_mitm_server|netplay_nat_traversal|input_enable_hotkey_btn|input_menu_toggle_btn)[[:space:]]*=/ { print }
-    ' "$config" >"$run/retroarch.cfg"
-    {
-        printf 'libretro_info_path = "/system/share/console/core-info"\nlibretro_directory = "/system/lib/libretro"\ncore_info_cache_enable = "false"\n'
-        printf 'savefile_directory = "%s/saves"\nsavestate_directory = "%s/states"\ncore_options_path = "%s/options.cfg"\n' "$run" "$run" "$run"
-        for setting in savefiles_in_content_dir savestates_in_content_dir sort_savefiles_enable sort_savefiles_by_content_enable sort_savestates_enable sort_savestates_by_content_enable game_specific_options config_save_on_exit auto_overrides_enable history_list_enable savestate_auto_save savestate_auto_load netplay_public_announce netplay_use_mitm_server netplay_nat_traversal; do
-            printf '%s = "false"\n' "$setting"
-        done
-        printf 'global_core_options = "true"\nautosave_interval = "0"\nnetplay_ip_port = "55435"\ninput_enable_hotkey_btn = "19"\ninput_menu_toggle_btn = "8"\n'
-    } >>"$run/retroarch.cfg"
-    printf 'tgbdual_gblink_enable = "enabled"\ntgbdual_single_screen_mp = "player %s only"\ntgbdual_audio_output = "Game Boy #%s"\n' "$player" "$player" >"$run/options.cfg"
+    /system/bin/console-netplay-input >"$run/controls.cfg" || exit 29
+    local native_config
+    native_config=$(/system/bin/console-native-netplay-profile link "$role" "$config" "$core" "$run") || exit 29
+    SDL_GAMECONTROLLERCONFIG=$(cat "$session/controller.map");export SDL_GAMECONTROLLERCONFIG
+    export CLOVE_NATIVE_LINK_CAPTURE="$run" CLOVE_NATIVE_LINK_CORE="$core" CLOVE_NATIVE_LINK_ROLE="$role"
+    : >"$run/native-export-required"
     stop_child "$notice"; notice=
-    /system/bin/retroarch --verbose --config "$run/retroarch.cfg" "$@" -L "$core" --subsystem gb_link_2p \
+    /system/bin/retroarch --verbose --config "$native_config" --sram-mode=noload-save "$@" -L "$core" --subsystem gb_link_2p \
         "$run/player1.gb" "$run/player2.gb" >"$run/retroarch.log" 2>&1 & ra=$!
 }
 wpa_available() { [ "$(system_wpa ping 2>/dev/null)" = PONG ]; }
@@ -129,7 +123,7 @@ cleanup() {
         if [ "$result" != 0 ]; then "$bb" tail -n 24 "$session/link/retroarch.log" 2>/dev/null || :; fi
         rm -rf -- "$session/link"
     fi
-    rm -f "$session/hostapd.conf" "$session/join.conf" "$session/wpa/$radio" "$session/ap/$radio"
+    rm -f "$session/controller.map" "$session/hostapd.conf" "$session/join.conf" "$session/wpa/$radio" "$session/ap/$radio"
     rmdir "$session/wpa" "$session/ap" "$session" 2>/dev/null || :
     exit "$result"
 }

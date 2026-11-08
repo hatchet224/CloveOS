@@ -1,62 +1,178 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
-# A writable, game/core-specific native RetroArch profile. Sessiond continues
-# to own every checkpoint, battery-save export, shutdown and content transition.
+# Native writable configuration; platform defaults are initialized once.
+# Save and lifecycle coordination must respect native settings and tasks.
 set -eu
 umask 077
 bb=/bin/busybox
+runtime=/run/console/native-runtime
+ra= monitor=
+cleanup() {
+    code=$?;trap - EXIT;trap '' INT TERM
+    if [ -n "$ra" ]; then kill -INT "$ra" 2>/dev/null || :;wait "$ra" 2>/dev/null || :;ra=;fi
+    if [ -n "$monitor" ]; then kill -TERM "$monitor" 2>/dev/null || :;wait "$monitor" 2>/dev/null || :;fi
+    if [ -f "$runtime/save-error" ];then code=31;fi
+    "$bb" tail -n 64 "$runtime/retroarch.log" >>/run/console/supervisor.log 2>/dev/null || :
+    "$bb" rm -f "$runtime/control" "$runtime/status" "$runtime/save-error" "$runtime/hotkey-consumed" "$runtime/import" "$runtime/audio-ready" "$runtime/exit-request" "$runtime/phase" "$runtime/retroarch.log"
+    "$bb" rmdir "$runtime" 2>/dev/null || :
+    exit "$code"
+}
+stop() {
+    trap '' INT TERM
+    code=0
+    if [ -n "$ra" ];then kill -INT "$ra" 2>/dev/null || :;wait "$ra" || code=$?;ra=;fi
+    exit "$code"
+}
+trap cleanup EXIT
+trap stop INT TERM
 test "$#" = 4
 factory=$1 core=$2 content=$3 game=$4
 case "$game" in ''|*[!0-9a-f]*) exit 2 ;; esac
 test "${#game}" = 64
 case "$factory" in /etc/console/*.cfg|/etc/console/core-configs/*.cfg) ;; *) exit 2 ;; esac
 test -f "$factory" && test ! -L "$factory"
-test -f "$core" && test -f "$content"
+if [ "$core" != --menu ];then
+    test -f "$core"
+    if [ ! -f "$content" ];then
+        # The native browser represents an archive member as archive#member.
+        # Keep that original argument for RetroArch; check the containing file.
+        archive=$(printf '%s' "$content"|"$bb" cut -d'#' -f1)
+        test "$archive" != "$content" && test -f "$archive"
+    fi
+fi
 card=/mnt/SDCARD
 "$bb" awk '$2 == "/mnt/SDCARD" && $3 == "vfat" { ok=1 } END { exit !ok }' /proc/mounts
-core_hash=$("$bb" sha256sum "$core"); core_hash=${core_hash%% *}
+hash_source=$core;[ "$core" != --menu ] || hash_source=$factory
+core_hash=$("$bb" sha256sum "$hash_source"); core_hash=${core_hash%% *}
 case "$core_hash" in ''|*[!0-9a-f]*) exit 2 ;; esac
 test "${#core_hash}" = 64
-base="$card/.console/retroarch-profiles"
-profile="$base/$game/$core_hash"
-for directory in "$card/.console" "$base" "$base/$game" "$profile" "$profile/config" "$profile/remaps" "$profile/overlays"; do
+# Native RetroArch owns its persistent configuration, options, overrides,
+# remaps, saves and states. Defaults are seeded once, never reapplied over edits.
+base="$card/.console/retroarch"
+profile="$base"
+for directory in "$card/.console" "$base" "$base/config" "$base/remaps" "$base/overlays" "$base/native-history" "$base/native-previews" "$base/imported-defaults" "$card/Saves" "$card/Saves/CurrentProfile" "$card/Saves/CurrentProfile/saves" "$card/Saves/CurrentProfile/states"; do
     test ! -L "$directory"
     "$bb" mkdir -p "$directory"
 done
+# Visible native core overrides carry the board's established presentation
+# defaults. They are seeded once and are ordinary editable RetroArch files.
+# In particular, VSync is now truthful: no driver hook ignores the user's value.
+if [ ! -e "$base/imported-defaults/platform-native-v1" ];then
+    for name in 'PPSSPP' 'PCSX-ReARMed' 'Mupen64Plus-Next' 'Flycast';do
+        directory="$base/config/$name";"$bb" mkdir -p "$directory"
+        file="$directory/$name.cfg"
+        if [ ! -e "$file" ];then
+            pending=$("$bb" mktemp "$directory/.defaults.XXXXXX")
+            case "$name" in
+                PPSSPP) printf 'audio_rate_control_delta = "0.04"\nvideo_vsync = "false"\nvideo_smooth = "true"\n' >"$pending" ;;
+                PCSX-ReARMed|Mupen64Plus-Next) printf 'video_vsync = "false"\n' >"$pending" ;;
+                Flycast)
+                    printf 'input_player1_up_axis = "-1"\ninput_player1_down_axis = "+1"\ninput_player1_left_axis = "-0"\ninput_player1_right_axis = "+0"\ninput_player1_analog_dpad_mode = "0"\n' >"$pending"
+                    printf 'input_player1_l_x_plus_axis = "+2"\ninput_player1_l_x_minus_axis = "-2"\ninput_player1_l_y_plus_axis = "+3"\ninput_player1_l_y_minus_axis = "-3"\ninput_player1_r_x_plus_axis = "nul"\ninput_player1_r_x_minus_axis = "nul"\ninput_player1_r_y_plus_axis = "nul"\ninput_player1_r_y_minus_axis = "nul"\n' >>"$pending" ;;
+            esac
+            "$bb" mv "$pending" "$file"
+        fi
+    done
+    : >"$base/imported-defaults/platform-native-v1"
+fi
 options=$("$bb" awk -F '"' '/^[[:space:]]*core_options_path[[:space:]]*=/ { print $2; exit }' "$factory")
 case "$options" in /etc/console/*.cfg|/etc/console/core-options/*.cfg) ;; *) exit 2 ;; esac
 test -f "$options" && test ! -L "$options"
 for file in "$profile/retroarch.cfg" "$profile/core-options.cfg"; do test ! -L "$file"; done
-if [ ! -e "$profile/core-options.cfg" ]; then
+if [ ! -e "$profile/core-options.cfg" ] && [ -f /etc/console/retroarch-core-options.cfg ];then
     pending=$("$bb" mktemp "$profile/.options.XXXXXX")
-    "$bb" cp "$options" "$pending"
+    "$bb" cat /etc/console/retroarch-core-options.cfg >"$pending"
     "$bb" mv "$pending" "$profile/core-options.cfg"
 fi
-case "$core" in */tgbdual_libretro.so)
+# Import each shipped core's defaults once, adding only missing option keys.
+# Existing native values, including TGB link mode, always win.
+marker="$base/imported-defaults/$core_hash"
+if [ ! -e "$marker" ]; then
     pending=$("$bb" mktemp "$profile/.options.XXXXXX")
-    "$bb" awk '!/^[[:space:]]*tgbdual_gblink_enable[[:space:]]*=/' "$profile/core-options.cfg" >"$pending"
-    printf 'tgbdual_gblink_enable = "disabled"\n' >>"$pending"
+    existing="$profile/core-options.cfg";test -e "$existing" || existing=/dev/null
+    "$bb" awk -F '=' 'FILENAME==ARGV[1] {print; key=$1;gsub(/^[ \t]+|[ \t]+$/, "",key);seen[key]=1;next} {key=$1;gsub(/^[ \t]+|[ \t]+$/, "",key);if(!seen[key]) print}' "$existing" "$options" >"$pending"
     "$bb" mv "$pending" "$profile/core-options.cfg"
-    ;; esac
-config="$profile/retroarch.cfg"
-# Carry forward user settings, while binding all writers and lifecycle-sensitive
-# options to this profile and the supervised state protocol on every launch.
-source=$factory; test ! -e "$config" || source=$config
-pending=$("$bb" mktemp "$profile/.config.XXXXXX")
-"$bb" awk '
- /^[[:space:]]*(core_options_path|config_save_on_exit|auto_overrides_enable|auto_remaps_enable|game_specific_options|global_core_options|input_remapping_directory|rgui_config_directory|overlay_directory|rgui_browser_directory|savefile_directory|savestate_directory|savefiles_in_content_dir|savestates_in_content_dir|autosave_interval|savestate_auto_save|savestate_auto_load|savestate_auto_index|savestate_file_compression|save_file_compression|block_sram_overwrite|network_cmd_enable|stdin_cmd_enable|ui_companion_enable|cheevos_enable|cheevos_hardcore_mode_enable|run_ahead_enabled|preemptive_frames_enable|menu_show_load_core|menu_show_load_content|menu_show_load_disc|menu_show_online_updater|quick_menu_show_undo_save_load_state|quick_menu_show_save_load_state|quick_menu_show_options|quick_menu_show_controls|quick_menu_show_restart_content|quick_menu_show_close_content|quick_menu_show_take_screenshot|menu_show_configurations|content_show_settings|menu_show_quit_retroarch|menu_driver)[[:space:]]*=/ { next }
- { print }
-' "$source" >"$pending"
-{
-    printf 'core_options_path = "%s/core-options.cfg"\n' "$profile"
-    printf 'input_remapping_directory = "%s/remaps"\nrgui_config_directory = "%s/config"\noverlay_directory = "%s/overlays"\n' "$profile" "$profile" "$profile"
-    printf 'rgui_browser_directory = "%s"\n' "$card"
-    printf 'savefile_directory = "/run/console/native-save-disabled"\nsavestate_directory = "/run/console/native-state-disabled"\n'
-    for key in config_save_on_exit auto_remaps_enable global_core_options content_show_settings menu_show_configurations menu_show_quit_retroarch quick_menu_show_save_load_state quick_menu_show_options quick_menu_show_controls quick_menu_show_restart_content quick_menu_show_close_content quick_menu_show_take_screenshot; do printf '%s = "true"\n' "$key"; done
-    for key in auto_overrides_enable game_specific_options savefiles_in_content_dir savestates_in_content_dir savestate_auto_save savestate_auto_load savestate_auto_index savestate_file_compression save_file_compression block_sram_overwrite network_cmd_enable stdin_cmd_enable ui_companion_enable cheevos_enable cheevos_hardcore_mode_enable run_ahead_enabled preemptive_frames_enable menu_show_load_core menu_show_load_content menu_show_load_disc menu_show_online_updater quick_menu_show_undo_save_load_state; do printf '%s = "false"\n' "$key"; done
-    printf 'autosave_interval = "0"\nmenu_driver = "rgui"\n'
-} >>"$pending"
-"$bb" mv "$pending" "$config"
+    : >"$marker"
+fi
+config="${CLOVE_NATIVE_CONFIG:-$profile/retroarch.cfg}"
+if [ ! -e "$config" ]; then
+    pending=$("$bb" mktemp "$profile/.config.XXXXXX")
+    # This is first-use platform path initialization, not a per-launch overlay.
+    "$bb" awk '!/^[[:space:]]*(core_options_path|input_remapping_directory|rgui_config_directory|overlay_directory|rgui_browser_directory|savefile_directory|savestate_directory|config_save_on_exit|sort_savefiles_enable|sort_savestates_enable|auto_overrides_enable|auto_remaps_enable|savestate_auto_load|savestate_auto_save|savestate_auto_index|global_core_options|game_specific_options|menu_show_load_core|menu_show_load_content|menu_show_configurations|core_info_cache_enable|user_language|assets_directory)[[:space:]]*=/' "$factory" >"$pending"
+    {
+        printf 'core_options_path = "%s/core-options.cfg"\n' "$profile"
+        printf 'input_remapping_directory = "%s/remaps"\nrgui_config_directory = "%s/config"\noverlay_directory = "%s/overlays"\n' "$profile" "$profile" "$profile"
+        printf 'rgui_browser_directory = "%s"\n' "$card"
+        printf 'savefile_directory = "%s/Saves/CurrentProfile/saves"\nsavestate_directory = "%s/Saves/CurrentProfile/states"\n' "$card" "$card"
+        language=0;case "${CLOVE_UI_LANGUAGE:-0}" in 1) language=3 ;; 2) language=9 ;; esac
+        printf 'user_language = "%s"\nassets_directory = "/opt/console/share/retroarch/assets"\n' "$language"
+        printf 'auto_overrides_enable = "true"\nauto_remaps_enable = "true"\nsavestate_auto_save = "true"\nsavestate_auto_load = "true"\nsavestate_auto_index = "true"\nglobal_core_options = "false"\ngame_specific_options = "true"\nmenu_show_load_core = "true"\nmenu_show_load_content = "true"\nmenu_show_configurations = "true"\ncore_info_cache_enable = "false"\n'
+        printf 'config_save_on_exit = "true"\nsort_savefiles_enable = "true"\nsort_savestates_enable = "true"\n'
+        if [ -n "${MAGICX_GAME_TWEAKS:-}" ];then
+            rate=$(printf '%s' "$MAGICX_GAME_TWEAKS"|"$bb" cut -d, -f2)
+            hide=$(printf '%s' "$MAGICX_GAME_TWEAKS"|"$bb" cut -d, -f4)
+            printf 'fastforward_ratio = "%s"\n' "$rate"
+            if [ "$hide" = 1 ];then printf 'menu_show_sublabels = "false"\nmenu_core_enable = "false"\n';fi
+        fi
+    } >>"$pending"
+    if [ "$(printf '%s' "${MAGICX_GAME_TWEAKS:-0,0,0,0}"|"$bb" cut -d, -f1)" = 1 ];then
+        "$bb" awk '
+            /^[[:space:]]*input_player[12]_[lr](2)?_(btn|axis)[[:space:]]*=/ {
+                key=$0;sub(/[[:space:]]*=.*/,"",key)
+                split(key,part,"_")
+                if(part[3] ~ /2$/)sub(/2$/,"",part[3]);else part[3]=part[3] "2"
+                key=part[1] "_" part[2] "_" part[3] "_" part[4]
+                sub(/^[^=]*/,key " ",$0)
+            } {print}' "$pending" >"$pending.swap"
+        "$bb" mv "$pending.swap" "$pending"
+    fi
+    "$bb" mv "$pending" "$config"
+fi
+legacy="$card/.console/retroarch-profiles/$game/$core_hash"
+migration="$base/imported-defaults/legacy-$game-$core_hash"
+if [ "$core" != --menu ] && [ ! -e "$migration" ] && [ -f "$legacy/retroarch.cfg" ];then
+    stem=$("$bb" basename "$core" _libretro.so)
+    info="/system/share/console/core-info/$stem.info"
+    name=
+    if [ -f "$info" ];then name=$("$bb" awk -F '"' '/^[[:space:]]*corename[[:space:]]*=/ {print $2;exit}' "$info");fi
+    case "$name" in ''|*/*|.|..) ;; *)
+        directory="$base/config/$name";"$bb" mkdir -p "$directory"
+        title=$("$bb" basename "$content");title=$(printf '%s' "$title" | "$bb" sed 's/\.[^.]*$//')
+        file="$directory/$title.cfg"
+        if [ ! -e "$file" ];then
+            pending=$("$bb" mktemp "$directory/.legacy.XXXXXX")
+            "$bb" awk '/^[[:space:]]*(rewind_|state_slot[[:space:]]*=|input_|audio_|video_|fastforward_ratio|slowmotion_ratio|run_ahead_|preemptive_|notification_|cheevos_|overlay_|shader_)/ {print}' "$legacy/retroarch.cfg" >"$pending"
+            "$bb" mv "$pending" "$file"
+        fi
+        if [ -f "$legacy/core-options.cfg" ] && [ ! -e "$directory/$title.opt" ];then
+            pending=$("$bb" mktemp "$directory/.legacy-options.XXXXXX")
+            "$bb" cat "$legacy/core-options.cfg" >"$pending";"$bb" mv "$pending" "$directory/$title.opt"
+        fi
+        : >"$migration" ;;
+    esac
+fi
+# Remove the legacy owner environment. All native callbacks execute normally.
+unset MAGICX_BRIDGE_LAUNCH MAGICX_INPUT_PROFILE CLOVE_UI_LANGUAGE
+export CLOVE_NATIVE_SESSION=/run/console/native-runtime
 export MAGICX_FACTORY_CONFIG="$factory" MAGICX_FACTORY_OPTIONS="$options"
 export HOME="$profile" XDG_CONFIG_HOME="$profile"
-exec /system/bin/retroarch --config "$config" -L "$core" "$content" --verbose
+printf 'starting-emulator\n' >"$runtime/phase"
+if [ "$core" = --menu ];then
+    /system/bin/retroarch --menu --config "$config" --verbose >"$runtime/retroarch.log" 2>&1 & ra=$!
+else
+    /system/bin/retroarch --config "$config" -L "$core" "$content" --verbose >"$runtime/retroarch.log" 2>&1 & ra=$!
+fi
+monitor_native() {
+    trap 'exit 0' TERM
+    ready=
+    while kill -0 "$ra" 2>/dev/null;do
+        if [ -z "$ready" ] && "$bb" grep -q '\[Audio\]: Started .*audio driver' "$runtime/retroarch.log";then
+            printf 'ready\n' >"$runtime/audio-ready";ready=1
+        fi
+        "$bb" sleep 0.1
+    done
+}
+printf 'emulator-running\n' >"$runtime/phase"
+monitor_native & monitor=$!
+code=0;wait "$ra" || code=$?;ra=
+exit "$code"

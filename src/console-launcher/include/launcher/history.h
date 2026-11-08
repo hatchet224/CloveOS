@@ -5,7 +5,7 @@
 
 #define CL_HISTORY_MAX 100U
 #define CL_VISIBLE_ROWS 6U
-#define CL_MANUAL_MAX 16U
+#define CL_MANUAL_MAX 1000U /* Native RetroArch slots 0..999; legacy store still has 16. */
 #define CL_LIBRARY_BOUND 1024U
 #define CL_LIBRARY_UI_BOUND (CL_LIBRARY_BOUND + 3U)
 enum cl_app_feature {
@@ -61,7 +61,7 @@ struct cl_entry
      * authority. Discovered entries without enrollment remain browseable. */
     char content_path[512], artwork_path[512], screenshot_path[512];
     uint64_t total_play_seconds; /* Runtime Activity Tracker query; never launch authority. */
-    bool discovered, launch_registered;
+    bool discovered, launch_registered, native_state;
     enum cl_library_action library_action; /* Transient UI rows only. */
     unsigned int disc_index, disc_count;
     char next_disc_game[65]; /* Presentation only; next request is fully revalidated. */

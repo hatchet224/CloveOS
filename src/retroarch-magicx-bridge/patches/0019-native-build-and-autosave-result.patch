@@ -1,0 +1,34 @@
+--- a/Makefile
++++ b/Makefile
+@@ -172,6 +172,10 @@
+ endif
+ 
+ all: $(TARGET) config.mk
++
++ifeq ($(HAVE_MAGICX_BRIDGE), 1)
++$(OBJDIR)/magicx/magicx_retroarch.o: magicx/clove_native.inc magicx/clove_native_session.h magicx/magicx_retroarch.h
++endif
+ 
+ $(MOC_SRC):
+ 	@$(if $(Q), $(shell echo echo MOC $<),)
+--- a/command.c
++++ b/command.c
+@@ -1309,7 +1309,8 @@
+          ".auto",
+          sizeof(savestate_name_auto) - _len);
+ 
+-   if (content_auto_save_state((const char*)savestate_name_auto))
++   bool saved = content_auto_save_state((const char*)savestate_name_auto);
++   if (saved)
+ 	   RARCH_LOG("%s \"%s\" %s.\n",
+ 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
+ 			   savestate_name_auto, "succeeded");
+@@ -1318,7 +1319,7 @@
+ 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
+ 			   savestate_name_auto, "failed");
+ 
+-   return true;
++   return saved;
+ }
+ 
+ #ifdef HAVE_CHEATS

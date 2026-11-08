@@ -8,6 +8,7 @@
 #include "supervisor/glo_scripts.h"
 #include "supervisor/clock.h"
 #include "supervisor/maintenance.h"
+#include "supervisor/native_session.h"
 #include "supervisor/zip.h"
 #include "console_activity/activity.h"
 #include "launcher/icons.h"
@@ -1146,6 +1147,34 @@ static bool reset_native_profiles(const struct cs_store *store, uint64_t scope)
     return ok&&cs_store_check_media(store)==CS_STORE_OK;
 }
 
+static bool reset_native_netplay(const struct cs_store *store,uint64_t scope)
+{
+    int root=openat(store->data_fd,"retroarch",O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+    if(root<0)return errno==ENOENT;
+    int fd=openat(root,"netplay",O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);close(root);
+    if(fd<0)return errno==ENOENT;
+    DIR *directory=fdopendir(fd);if(!directory){close(fd);return false;}
+    bool ok=true;struct dirent *entry;
+    const char *const modes[]={"standard-host","standard-join","link-host","link-join"};
+    while(ok && (entry=readdir(directory))){
+        if(!strcmp(entry->d_name,".")||!strcmp(entry->d_name,".."))continue;
+        if(!cs_hex_valid(entry->d_name,64U)){ok=false;break;}
+        int core=openat(fd,entry->d_name,O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);if(core<0){ok=false;break;}
+        for(size_t i=0;i<sizeof(modes)/sizeof(modes[0])&&ok;i++){
+            int profile=openat(core,modes[i],O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+            if(profile<0){if(errno!=ENOENT)ok=false;continue;}
+            if(scope==CL_RESET_RETROARCH||scope==CL_RESET_ALL)ok=clear_setting(store,profile,"retroarch.cfg",0U);
+            if(scope==CL_RESET_CORE_OVERRIDES||scope==CL_RESET_ALL){
+                const char *const names[]={"core-options.cfg","config","remaps"};
+                for(size_t n=0;n<3U&&ok;n++)ok=clear_setting(store,profile,names[n],4U);
+            }
+            if(cs_flush_directory(profile,store->fat,store->qualified_fat_syncfs)!=0)ok=false;close(profile);
+        }
+        close(core);
+    }
+    closedir(directory);return ok&&cs_store_check_media(store)==CS_STORE_OK;
+}
+
 static void reset_config(const struct sc_config *c, const struct cs_store *store,
                          uint64_t scope, struct cl_tool_snapshot *s)
 {
@@ -1161,11 +1190,17 @@ static void reset_config(const struct sc_config *c, const struct cs_store *store
     const char *const mainui[] = {"presentation.json", "theme.json", "icons.json"};
     bool ok = true;
     if (scope == CL_RESET_RETROARCH || scope == CL_RESET_ALL)
-        ok = reset_profile(store, "standalone-retroarch", retroarch, 1U, 0U);
+        ok = reset_profile(store, "standalone-retroarch", retroarch, 1U, 0U) &&
+             reset_profile(store, "retroarch", retroarch, 1U, 0U);
     if (scope == CL_RESET_CORE_OVERRIDES || scope == CL_RESET_ALL)
-        ok = reset_profile(store, "standalone-retroarch", cores, 3U, 4U) && ok;
+        ok = reset_profile(store, "standalone-retroarch", cores, 3U, 4U) &&
+             reset_profile(store, "retroarch", cores, 3U, 4U) && ok;
+    if (scope == CL_RESET_CORE_OVERRIDES || scope == CL_RESET_ALL) {
+        const char *const markers[]={"imported-defaults"};
+        ok=reset_profile(store,"retroarch",markers,1U,1U)&&ok;
+    }
     if (scope == CL_RESET_RETROARCH || scope == CL_RESET_CORE_OVERRIDES || scope == CL_RESET_ALL)
-        ok = reset_native_profiles(store,scope) && ok;
+        ok = reset_native_profiles(store,scope) && reset_native_netplay(store,scope) && ok;
     if (scope == CL_RESET_ADVANCE || scope == CL_RESET_ALL)
         ok = reset_profile(store, "standalone-advance", advance, 3U, 0U) && ok;
     if (scope == CL_RESET_ALL) {
@@ -1273,6 +1308,8 @@ static void regenerate_history(const struct sc_config *c, const struct cs_store 
         for (size_t i = 0; i < recent->count; ++i)
             import_recent_game(c, history, recent->entries[i].game.relative_path);
     import_retroarch_history(c, history, ".console/standalone-retroarch/content_history.lpl");
+    import_retroarch_history(c, history, ".console/retroarch/content_history.lpl");
+    sc_native_history(c,history);
     import_retroarch_history(c, history, "RetroArch/.retroarch/content_history.lpl");
     if (history->count == 0U) {
         fail(s, "No matching games in Activity Tracker or RetroArch history. Current list retained.");

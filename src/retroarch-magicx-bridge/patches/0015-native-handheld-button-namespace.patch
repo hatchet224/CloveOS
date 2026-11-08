@@ -1,0 +1,11 @@
+--- a/input/drivers_joypad/sdl_joypad.c
++++ b/input/drivers_joypad/sdl_joypad.c
+@@ -126,7 +126,7 @@
+     * cannot represent raw MENU21). Choose the raw path before pad init. */
+    if (SDL_IsGameController(id)
+ #ifdef HAVE_MAGICX_BRIDGE
+-         && !magicx_retroarch_requested()
++         && !magicx_retroarch_requested() && getenv("CLOVE_NATIVE_SESSION")==NULL
+ #endif
+       )
+    {

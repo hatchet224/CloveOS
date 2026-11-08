@@ -28,7 +28,7 @@ target_include_directories(console_online_codec PUBLIC vendor ../console-launche
 target_compile_definitions(console_online_codec PRIVATE LODEPNG_NO_COMPILE_DISK)
 target_compile_options(console_online_codec PRIVATE -w)
 add_library(console_control STATIC src/wire.c src/process.c src/mount.c src/cpu_policy.c src/clock.c src/timezone.c
-            src/package_registry.c src/package_manager.c src/network.c src/transfer.c src/online.c src/api_document.c src/online_art.c src/zip.c src/elf_dependency.c src/core_choice.c src/maintenance.c src/glo_scripts.c src/battery_monitor.c)
+            src/package_registry.c src/package_manager.c src/network.c src/transfer.c src/online.c src/api_document.c src/online_art.c src/zip.c src/elf_dependency.c src/native_session.c src/core_choice.c src/maintenance.c src/glo_scripts.c src/battery_monitor.c)
 target_link_libraries(console_control PUBLIC console_online_codec)
 set(CONSOLE_ONLINE_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../work/build-download/prefix" CACHE PATH
     "AArch64 static libcurl/Mbed TLS installation built for the same libc")
@@ -72,6 +72,10 @@ target_compile_options(five_apps_backend_tests PRIVATE -UNDEBUG)
 add_executable(console-ctl src/ctl.c)
 target_link_libraries(console-ctl PRIVATE console_control)
 find_package(SDL2 2.0.5 CONFIG REQUIRED)
+add_executable(console-native-launch src/native_launch.c src/config.c src/catalog_index.c)
+target_link_libraries(console-native-launch PRIVATE console_control)
+target_compile_definitions(console-native-launch PRIVATE _GNU_SOURCE _FILE_OFFSET_BITS=64)
+install(TARGETS console-native-launch RUNTIME DESTINATION bin)
 add_executable(console-netplay-input src/netplay_input.c)
 target_link_libraries(console-netplay-input PRIVATE sessiond_linux SDL2::SDL2)
 target_compile_options(console-netplay-input PRIVATE -Wall -Wextra -Werror -Wno-misleading-indentation)
@@ -84,12 +88,13 @@ set(SDL2MIXER_OPUS OFF CACHE BOOL "" FORCE)
 set(SDL2MIXER_WAVPACK OFF CACHE BOOL "" FORCE)
 set(SDL2MIXER_CMD OFF CACHE BOOL "" FORCE)
 set(SDL2MIXER_VORBIS STB CACHE STRING "" FORCE)
-add_subdirectory(../console-portmaster/vendor/SDL_mixer ${CMAKE_CURRENT_BINARY_DIR}/portmaster-mixer EXCLUDE_FROM_ALL)
+set(CONSOLE_PORTMASTER_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../console-portmaster/vendor" CACHE PATH "Prepared pinned PortMaster dependency source cache")
+add_subdirectory("${CONSOLE_PORTMASTER_VENDOR_DIR}/SDL_mixer" ${CMAKE_CURRENT_BINARY_DIR}/portmaster-mixer EXCLUDE_FROM_ALL)
 add_library(SDL2_gfx SHARED
-    ../console-portmaster/vendor/SDL2_gfx/SDL2_gfxPrimitives.c
-    ../console-portmaster/vendor/SDL2_gfx/SDL2_rotozoom.c
-    ../console-portmaster/vendor/SDL2_gfx/SDL2_framerate.c
-    ../console-portmaster/vendor/SDL2_gfx/SDL2_imageFilter.c)
+    ${CONSOLE_PORTMASTER_VENDOR_DIR}/SDL2_gfx/SDL2_gfxPrimitives.c
+    ${CONSOLE_PORTMASTER_VENDOR_DIR}/SDL2_gfx/SDL2_rotozoom.c
+    ${CONSOLE_PORTMASTER_VENDOR_DIR}/SDL2_gfx/SDL2_framerate.c
+    ${CONSOLE_PORTMASTER_VENDOR_DIR}/SDL2_gfx/SDL2_imageFilter.c)
 target_link_libraries(SDL2_gfx PRIVATE SDL2::SDL2 m)
 set_target_properties(SDL2_gfx PROPERTIES OUTPUT_NAME SDL2_gfx-1.0 SOVERSION 0)
 target_compile_options(SDL2_gfx PRIVATE -w)
@@ -115,7 +120,7 @@ target_compile_definitions(console-link-cable PRIVATE _GNU_SOURCE _FILE_OFFSET_B
 install(TARGETS console-link-cable RUNTIME DESTINATION bin)
 target_compile_definitions(console-netplay-peer PRIVATE _GNU_SOURCE)
 install(TARGETS console-netplay-peer RUNTIME DESTINATION bin)
-install(PROGRAMS init/console-easy-netplay init/console-managed-retroarch DESTINATION bin)
+install(PROGRAMS init/console-easy-netplay init/console-managed-retroarch init/console-native-netplay-profile DESTINATION bin)
 add_executable(console-time-sync src/time_sync.c)
 target_compile_options(console-time-sync PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror)
 install(TARGETS console-time-sync RUNTIME DESTINATION bin)
@@ -140,6 +145,14 @@ install(FILES config/cards.conf DESTINATION bootstrap/etc/console
 install(FILES config/supervisor.json config/base-profile.json config/bridge-launch.json config/ui.json
         DESTINATION bootstrap/etc/console)
 if(BUILD_TESTING)
+    add_executable(native_legacy_import_tests tests/test_native_legacy_import.c src/config.c src/catalog_index.c)
+    target_link_libraries(native_legacy_import_tests PRIVATE console_control)
+    add_executable(native_catalog_tests tests/test_native_catalog.c src/config.c src/catalog_index.c)
+    target_link_libraries(native_catalog_tests PRIVATE console_control)
+    target_compile_definitions(native_catalog_tests PRIVATE _GNU_SOURCE)
+    add_executable(native_authority_tests tests/test_native_authority.c src/config.c src/catalog_index.c)
+    target_link_libraries(native_authority_tests PRIVATE console_control)
+    target_compile_definitions(native_authority_tests PRIVATE _GNU_SOURCE)
     add_executable(netplay_level_drain_tests tests/test_netplay_level_drain.c src/config.c src/disk.c src/catalog_index.c src/diagnostics.c src/tools_backend.c src/file_service.c src/lan_services.c)
     target_link_libraries(netplay_level_drain_tests PRIVATE console_control)
     target_compile_options(netplay_level_drain_tests PRIVATE -UNDEBUG)

@@ -1,0 +1,136 @@
+{
+  "status": "Production custom guards retired; seven exact sealed-payload software suites passed; physical acceptance and publication pending",
+  "base": "35b378549326da7d7a03b77dd5f1684fc93f66a6",
+  "rows": [
+    {
+      "layer": "native setting action",
+      "controls": [
+        "autosave_interval",
+        "savestate_auto_save",
+        "savestate_auto_load",
+        "savestate_auto_index",
+        "savestate_file_compression",
+        "save_file_compression",
+        "block_sram_overwrite",
+        "savefile_directory",
+        "savestate_directory",
+        "savefiles_in_content_dir",
+        "savestates_in_content_dir",
+        "system_directory",
+        "core_options_path",
+        "config_save_on_exit",
+        "auto_overrides_enable",
+        "auto_remaps_enable",
+        "game_specific_options",
+        "global_core_options",
+        "threaded_data_runloop_enable",
+        "run_ahead_enabled",
+        "preemptive_frames_enable",
+        "cheevos_enable",
+        "cheevos_hardcore_mode_enable",
+        "network_cmd_enable",
+        "stdin_cmd_enable",
+        "ui_companion_enable",
+        "menu_driver",
+        "input_driver",
+        "input_joypad_driver",
+        "input_player1_joypad_index",
+        "input_remapping_directory",
+        "rgui_config_directory",
+        "apply_cheats_after_load",
+        "apply_cheats_after_toggle",
+        "input_enable_hotkey*",
+        "input_menu_toggle*",
+        "input_exit_emulator*"
+      ],
+      "required": "Remove interception and allow real upstream callbacks with native persistence",
+      "previous_behavior": "Intercepts native changes as no-op",
+      "current_behavior": "Native upstream authority; legacy immutable owner cannot activate in production",
+      "disposition": "Custom production restriction removed; ordinary upstream callbacks/persistence; software coverage in QUALIFICATION.json; exhaustive physical control matrix pending"
+    },
+    {
+      "layer": "Rewind",
+      "controls": [
+        "rewind_enable",
+        "rewind_buffer_size",
+        "rewind_granularity",
+        "rewind_buffer_size_step"
+      ],
+      "required": "Upstream capability/ranges; real resizing/failure handling; preserve values across checkpoint/cold restore",
+      "previous_behavior": "TGB-only policy,16MiB/1-frame force, three native controls no-op",
+      "current_behavior": "Native upstream authority; legacy immutable owner cannot activate in production",
+      "disposition": "Custom production restriction removed; ordinary upstream callbacks/persistence; software coverage in QUALIFICATION.json; exhaustive physical control matrix pending"
+    },
+    {
+      "layer": "Launcher",
+      "controls": [
+        "forced configuration overlay",
+        "TGB link reset",
+        "disabled save/state directories",
+        "per-game profiles"
+      ],
+      "required": "Seed writable native config once; honor edits, paths, overrides, save/load and config save-on-exit",
+      "previous_behavior": "Rewrites user config and core options every launch",
+      "current_behavior": "Native upstream authority; legacy immutable owner cannot activate in production",
+      "disposition": "Custom production restriction removed; ordinary upstream callbacks/persistence; software coverage in QUALIFICATION.json; exhaustive physical control matrix pending"
+    },
+    {
+      "layer": "Commands",
+      "controls": [
+        "save/load",
+        "Undo",
+        "slots",
+        "screenshot",
+        "reset",
+        "load/unload core",
+        "disk controls",
+        "Netplay",
+        "shutdown/reboot/restart",
+        "close/quit"
+      ],
+      "required": "Native operations execute; save/checkpoint/process handoff must coordinate rather than forbid them",
+      "previous_behavior": "Replaces or blocks native operations with supervisor commands",
+      "current_behavior": "Native upstream authority; legacy immutable owner cannot activate in production",
+      "disposition": "Custom production restriction removed; ordinary upstream callbacks/persistence; software coverage in QUALIFICATION.json; exhaustive physical control matrix pending"
+    },
+    {
+      "layer": "Content/config tasks",
+      "controls": [
+        "12 task-content entry guards",
+        "configuration load/save/replace actions"
+      ],
+      "required": "Remove task entry locks and adapt lifecycle ownership to actual native transitions",
+      "previous_behavior": "Rejects callbacks when lifecycle owned",
+      "current_behavior": "Native upstream authority; legacy immutable owner cannot activate in production",
+      "disposition": "Custom production restriction removed; ordinary upstream callbacks/persistence; software coverage in QUALIFICATION.json; exhaustive physical control matrix pending"
+    },
+    {
+      "layer": "Post-edit policy",
+      "controls": [
+        "qualified_settings",
+        "native_owned_options",
+        "raw shortcut filtering",
+        "factory configuration normalization"
+      ],
+      "required": "Remove UI-policy rejection/reset; retain only actual upstream/core limitations and coordinate writers/context safely",
+      "previous_behavior": "Rejects or overwrites otherwise valid native changes",
+      "current_behavior": "Native upstream authority; legacy immutable owner cannot activate in production",
+      "disposition": "Custom production restriction removed; ordinary upstream callbacks/persistence; software coverage in QUALIFICATION.json; exhaustive physical control matrix pending"
+    }
+  ],
+  "stock_reference": "Prior reviewed stock native menu comparison; stock RetroArch 1.15 versus Clove RetroArch 1.19.1; exact version parity is not claimed",
+  "stock_RA": "1.15",
+  "Clove_RA": "1.19.1",
+  "exact_stock_parity_not_claimed": true,
+  "no_SD_writes": true,
+  "implemented_pending_runtime": [],
+  "remaining_integration": "Physical handheld acceptance and source/license/vendor publication review; no SD write performed",
+  "source_complete": true,
+  "release_ready": false,
+  "retained_constraints": [
+    "Upstream Netplay/hardcore state and rewind restrictions",
+    "Core serialization/RTC capability and compiled build features",
+    "Actual allocation, path access, disk space, core loader and hardware support errors",
+    "Authenticated migration only for matching original core/content/artifact identities; original bytes retained"
+  ]
+}

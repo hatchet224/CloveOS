@@ -59,8 +59,17 @@ int main(void)
 {
     struct supervisor *s=calloc(1U,sizeof(*s));assert(s!=NULL);
     const enum cs_operation operations[]={CS_OP_POWER_PREPARE,CS_OP_SHUTDOWN,CS_OP_STANDBY_ENTER,CS_OP_STANDBY_LEAVE};
+        for(unsigned operation=0;operation<2;operation++){
+        initialize(s);struct writer native=start_writer();s->native_pid=native.pid;
+        s->hook_pending=true;s->hook.request.operation=operation?CS_OP_SHUTDOWN:CS_OP_POWER_PREPARE;s->hook_deadline=10U;
+        service_hook(s,1U);assert(s->hook_pending&&s->hook_out.count==0U);
+        exit_without_reap(&native);service_hook(s,101U);assert(s->hook_pending&&s->hook_out.count==0U&&s->native_pid==native.pid);
+        reap(s);assert(s->native_pid==0);service_hook(s,102U);assert(!s->hook_pending&&s->hook_out.count==1U);
+        sc_discard(&s->hook_out);release_record(&native);
+    }
+    puts("NATIVE_REAL_WRITER_WAITPID_POWER_PREPARE_AND_SHUTDOWN_BARRIERS_PASS");
     for(size_t i=0U;i<sizeof(operations)/sizeof(operations[0]);++i){
-        initialize(s);struct writer w=start_writer();s->netplay_level_pid=w.pid;
+    initialize(s);struct writer w=start_writer();s->netplay_level_pid=w.pid;
         s->hook_pending=true;s->hook.request.operation=operations[i];s->hook_deadline=10U;
         unsigned int before=spawned;
         service_hook(s,1U);assert(s->hook_pending&&s->hook_out.count==0U&&spawned==before);

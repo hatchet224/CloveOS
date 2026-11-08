@@ -203,9 +203,8 @@ static enum cs_result maintenance(void *context, struct cs_store *store) {
         enum cl_history_result history_result = cl_history_set_checkpoint(store,m->remove_game,&empty,&empty,&m->history);
         return history_result == CL_HISTORY_OK || history_result == CL_HISTORY_EMPTY ? CS_RESULT_COMPLETED : CS_RESULT_FAILED;
     }
-    return cl_history_remove(store, m->remove_game, &m->history) == CL_HISTORY_OK
-               ? CS_RESULT_COMPLETED
-               : CS_RESULT_FAILED;
+    enum cl_history_result removed=cl_history_remove(store,m->remove_game,&m->history);
+    return removed==CL_HISTORY_OK || removed==CL_HISTORY_EMPTY?CS_RESULT_COMPLETED:CS_RESULT_FAILED;
 }
 static void wire_worker(struct managed *m) {
     m->worker.managed = true;

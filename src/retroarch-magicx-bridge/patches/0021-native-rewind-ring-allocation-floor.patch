@@ -1,0 +1,16 @@
+--- a/state_manager.c
++++ b/state_manager.c
+@@ -403,7 +403,12 @@
+    uint8_t *next_block    = NULL;
+    uint8_t *this_block    = NULL;
+    uint8_t *state_data    = NULL;
+-   state_manager_t *state = (state_manager_t*)calloc(1, sizeof(*state));
++   state_manager_t *state = NULL;
++   /* Native preference files can request a zero/tiny history. The ring needs
++    * room for one maximum delta and its two links before its first push. */
++   if (!state_size || buffer_size < state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2U)
++      return NULL;
++   state = (state_manager_t*)calloc(1, sizeof(*state));
+ 
+    if (!state)
+       return NULL;

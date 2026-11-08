@@ -429,20 +429,29 @@ func linkReady(folder string) {
 	die(e)
 	die(os.Remove(path.Join(folder, "inbox/host_ready")))
 }
+func linkBatteryPath(folder, fallback, captured string) string {
+	if data, err := os.ReadFile(path.Join(folder, "native-battery/complete")); err == nil && string(data) == "ready\n" {
+		return path.Join(folder, "native-battery", captured)
+	}
+	if _, err := os.Stat(path.Join(folder, "native-export-required")); err == nil {
+		return path.Join(folder, "native-battery-unavailable", captured)
+	}
+	return path.Join(folder, fallback)
+}
 func linkFinish(folder string) {
 	linkPhase("returning-saves")
 	var state LinkSession
 	readJSON(path.Join(folder, "link-session.json"), &state)
 	if state.Role == "host" {
-		own, e := readBounded(path.Join(folder, "saves/player1.srm"), 131072)
+		own, e := readBounded(linkBatteryPath(folder, "saves/player1.srm", "player1.srm"), 131072)
 		die(e)
-		rtc, e := readBounded(path.Join(folder, "saves/player1.rtc"), 4)
+		rtc, e := readBounded(linkBatteryPath(folder, "saves/player1.rtc", "player1.rtc"), 4)
 		die(e)
 		die(persistLink(state, own, rtc))
 		die(notify(state.PeerAddress, "ready_to_send"))
 		_, e = waitFile(path.Join(folder, "inbox/ready_to_receive"), 40)
 		die(e)
-		other, e := readBounded(path.Join(folder, "saves/player2.srm"), 131072)
+		other, e := readBounded(linkBatteryPath(folder, "saves/player2.srm", "player2.srm"), 131072)
 		die(e)
 		if len(other) != state.PeerSRAM {
 			die(errors.New("returned peer battery size differs"))
@@ -456,7 +465,7 @@ func linkFinish(folder string) {
 		die(e)
 		own, e := waitFile(path.Join(folder, "inbox", state.OwnSave+"_rcvd"), 30)
 		die(e)
-		rtc, e := readBounded(path.Join(folder, "saves/.netplay/player2.rtc"), 4)
+		rtc, e := readBounded(linkBatteryPath(folder, "saves/.netplay/player2.rtc", "player2.rtc"), 4)
 		die(e)
 		die(persistLink(state, own, rtc))
 	}

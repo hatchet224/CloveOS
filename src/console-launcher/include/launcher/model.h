@@ -42,7 +42,7 @@ struct cl_input_profile {
 enum cl_launch_kind { CL_LAUNCH_FRESH, CL_LAUNCH_CHECKPOINT, CL_LAUNCH_MANUAL,
                       CL_LAUNCH_SCRIPT, CL_LAUNCH_NETPLAY_HOST, CL_LAUNCH_NETPLAY_JOIN,
                       CL_LAUNCH_FILE_EXPLORER, CL_LAUNCH_EASY_HOST, CL_LAUNCH_EASY_JOIN,
-                      CL_LAUNCH_LINK_HOST, CL_LAUNCH_LINK_JOIN, CL_LAUNCH_PORTMASTER };
+                      CL_LAUNCH_LINK_HOST, CL_LAUNCH_LINK_JOIN, CL_LAUNCH_PORTMASTER, CL_LAUNCH_NATIVE, CL_LAUNCH_NATIVE_STATE };
 enum cl_glo_scope { CL_GLO_GAMES, CL_GLO_EXPERT, CL_GLO_FAVORITES, CL_GLO_RECENTS };
 struct cl_launch_intent {
     struct cs_identity identity;
@@ -54,6 +54,7 @@ struct cl_launch_intent {
 };
 struct cl_manual_state {
     unsigned int slot;
+    bool native;
     char label[49];
     enum cl_availability status;
     struct cl_reference reference;
@@ -62,6 +63,7 @@ struct cl_state_snapshot {
     struct cs_identity identity, qualified_identity;
     uint64_t history_revision;
     enum cl_availability game_status, latest_status, previous_status;
+    bool native_available, native_latest;
     struct cl_reference latest, previous;
     struct cl_manual_state manual[CL_MANUAL_MAX];
     size_t manual_count;

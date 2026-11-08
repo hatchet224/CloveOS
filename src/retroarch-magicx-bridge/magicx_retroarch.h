@@ -5,6 +5,12 @@
 #include <stddef.h>
 #include <stdint.h>
 bool magicx_retroarch_init(void);
+bool magicx_native_autoload_permitted(void);
+void magicx_native_state_loaded(void);
+bool magicx_native_load_path(const char *path);
+void magicx_native_prepare_state(void);
+bool magicx_native_save_begin(const char *path,char *pending,size_t capacity);
+bool magicx_native_save_finish(const char *path,const char *pending,bool complete);
 void magicx_retroarch_apply_language(void);
 bool magicx_retroarch_poll(void); /* true: content exited; skip the ordinary runloop */
 void magicx_retroarch_deinit(void);

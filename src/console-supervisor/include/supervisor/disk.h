@@ -3,11 +3,14 @@
 #include "console_activity/activity.h"
 #include "supervisor/config.h"
 #include <pthread.h>
+#include "supervisor/native_session.h"
 #define SC_DISK_JOBS 8U
 struct sc_disk_result
 {
     struct sc_message message;
     struct cs_record resume;
+    struct clove_native_record native_resume;
+    bool native_candidate, native_maintenance;
     struct cl_input_verification verification;
     bool automatic_candidate, final, ok, verification_loaded, verification_write;
     bool activity_write;

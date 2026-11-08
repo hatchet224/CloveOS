@@ -34,6 +34,19 @@ int main(int argc,char **argv)
 {
  char path[1024],directory[1024],other[1024],record[1024];struct cl_preferences *w,*second;struct cl_preference_snapshot s,before;struct statfs fs;
  assert(argc==2&&SDL_Init(0)==0);assert(mkdir(argv[1],0700)==0);assert(statfs(argv[1],&fs)==0);
+ card(path,argv[1],"native-sync");join(directory,path,".console");join(record,directory,"retroarch");assert(!mkdir(record,0700));
+ write_text(record,"retroarch.cfg","fastforward_ratio = \"9\"\nrewind_granularity = \"7\"\nconfig_save_on_exit = \"false\"\nsavefile_directory = \"/custom/native\"\ninput_player1_l_btn = \"21\"\ninput_player1_l2_btn = \"22\"\ninput_player2_l_btn = \"31\"\ninput_player2_l2_btn = \"32\"\n");
+ w=cl_preferences_test_start(path,uuid,false,0);assert(!wait_snapshot(w,0).error);
+ uint32_t tweaked=(UINT32_C(1)<<CL_TRIGGER_SWAP_SHIFT)|(UINT32_C(6)<<CL_FAST_FORWARD_SHIFT);
+ assert(cl_preferences_submit_ui(w,false,0,CL_HIDE_HINT_LABELS,tweaked));s=wait_snapshot(w,1);assert(!s.error&&cl_preferences_stop(w));
+ char native_file[1024],native_data[8192];join(native_file,record,"retroarch.cfg");FILE *native=fopen(native_file,"r");assert(native);size_t native_n=fread(native_data,1,sizeof(native_data)-1,native);assert(!ferror(native)&&!fclose(native));native_data[native_n]=0;
+ assert(strstr(native_data,"fastforward_ratio = \"6\"")&&strstr(native_data,"rewind_granularity = \"7\"")&&strstr(native_data,"config_save_on_exit = \"false\"")&&strstr(native_data,"savefile_directory = \"/custom/native\""));
+ assert(strstr(native_data,"input_player1_l_btn = \"22\"")&&strstr(native_data,"input_player1_l2_btn = \"21\"")&&strstr(native_data,"input_player2_l_btn = \"32\"")&&strstr(native_data,"input_player2_l2_btn = \"31\""));
+ assert(strstr(native_data,"menu_show_sublabels = \"false\""));
+ write_text(record,"retroarch.cfg","fastforward_ratio = \"13\"\nrewind_granularity = \"9\"\n");
+ w=cl_preferences_test_start(path,uuid,false,0);assert(!wait_snapshot(w,0).error);assert(cl_preferences_submit(w,true,2));s=wait_snapshot(w,1);assert(!s.error&&cl_preferences_stop(w));
+ native=fopen(native_file,"r");assert(native);native_n=fread(native_data,1,sizeof(native_data)-1,native);assert(!ferror(native)&&!fclose(native));native_data[native_n]=0;assert(strstr(native_data,"fastforward_ratio = \"13\"")&&strstr(native_data,"rewind_granularity = \"9\""));
+ puts("NATIVE_EXPLICIT_TWEAKS_SYNC_AND_UNRELATED_PREFERENCE_EDITS_PRESERVE_NATIVE_CHOICES_PASS");
  card(path,argv[1],"early-stop");w=cl_preferences_test_start(path,uuid,false,0);assert(w);
  assert(cl_preferences_finish_latest(w,true,true,3));
  w=cl_preferences_test_start(path,uuid,false,0);s=wait_snapshot(w,0);assert(!s.error&&s.grid&&s.main_tab==3&&s.revision==1&&cl_preferences_stop(w));

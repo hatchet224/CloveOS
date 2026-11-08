@@ -1,0 +1,242 @@
+--- a/tasks/task_save.c
++++ b/tasks/task_save.c
+@@ -120,6 +120,9 @@
+    int state_slot;
+    uint8_t flags;
+    char path[PATH_MAX_LENGTH];
++#ifdef HAVE_MAGICX_BRIDGE
++   char clove_pending[PATH_MAX_LENGTH];
++#endif
+ } save_task_state_t;
+ 
+ typedef save_task_state_t load_task_data_t;
+@@ -313,8 +316,13 @@
+ 
+    task_set_finished(task, true);
+ 
+-   intfstream_close(state->file);
++   int closed = state->file ? intfstream_close(state->file) : -1;
+    free(state->file);
++#ifdef HAVE_MAGICX_BRIDGE
++   if (!magicx_native_save_finish(state->path,state->clove_pending,
++          closed==0 && !task_get_error(task) && !task_get_cancelled(task)))
++      if(!task_get_error(task))task_set_error(task,strdup("Save could not finish; previous completed file retained"));
++#endif
+ 
+    if (!task_get_error(task) && task_get_cancelled(task))
+       task_set_error(task, strdup("Task canceled"));
+@@ -496,16 +504,26 @@
+ 
+    if (!state->file)
+    {
++      const char *write_path=state->path;
++#ifdef HAVE_MAGICX_BRIDGE
++      if(!magicx_native_save_begin(state->path,state->clove_pending,sizeof(state->clove_pending))){
++         task_set_error(task,strdup("Save path is unavailable; previous completed file retained"));
++         task_save_handler_finished(task,state);return;
++      }
++      write_path=state->clove_pending;
++#endif
+       if (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
+          state->file   = intfstream_open_rzip_file(
+-               state->path, RETRO_VFS_FILE_ACCESS_WRITE);
++               write_path, RETRO_VFS_FILE_ACCESS_WRITE);
+       else
+          state->file   = intfstream_open_file(
+-               state->path, RETRO_VFS_FILE_ACCESS_WRITE,
++               write_path, RETRO_VFS_FILE_ACCESS_WRITE,
+                RETRO_VFS_FILE_ACCESS_HINT_NONE);
+ 
+-      if (!state->file)
+-         return;
++      if (!state->file) {
++         task_set_error(task,strdup("Save file could not open; previous completed file retained"));
++         task_save_handler_finished(task,state);return;
++      }
+    }
+ 
+    if (!state->data)
+@@ -1333,6 +1351,10 @@
+    void *serial_data  = NULL;
+    size_t serial_size;
+    intfstream_t *file = NULL;
++   const char *write_path=path;
++#ifdef HAVE_MAGICX_BRIDGE
++   char pending[PATH_MAX_LENGTH]={0};
++#endif
+ 
+    if (!core_info_current_supports_savestate())
+    {
+@@ -1350,16 +1372,23 @@
+    if (!serial_data)
+       return false;
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if(!magicx_native_save_begin(path,pending,sizeof(pending))){free(serial_data);return false;}
++   write_path=pending;
++#endif
+ #if defined(HAVE_ZLIB)
+    if (settings->bools.savestate_file_compression)
+-      file = intfstream_open_rzip_file(path, RETRO_VFS_FILE_ACCESS_WRITE);
++      file = intfstream_open_rzip_file(write_path, RETRO_VFS_FILE_ACCESS_WRITE);
+    else
+ #endif
+-      file = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_WRITE,
++      file = intfstream_open_file(write_path, RETRO_VFS_FILE_ACCESS_WRITE,
+                                   RETRO_VFS_FILE_ACCESS_HINT_NONE);
+ 
+    if (!file)
+    {
++#ifdef HAVE_MAGICX_BRIDGE
++      (void)magicx_native_save_finish(path,pending,false);
++#endif
+       free(serial_data);
+       return false;
+    }
+@@ -1367,14 +1396,22 @@
+    if (serial_size != (size_t)intfstream_write(file, serial_data, serial_size))
+    {
+       intfstream_close(file);
++#ifdef HAVE_MAGICX_BRIDGE
++      (void)magicx_native_save_finish(path,pending,false);
++#endif
+       free(serial_data);
+       free(file);
+       return false;
+    }
+ 
+-   intfstream_close(file);
++   int closed=intfstream_close(file);
+    free(serial_data);
+    free(file);
++#ifdef HAVE_MAGICX_BRIDGE
++   if(!magicx_native_save_finish(path,pending,closed==0))return false;
++#else
++   if(closed!=0)return false;
++#endif
+ 
+ #ifdef HAVE_SCREENSHOTS
+    if (settings->bools.savestate_thumbnail_enable)
+--- a/save.c
++++ b/save.c
+@@ -1,3 +1,6 @@
++#ifdef HAVE_MAGICX_BRIDGE
++#include "magicx/magicx_retroarch.h"
++#endif
+ /*  RetroArch - A frontend for libretro.
+  *  Copyright (C) 2011-2017 - Daniel De Matteis
+  *  Copyright (C) 2016-2019 - Brad Parker
+@@ -94,13 +97,14 @@
+ static void autosave_thread(void *data)
+ {
+    autosave_t *save = (autosave_t*)data;
++   bool write_pending=false;
+ 
+    for (;;)
+    {
+       bool differ;
+ 
+       slock_lock(save->lock);
+-      differ = memcmp(save->buffer, save->retro_buffer,
++      differ = write_pending || memcmp(save->buffer, save->retro_buffer,
+             save->bufsize) != 0;
+       if (differ)
+          memcpy(save->buffer, save->retro_buffer, save->bufsize);
+@@ -109,22 +113,30 @@
+       if (differ)
+       {
+          intfstream_t *file = NULL;
+-
+-         /* Should probably deal with this more elegantly. */
+-         if (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES)
+-            file = intfstream_open_rzip_file(save->path,
+-                  RETRO_VFS_FILE_ACCESS_WRITE);
+-         else
+-            file = intfstream_open_file(save->path,
+-                  RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+-
+-         if (file)
++         const char *write_path=save->path;
++         bool saved=false;
++#ifdef HAVE_MAGICX_BRIDGE
++         char pending[PATH_MAX_LENGTH]={0};
++         bool opened=magicx_native_save_begin(save->path,pending,sizeof(pending));
++         if(opened)write_path=pending;
++         if(opened)
++#endif
+          {
+-            intfstream_write(file, save->buffer, save->bufsize);
+-            intfstream_flush(file);
+-            intfstream_close(file);
+-            free(file);
++            if(save->flags&AUTOSAVE_FLAG_COMPRESS_FILES)
++               file=intfstream_open_rzip_file(write_path,RETRO_VFS_FILE_ACCESS_WRITE);
++            else file=intfstream_open_file(write_path,RETRO_VFS_FILE_ACCESS_WRITE,RETRO_VFS_FILE_ACCESS_HINT_NONE);
++            if(file){
++               saved=intfstream_write(file,save->buffer,save->bufsize)==(int64_t)save->bufsize;
++               if(intfstream_flush(file)!=0)saved=false;
++               if(intfstream_close(file)!=0)saved=false;
++               free(file);
++            }
+          }
++#ifdef HAVE_MAGICX_BRIDGE
++         saved=magicx_native_save_finish(save->path,pending,saved);
++#endif
++         write_pending=!saved;
++         if(!saved)RARCH_WARN("[SRAM]: Autosave did not finish; previous file retained, retry remains pending.\n");
+       }
+ 
+       slock_lock(save->cond_lock);
+@@ -463,6 +475,10 @@
+ {
+    struct ram_type ram;
+    retro_ctx_memory_info_t mem_info;
++   const char *write_path=NULL;
++#ifdef HAVE_MAGICX_BRIDGE
++   char pending[PATH_MAX_LENGTH]={0};
++#endif
+ 
+    if (!content_get_memory(&mem_info, &ram, slot))
+       return false;
+@@ -473,21 +489,29 @@
+          msg_hash_to_str(MSG_TO),
+          ram.path);
+ 
++   write_path=ram.path;
++#ifdef HAVE_MAGICX_BRIDGE
++   if(!magicx_native_save_begin(ram.path,pending,sizeof(pending)))goto fail;
++   write_path=pending;
++#endif
+ #if defined(HAVE_ZLIB)
+    if (compress)
+    {
+       if (!rzipstream_write_file(
+-            ram.path, mem_info.data, mem_info.size))
++            write_path, mem_info.data, mem_info.size))
+          goto fail;
+    }
+    else
+ #endif
+    {
+       if (!filestream_write_file(
+-            ram.path, mem_info.data, mem_info.size))
++            write_path, mem_info.data, mem_info.size))
+          goto fail;
+    }
+ 
++#ifdef HAVE_MAGICX_BRIDGE
++   if(!magicx_native_save_finish(ram.path,pending,true))goto fail;
++#endif
+    RARCH_LOG("[SRAM]: %s \"%s\".\n",
+          msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
+          ram.path);
+@@ -495,6 +519,9 @@
+    return true;
+ 
+ fail:
++#ifdef HAVE_MAGICX_BRIDGE
++   if(pending[0])(void)magicx_native_save_finish(ram.path,pending,false);
++#endif
+    RARCH_ERR("[SRAM]: %s.\n",
+          msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
+    RARCH_WARN("[SRAM]: Attempting to recover ...\n");

@@ -1,7 +1,9 @@
 #ifdef NDEBUG
 #error "Regression fixtures require active assertions; compile with -UNDEBUG"
 #endif
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include "launcher/favorites.h"
 #include "sessiond/library.h"
 #include <SDL.h>
@@ -29,7 +31,7 @@ static struct cl_favorite_snapshot wait_ready(struct cl_favorites *worker, bool 
         }
         SDL_Delay(2U);
     }
-    assert(!"favorites worker timed out");
+    assert(0 && "favorites worker timed out");
     return snapshot;
 }
 int main(int argc, char **argv)

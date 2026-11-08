@@ -43,6 +43,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,6 +79,8 @@ struct mx_ra {
     bool managed, internal_command, content_closed, quick_menu, recovery_panel, first_frame_entered, priming_load;
     bool restore_render_warmup;
     bool settings_page, rewind_owned, save_error;
+    size_t rewind_bytes, rewind_attempt_bytes;
+    bool rewind_attempted;
     char native_notice[384];
     unsigned int native_exit_confirm;
     bool swap_triggers, triggers_swapped, hide_hints, levels_observed;
@@ -206,7 +209,9 @@ bool magicx_retroarch_meter(int width, int height, int clockwise,
                            struct magicx_meter_rect out[3])
 {
     int meter_width = ra.osd_width == 0U ? 28 : 12 + (int)ra.osd_width * 3;
-    if (!ra.managed || ra.content_closed || ra.meter_until == 0U ||
+    const char *panel=getenv("CLOVE_DISPLAY_PANEL");
+    bool handheld=panel && !strcmp(panel,"magicx-mini-zero28");
+    if ((!ra.managed && !handheld && getenv("CLOVE_NATIVE_SESSION")==NULL) || ra.content_closed || ra.meter_until == 0U ||
         controls_now() >= ra.meter_until || width < 1 || width > 16384 ||
         height < 1 || height > 16384 || (clockwise != 0 && clockwise != 90)) return false;
 
@@ -312,8 +317,10 @@ static void poll_control_status(uint64_t now)
         fprintf(stderr, "MagicX authoritative session status unavailable\n");
     }
 }
+static void clove_native_note_hotkey(void);
 void magicx_retroarch_hotkey_consumed(void)
 {
+    clove_native_note_hotkey();
     if (ra.managed) {
         control_request(CS_CONTROL_HOTKEY_CONSUMED);
     }
@@ -620,24 +627,13 @@ static void native_owned_options(void)
             }
     }
 }
-/* Rewind is an explicitly owned, bounded RAM feature for the pinned normal
- * single-player TGB core. It creates no independent on-card save writer. */
-#define MAGICX_REWIND_BYTES (16U*1024U*1024U)
+/* Native rewind preferences retain upstream ranges and callbacks. The session
+ * owns allocation lifetime, not the user's values or core capability policy. */
 static bool managed_rewind_supported(void)
 {
 #ifdef HAVE_REWIND
-    core_option_manager_t *options=runloop_state_get_ptr()->core_options;
-    if(!ra.managed || ra.content_closed || !loaded_single_content() || ra.disc_count!=0U ||
-       (strcmp(ra.identity.core,"e2495af9a5be23045fc74981173f06b9856c3182d696651fa026999348134f45")!=0 &&
-        strcmp(ra.identity.core,"b83a869c3b25f1f02e2d06687abd0e1ff992d379ae815b5f7e08d53bcd457301")!=0) ||
-       !magicx_core_basename(path_get(RARCH_PATH_CORE),"tgbdual_libretro.so") ||
-       options==NULL || options->size!=1U)return false;
-#ifdef HAVE_NETWORKING
-    if(netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED,NULL))return false;
-#endif
-    const char *value=core_option_manager_get_val(options,options->opts[0].opt_idx);
-    return options->opts[0].key!=NULL && strcmp(options->opts[0].key,"tgbdual_gblink_enable")==0 &&
-           value!=NULL && strcmp(value,"disabled")==0;
+    return ra.managed && !ra.content_closed && core_info_current_supports_rewind()
+           && !audio_driver_has_callback();
 #else
     return false;
 #endif
@@ -645,61 +641,78 @@ static bool managed_rewind_supported(void)
 static void managed_rewind_clear(void)
 {
 #ifdef HAVE_REWIND
-    runloop_state_t *runloop=runloop_state_get_ptr();
-    state_manager_event_deinit(&runloop->rewind_st,&runloop->current_core);
+    state_manager_event_deinit(&runloop_state_get_ptr()->rewind_st,
+                              &runloop_state_get_ptr()->current_core);
+    ra.rewind_bytes=0U;
+#endif
+}
+static bool managed_rewind_allocate(bool preserve_previous)
+{
+#ifdef HAVE_REWIND
+    settings_t *settings=config_get_ptr();runloop_state_t *runloop=runloop_state_get_ptr();
+    struct state_manager_rewind_state next={0};
+    size_t requested=settings->sizes.rewind_buffer_size;
+    ra.rewind_attempted=true;ra.rewind_attempt_bytes=requested;
+    if (managed_rewind_supported() && requested<=UINT_MAX)
+        state_manager_event_init(&next,(unsigned int)requested);
+    if(next.state==NULL || next.size==0U){
+        state_manager_event_deinit(&next,NULL);
+        if(!preserve_previous)managed_rewind_clear();
+        char message[384];
+        snprintf(message,sizeof(message),
+                 "Rewind history could not be allocated for this core (%zu MiB requested). "
+                 "%s Your settings, game and last saved progress are retained. A/B: dismiss.",
+                 requested/(1024U*1024U),
+                 runloop->rewind_st.state!=NULL ? "The previous history remains available." : "The game can continue without rewind history.");
+        native_notice(message);
+        fprintf(stderr,"Clove native rewind: allocation unavailable requested=%zu active=%zu; preferences retained\n",requested,ra.rewind_bytes);
+        return false;
+    }
+    struct state_manager_rewind_state previous=runloop->rewind_st;
+    runloop->rewind_st=next;ra.rewind_bytes=requested;
+    state_manager_event_deinit(&previous,&runloop->current_core);
+    fprintf(stderr,"Clove native rewind: history ready buffer_bytes=%zu state_bytes=%zu interval=%u step_MiB=%u\n",
+            requested,runloop->rewind_st.size,settings->uints.rewind_granularity,settings->uints.rewind_buffer_size_step);
+    return true;
+#else
+    (void)preserve_previous;return false;
 #endif
 }
 static bool managed_rewind_reseed(void)
 {
-#ifdef HAVE_REWIND
-    settings_t *settings=config_get_ptr();runloop_state_t *runloop=runloop_state_get_ptr();
-    managed_rewind_clear();
-    if(!settings->bools.rewind_enable)return true;
-    if(!ra.rewind_owned || !managed_rewind_supported())return false;
-    state_manager_event_init(&runloop->rewind_st,MAGICX_REWIND_BYTES);
-    return runloop->rewind_st.state!=NULL && runloop->rewind_st.size!=0U;
-#else
-    return false;
-#endif
+    managed_rewind_clear();ra.rewind_attempted=false;
+    if(!config_get_ptr()->bools.rewind_enable)return true;
+    ra.rewind_owned=true;
+    return managed_rewind_allocate(false);
 }
 static bool managed_rewind_set(bool enabled)
 {
-#ifdef HAVE_REWIND
-    settings_t *settings=config_get_ptr();
-    managed_rewind_clear();settings->bools.rewind_enable=false;ra.rewind_owned=false;
-    if(!enabled)return true;
-    if(!managed_rewind_supported())return false;
-    settings->sizes.rewind_buffer_size=MAGICX_REWIND_BYTES;
-    settings->uints.rewind_granularity=1U;
-    settings->bools.rewind_enable=true;ra.rewind_owned=true;
-    if(!managed_rewind_reseed()){
-        managed_rewind_clear();settings->bools.rewind_enable=false;ra.rewind_owned=false;
-        fprintf(stderr,"Clove rewind: initialization unavailable; remains disabled\n");return false;
-    }
-    fprintf(stderr,"Clove rewind: owned history ready buffer_bytes=%u state_bytes=%zu\n",
-            MAGICX_REWIND_BYTES,runloop_state_get_ptr()->rewind_st.size);
-    return true;
-#else
-    (void)enabled;return false;
-#endif
+    settings_t *settings=config_get_ptr();settings->bools.rewind_enable=enabled;
+    if(!enabled){managed_rewind_clear();ra.rewind_owned=false;ra.rewind_attempted=false;return true;}
+    ra.rewind_owned=true;
+    return managed_rewind_allocate(true);
 }
 static bool managed_rewind_toggle(void)
 {
-    if(!ra.quick_menu || !ra_paused(NULL) || magicx_bridge_busy(ra.bridge) ||
-       ra.controls.fd>=0 || ra.feedback.phase==MX_FEEDBACK_QUEUED ||
-       ra.feedback.phase==MX_FEEDBACK_BUSY)return false;
     return managed_rewind_set(!config_get_ptr()->bools.rewind_enable);
+}
+static void managed_rewind_sync(void)
+{
+    if(!ra.managed || ra.content_closed || magicx_bridge_busy(ra.bridge))return;
+    settings_t *settings=config_get_ptr();
+    if(!settings->bools.rewind_enable){
+        if(ra.rewind_owned || runloop_state_get_ptr()->rewind_st.state!=NULL)
+            (void)managed_rewind_set(false);
+    }else if(!ra.rewind_owned || !ra.rewind_attempted ||
+             settings->sizes.rewind_buffer_size!=ra.rewind_attempt_bytes){
+        (void)managed_rewind_set(true);
+    }
 }
 static bool managed_rewind_valid(void)
 {
-#ifdef HAVE_REWIND
-    settings_t *settings=config_get_ptr();
-    return ra.rewind_owned && managed_rewind_supported() &&
-        settings->sizes.rewind_buffer_size==MAGICX_REWIND_BYTES &&
-        settings->uints.rewind_granularity==1U && runloop_state_get_ptr()->rewind_st.state!=NULL;
-#else
-    return false;
-#endif
+    /* A failed allocation is not an invalid checkpoint: no history is an
+     * ordinary upstream failure mode. Native settings remain the preference. */
+    return ra.rewind_owned;
 }
 static bool qualified_settings(char error[MAGICX_ERROR_MAX])
 {
@@ -972,11 +985,11 @@ bool magicx_retroarch_menu_finish_requested(bool quit)
 unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
 {
 #ifdef HAVE_MENU
-    if (!ra.managed) return action;
-    if(native_notice_action(action))return MENU_ACTION_NOOP;
-    if (!ra.quick_menu) return MENU_ACTION_NOOP;
+    if (!ra.managed && getenv("CLOVE_NATIVE_SESSION")==NULL)return action;
+    if(ra.managed && native_notice_action(action))return MENU_ACTION_NOOP;
+    if(ra.managed && !ra.quick_menu)return MENU_ACTION_NOOP;
     file_list_t *list = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_state_get_ptr(), 0U);
-    if (list == NULL || selected >= list->size) return MENU_ACTION_NOOP;
+    if (list == NULL || selected >= list->size) return ra.managed?MENU_ACTION_NOOP:action;
     menu_entry_t entry;
     MENU_ENTRY_INITIALIZE(entry);
     entry.flags = MENU_ENTRY_FLAG_LABEL_ENABLED;
@@ -995,6 +1008,7 @@ unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
         (void)snprintf(last_label, sizeof(last_label), "%s", trace_label);
         last_selected = selected;
     }
+    if(!ra.managed)return action;
     if (action == MENU_ACTION_NOOP || action == MENU_ACTION_UP || action == MENU_ACTION_DOWN ||
         action == MENU_ACTION_CANCEL || action == MENU_ACTION_INFO || action == MENU_ACTION_SEARCH)
         return action;
@@ -1019,19 +1033,8 @@ unsigned int magicx_retroarch_menu_action(unsigned int action, size_t selected)
             return MENU_ACTION_NOOP;
         }
     }
-    if(name!=NULL && strcmp(name,"rewind_enable")==0){
-        if(action==MENU_ACTION_LEFT || action==MENU_ACTION_RIGHT || action==MENU_ACTION_OK || action==MENU_ACTION_START){
-            bool ok=action==MENU_ACTION_START ? managed_rewind_set(false) : managed_rewind_toggle();
-            if(!ok)native_notice("Rewind is unavailable for this core or while an operation is pending.\n"
-                                 "The game and previous save are retained. A/B: dismiss.");
-            else feedback_refresh(config_get_ptr()->bools.rewind_enable?"Rewind enabled":"Rewind disabled");
-        }
-        return MENU_ACTION_NOOP;
-    }
-    if(name!=NULL && (strcmp(name,"rewind_granularity")==0 || strcmp(name,"rewind_buffer_size")==0 || strcmp(name,"rewind_buffer_size_step")==0)){
-        native_notice("Managed rewind uses a bounded 16 MiB history and one-frame granularity.\nA/B: dismiss.");
-        return MENU_ACTION_NOOP;
-    }
+    /* Rewind rows use their original native actions, ranges and step handler. */
+    (void)managed_rewind_toggle;
     if (name != NULL && strcmp(name, "state_slot") == 0) {
         if (action == MENU_ACTION_LEFT) control_request(CS_CONTROL_SLOT_DOWN);
         else if (action == MENU_ACTION_RIGHT) control_request(CS_CONTROL_SLOT_UP);
@@ -1309,7 +1312,7 @@ static bool ra_restore(void *context, const struct magicx_blob blobs[MAGICX_ARTI
     if (!content_deserialize_state(state.data, state.size) ||
         !restore_memory(RETRO_MEMORY_SAVE_RAM, &blobs[1]) ||
         !restore_memory(RETRO_MEMORY_RTC, &blobs[2])) {
-        if(rewind_wanted){config_get_ptr()->bools.rewind_enable=false;ra.rewind_owned=false;}
+        if(rewind_wanted){ra.rewind_owned=true;ra.rewind_attempted=false;}
         return error_text(error,
                           "core rejected exact RASTATE generation or SRAM/RTC restore policy");
     }
@@ -1319,8 +1322,8 @@ static bool ra_restore(void *context, const struct magicx_blob blobs[MAGICX_ARTI
         return error_text(error, "core restored a different disc than the checkpoint recorded");
     }
     if(rewind_wanted && !managed_rewind_reseed()){
-        config_get_ptr()->bools.rewind_enable=false;ra.rewind_owned=false;
-        fprintf(stderr,"Clove rewind: restore succeeded; history unavailable, rewind disabled\n");
+        ra.rewind_owned=true;
+        fprintf(stderr,"Clove rewind: restore succeeded; history unavailable, native preference retained\n");
     }else if(rewind_wanted)fprintf(stderr,"Clove rewind: history reseeded after authenticated restore\n");
     ra.frames = frame;
     ra.restore_render_warmup = magicx_core_basename(path_get(RARCH_PATH_CORE), "mupen64plus_next_libretro.so");
@@ -1712,8 +1715,15 @@ static bool apply_verified_input(char error[MAGICX_ERROR_MAX])
 }
 bool magicx_retroarch_requested(void)
 {
+#ifdef MAGICX_TESTING
     const char *path = getenv("MAGICX_BRIDGE_LAUNCH");
     return path != NULL && path[0] != '\0';
+#else
+    /* The former immutable owner is retired from every production launch.
+     * Its protocol adapter remains only for old-format fixture coverage.
+     * A stale inherited environment must never reactivate setting locks. */
+    return false;
+#endif
 }
 bool magicx_retroarch_portrait_menu(unsigned int width, unsigned int height)
 {
@@ -1729,13 +1739,17 @@ bool magicx_retroarch_saturn(void)
 bool magicx_retroarch_psp_audio(void)
 {
     settings_t *settings = config_get_ptr();
-    return magicx_retroarch_requested() && settings != NULL && settings->bools.audio_sync &&
+    const char *panel=getenv("CLOVE_DISPLAY_PANEL");
+    return (magicx_retroarch_requested() || (panel && !strcmp(panel,"magicx-mini-zero28"))) &&
+           settings != NULL && settings->bools.audio_sync &&
            magicx_core_basename(path_get(RARCH_PATH_CORE), "ppsspp_libretro.so");
 }
 bool magicx_retroarch_psx_audio(void)
 {
     settings_t *settings = config_get_ptr();
-    return magicx_retroarch_requested() && settings != NULL && settings->bools.audio_sync &&
+    const char *panel=getenv("CLOVE_DISPLAY_PANEL");
+    return (magicx_retroarch_requested() || (panel && !strcmp(panel,"magicx-mini-zero28"))) &&
+           settings != NULL && settings->bools.audio_sync &&
            magicx_core_basename(path_get(RARCH_PATH_CORE), "pcsx_rearmed_libretro.so");
 }
 bool magicx_retroarch_smooth_video(void)
@@ -1764,6 +1778,8 @@ int magicx_retroarch_swap_interval(int requested)
 }
 void magicx_retroarch_apply_language(void)
 {
+    /* Native configuration is authoritative, including language/assets. */
+    if(!magicx_retroarch_requested())return;
     const char *language=getenv("CLOVE_UI_LANGUAGE");
     if (language!=NULL && language[0]>='0' && language[0]<='2' && language[1]=='\0') {
         /* Frontend enum 0/1/2 is not libretro's enum 0/3/9. */
@@ -1796,13 +1812,17 @@ void magicx_retroarch_apply_language(void)
         RARCH_LOG("Clove native language: enum=%u\n", native_languages[(unsigned int)(language[0]-'0')]);
     }
 }
+#include "clove_native.inc"
 bool magicx_retroarch_init(void)
 {
     struct magicx_host host;
     char error[MAGICX_ERROR_MAX] = "invalid launch description";
     magicx_retroarch_apply_language();
     if (!magicx_retroarch_requested()) {
-        return true;
+        bool initialized=clove_native_init();
+        if(!initialized){clove_native_start_failed=true;
+            RARCH_ERR("Clove native: startup restore/control initialization failed; existing saved files retained\n");}
+        return initialized;
     }
     fprintf(stderr, "MagicX endpoint: initializing managed session\n");
     memset(&ra, 0, sizeof(ra));
@@ -1877,14 +1897,19 @@ bool magicx_retroarch_init(void)
         return false;
     }
     if(rewind_wanted && !managed_rewind_set(true))
-        fprintf(stderr,"Clove rewind: persisted preference unavailable; starting safely with rewind Off\n");
+        fprintf(stderr,"Clove rewind: persisted preference retained; history unavailable, game remains usable\n");
     fprintf(stderr, "MagicX endpoint ready: %s (paused until authorized RELEASE)\n",
             ra.config.socket_path);
     return true;
 }
 bool magicx_retroarch_poll(void)
 {
+    if(clove_native_active){clove_native_poll();return false;}
+    const char *panel=getenv("CLOVE_DISPLAY_PANEL");
+    if(!ra.managed && panel && !strcmp(panel,"magicx-mini-zero28"))poll_level_meter(controls_now());
+
     if (ra.managed) native_owned_options();
+    managed_rewind_sync();
     uint64_t now = controls_now();
     if (magicx_controls_poll(&ra.controls, now) < 0) {
         /* ACK loss does not prove the queued command failed. The status token
@@ -1911,6 +1936,8 @@ static bool waiting_for_bridge(void *context)
 }
 void magicx_retroarch_deinit(void)
 {
+    clove_native_deinit();
+
     magicx_controls_close(&ra.controls);
     magicx_controls_close(&ra.status_controls);
     magicx_bridge_begin_shutdown(ra.bridge);
@@ -1926,7 +1953,7 @@ void magicx_retroarch_deinit(void)
 }
 bool magicx_retroarch_input_gated(void)
 {
-    return ra.recovery_panel || magicx_bridge_input_gated(ra.bridge);
+    return clove_native_priming || ra.recovery_panel || magicx_bridge_input_gated(ra.bridge);
 }
 bool magicx_retroarch_core_allowed(void)
 {
@@ -1972,6 +1999,7 @@ void magicx_retroarch_frame_begin(void)
 }
 void magicx_retroarch_frame_complete(void)
 {
+    if(getenv("CLOVE_NATIVE_SESSION"))++clove_native_frames;
     if (ra.managed && ra.frames != UINT64_MAX) {
         uint64_t ended = profile_us();
         if (ra.frame_started_us != 0U && ended >= ra.frame_started_us) {
@@ -2019,6 +2047,29 @@ void magicx_retroarch_frame_complete(void)
 bool magicx_retroarch_command_allowed(unsigned int command)
 {
     enum event_command cmd = (enum event_command)command;
+    const char *panel=getenv("CLOVE_DISPLAY_PANEL");
+    if((cmd==CMD_EVENT_SHUTDOWN || cmd==CMD_EVENT_REBOOT) && panel && !strcmp(panel,"magicx-mini-zero28")){
+        const char *operation=cmd==CMD_EVENT_REBOOT?"reboot\n":"shutdown\n";
+        if(!clove_native_write("/run/console/native-power-request",operation,strlen(operation)))
+            feedback_refresh("Power request could not be queued. The game remains available.");
+        return false; /* Platform executes it after native frontend/task reap and volume sync. */
+    }
+    if(cmd==CMD_EVENT_CORE_DEINIT || cmd==CMD_EVENT_UNLOAD_CORE){
+        clove_native_frames=0;
+        clove_link_export();if(clove_native_active){clove_native_preview();clove_native_metadata(!frontend_driver_get_signal_handler_state());}
+    }
+    if(clove_native_active){
+        switch(cmd){
+         case CMD_EVENT_MENU_TOGGLE:case CMD_EVENT_SAVE_STATE:case CMD_EVENT_LOAD_STATE:
+         case CMD_EVENT_SAVE_STATE_INCREMENT:case CMD_EVENT_SAVE_STATE_DECREMENT:
+         case CMD_EVENT_UNDO_SAVE_STATE:case CMD_EVENT_UNDO_LOAD_STATE:
+         case CMD_EVENT_REWIND_TOGGLE:case CMD_EVENT_TAKE_SCREENSHOT:case CMD_EVENT_RESET:
+            clove_native_note_hotkey();break;
+         case CMD_EVENT_QUIT:if(!frontend_driver_get_signal_handler_state())clove_native_return_home=true;break;
+         default:break;
+        }
+        return true; /* Observation only; original callbacks retain authority. */
+    }
     if (magicx_retroarch_requested() && cmd == CMD_EVENT_SAVE_FILES) {
         return false; /* No automatic SRAM write during managed EXIT/main_exit. */
     }
@@ -2065,7 +2116,7 @@ bool magicx_retroarch_command_allowed(unsigned int command)
             managed_rewind_clear();
             core_reset();
             if (ra.rewind_owned && !managed_rewind_reseed()) {
-                config_get_ptr()->bools.rewind_enable=false; ra.rewind_owned=false;
+                ra.rewind_owned=true; ra.rewind_attempted=true;
             }
             feedback_refresh("Game restarted; paused until Resume");
         }

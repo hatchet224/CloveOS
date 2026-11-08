@@ -2084,6 +2084,10 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
             else
                 message(a, CL_TR("Game check could not start. Try again."), HOME);
         }
+        else if (a->states.native_available)
+        {
+            return launch(a,intent,CL_LAUNCH_NATIVE,NULL,0U);
+        }
         else if (a->states.latest_status == CL_READY)
         {
             return launch(a, intent, CL_LAUNCH_CHECKPOINT, &a->states.latest, 0U);
@@ -2235,6 +2239,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
             state = a->choice == 0U ? a->states.latest_status : a->states.previous_status;
             if (state == CL_READY)
             {
+                if(a->choice==0U && a->states.native_latest)return launch(a,intent,CL_LAUNCH_NATIVE_STATE,NULL,UINT32_MAX);
                 return launch(a, intent, CL_LAUNCH_CHECKPOINT,
                               a->choice == 0U ? &a->states.latest : &a->states.previous, 0U);
             }
@@ -2245,7 +2250,7 @@ static bool activate(struct app *a, struct cl_launch_intent *intent)
             state = manual->status;
             if (state == CL_READY)
             {
-                return launch(a, intent, CL_LAUNCH_MANUAL, &manual->reference, manual->slot);
+                return launch(a,intent,manual->native?CL_LAUNCH_NATIVE_STATE:CL_LAUNCH_MANUAL,manual->native?NULL:&manual->reference,manual->slot);
             }
         }
         else
@@ -3259,7 +3264,7 @@ static bool apply_update(struct app *a, struct cl_update *update)
             strcmp(states->identity.game, states->qualified_identity.game) == 0 &&
             cs_identity_equal(&entry->identity, &states->identity) &&
             states->history_revision == list(a)->revision &&
-            (states->latest_status != CL_READY || ready_reference(&states->latest)) &&
+            (states->latest_status != CL_READY || states->native_latest || ready_reference(&states->latest)) &&
             (states->previous_status != CL_READY || ready_reference(&states->previous)))
         {
             size_t i;

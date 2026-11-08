@@ -15,6 +15,7 @@
 #include "supervisor/lan_services.h"
 #include "supervisor/core_choice.h"
 #include "supervisor/glo_scripts.h"
+#include "supervisor/native_session.h"
 #include "launcher/preferences.h"
 #include "launcher/ports.h"
 #include <sys/mount.h>
@@ -74,7 +75,11 @@ struct supervisor {
     struct sc_game effective_game;
     struct cl_launch_intent launch;
     int daemon_fd, hook_fd, ui_fd, server, signal_fd, lock;
-    pid_t daemon_pid, ui_pid, ra_pid, level_pid, netplay_level_pid;
+    pid_t daemon_pid, ui_pid, ra_pid, native_pid, level_pid, netplay_level_pid;
+    bool native_term, native_paused, native_running, native_reboot, native_maintenance_pending;
+    uint64_t native_maintenance_token;
+    uint64_t native_observe_at;
+    char config_path[512];
     bool netplay_levels_restored, netplay_level_restore, netplay_level_restore_attempted;
     uint64_t hook_token, hook_deadline, active_session, ui_epoch, telemetry_at, menu_retry,
         diagnostics_at, launch_diagnostics_at,
@@ -102,10 +107,9 @@ struct supervisor {
 static void activity_update(struct supervisor *s, uint64_t now) {
     struct sc_activity_update update = {0};
     bool changed;
-    update.active = s->status.active && s->selected != NULL;
-    update.running = update.active && s->status.state == CS_GAME_RUNNING &&
-                     !s->status.unsettled;
-    update.session = s->status.session;
+    update.active = (s->status.active || s->native_pid>0) && s->selected != NULL;
+    update.running = update.active && (s->native_pid>0?s->native_running:(s->status.state==CS_GAME_RUNNING && !s->status.unsettled));
+    update.session = s->native_pid>0?s->active_session:s->status.session;
     update.mono_ms = now;
     update.wall_sec = (int64_t)time(NULL);
     if (s->selected != NULL) update.entry = s->selected->entry;
@@ -128,7 +132,7 @@ static void remember_error(struct supervisor *s, const char *text) {
 static void game_services_policy(struct supervisor *s)
 {
     bool paused = (s->preferences & CL_DISABLE_GAME_SERVICES) != 0U &&
-        (s->launch_pending || s->selection_pending || s->ra_pid > 0 ||
+        (s->launch_pending || s->selection_pending || (s->ra_pid > 0 || s->native_pid > 0) ||
          s->netplay_running || s->ports_running || s->status.active || s->status.unsettled);
     if (paused == s->services_paused) return;
     if (paused) {
@@ -190,6 +194,10 @@ static bool event(struct supervisor *s, enum cs_event_kind kind) {
 }
 static void quiesce_ui(struct supervisor *s) {
     struct sc_message m;
+    if(s->native_pid>0){
+        if(s->stopping)(void)sc_term_once(s->native_pid,&s->native_term);
+        else s->native_paused=sc_native_request(CLOVE_NATIVE_PAUSE);
+    }
     if (s->diagnostic_running || s->startup_child)
         (void)sc_term_once(s->level_pid, &s->level_term);
     if (s->ui_pid <= 0) {
@@ -255,7 +263,7 @@ static bool spawn_ui(struct supervisor *s) {
     struct sc_message message;
     char *program = s->show_gameswitcher ? s->config.gameswitcher : s->config.ui;
     char *args[] = {program, NULL};
-    if (s->stopping || s->ui_pid > 0 || s->ra_pid > 0 || s->level_pid > 0 || s->netplay_level_pid > 0 || s->ui_fault ||
+    if (s->stopping || s->ui_pid > 0 || (s->ra_pid > 0 || s->native_pid > 0) || s->level_pid > 0 || s->netplay_level_pid > 0 || s->ui_fault ||
         s->selection_pending || s->launch_pending || s->status.active || s->status.unsettled ||
         s->ui_epoch >= UINT32_MAX - 1U || !sc_pair(pair)) {
         return false;
@@ -298,43 +306,29 @@ static bool spawn_ui(struct supervisor *s) {
     s->show_gameswitcher = false;
     return true;
 }
-static bool select_launch(struct supervisor *s, const struct cl_launch_intent *intent,
-                          bool automatic) {
-    struct sc_game resolved;
-    const struct sc_game *game = sc_core_resolve(&s->config,intent->identity.game,&resolved) ? &resolved : NULL;
-    struct sc_message message;
-    size_t i;
-    if (game == NULL || s->stopping || s->catalog_refreshing || s->transport_fault || s->ra_pid > 0 || s->ui_pid > 0 ||
-        s->level_pid > 0 || s->netplay_level_pid > 0 || s->file_service.pid > 0 || s->status.active || s->status.unsettled || s->selection_pending ||
-        !cs_identity_equal(&game->profile.identity, &intent->identity) ||
-        (intent->kind != CL_LAUNCH_FRESH && intent->kind != CL_LAUNCH_CHECKPOINT &&
-         intent->kind != CL_LAUNCH_MANUAL) ||
-        (intent->kind == CL_LAUNCH_MANUAL && intent->manual_slot >= CS_MANUAL_SLOTS) ||
-        (intent->kind != CL_LAUNCH_FRESH &&
-         (intent->checkpoint.generation == 0U ||
-          !cs_hex_valid(intent->checkpoint.manifest, 64U)))) {
-        return false;
-    }
-    sc_message_init(&message, SC_SELECT, 0U);
-    message.data.selection.profile = game->profile;
-    message.data.selection.entry = game->entry;
-    for (i = 0U; i < s->history.count; ++i) {
-        if (cs_identity_equal(&s->history.entries[i].identity, &game->profile.identity)) {
-            message.data.selection.entry.latest = s->history.entries[i].latest;
-            message.data.selection.entry.previous = s->history.entries[i].previous;
-            break;
-        }
-    }
-    message.data.selection.intent = *intent;
-    message.data.selection.automatic = automatic;
-    if (!sc_queue(&s->daemon_out, &message)) {
-        return false;
-    }
-    s->effective_game = *game;
-    s->selected = &s->effective_game;
-    s->selection_pending = true;
-    s->launch = *intent;
-    return true;
+static bool launch_native(struct supervisor *s,const struct cl_launch_intent *intent,bool resume)
+{
+ if(s->stopping || s->native_maintenance_pending || s->status.busy || s->ui_pid>0 || s->ra_pid>0 || s->native_pid>0 || s->level_pid>0 ||
+  s->netplay_level_pid>0 || s->status.active || s->status.unsettled)return false;
+ bool menu=!resume && !strcmp(intent->auxiliary,"menu");
+ char generation[32];snprintf(generation,sizeof(generation),"%llu",intent->kind==CL_LAUNCH_NATIVE_STATE?(unsigned long long)intent->manual_slot:(unsigned long long)intent->checkpoint.generation);
+ char *args[]={"/system/bin/console-native-launch",s->config_path,
+  resume?"resume":(menu?"menu":(char *)intent->identity.game),
+  intent->kind==CL_LAUNCH_NATIVE_STATE?"state":(intent->kind==CL_LAUNCH_FRESH?"fresh":
+   (intent->kind==CL_LAUNCH_CHECKPOINT || intent->kind==CL_LAUNCH_MANUAL?"legacy":"native")),
+  generation,(char *)intent->checkpoint.manifest,NULL};
+ if(!resume && !menu){struct sc_game resolved;
+  if(sc_core_resolve(&s->config,intent->identity.game,&resolved)){s->effective_game=resolved;s->selected=&s->effective_game;}
+  else{struct clove_native_record record;if(!sc_native_by_key(&s->config,intent->identity.game,&record))return false;s->selected=NULL;}
+ }
+ if(!sc_cpu_policy_prepare(&s->cpu_policy,"/sys/devices/system/cpu/cpu0/cpufreq"))
+  fprintf(stderr,"Native frontend: kernel CPU policy retained\n");
+ if(!sc_spawn_game(args[0],args,NULL,s->preferences,s->shortcuts,&s->native_pid)){
+  (void)sc_cpu_policy_restore(&s->cpu_policy);return false;}
+ s->native_term=false;s->native_paused=false;s->native_running=true;s->native_observe_at=0U;
+ ++s->active_session;s->ever_started=true;s->show_gameswitcher=false;
+ s->netplay_level_restore_attempted=false;s->netplay_levels_restored=false;
+ return true;
 }
 static bool stale_identity_remove(struct supervisor *s) {
     char path[256];
@@ -350,7 +344,7 @@ static bool stale_identity_remove(struct supervisor *s) {
 }
 static bool spawn_ra(struct supervisor *s) {
     char *args[9];
-    if (s->selected == NULL || s->ui_pid > 0 || s->ra_pid > 0 || s->level_pid > 0 || s->netplay_level_pid > 0 ||
+    if (s->selected == NULL || s->ui_pid > 0 || (s->ra_pid > 0 || s->native_pid > 0) || s->level_pid > 0 || s->netplay_level_pid > 0 ||
         !stale_identity_remove(s)) {
         return false;
     }
@@ -388,7 +382,7 @@ static bool finish_start_levels(struct supervisor *s, int status) {
     fprintf(stderr, "supervisor: post-emulator level restore result=%d\n",
             WIFEXITED(status) ? WEXITSTATUS(status) : -1);
     /* Optional settings never invalidate an otherwise healthy core identity. */
-    hook_reply(s, s->ra_pid > 0 && !s->stopping ? CS_RESULT_COMPLETED : CS_RESULT_FAILED);
+    hook_reply(s, (s->ra_pid > 0 || s->native_pid > 0) && !s->stopping ? CS_RESULT_COMPLETED : CS_RESULT_FAILED);
     return true;
 }
 static void hook_received(struct supervisor *s, const struct sc_message *message, uint64_t now) {
@@ -457,7 +451,7 @@ static void service_hook(struct supervisor *s, uint64_t now) {
         /* Publication is atomic. Observe existence before validation: a file
          * published between a failed read and a later lstat is not a mismatch. */
         bool published = lstat(path, &identity) == 0;
-        if (!s->preflight_pending && s->ra_pid > 0 && s->selected != NULL &&
+        if (!s->preflight_pending && (s->ra_pid > 0 || s->native_pid > 0) && s->selected != NULL &&
             published && sc_identity_file(path, &s->selected->profile.identity)) {
             /* SDL/ALSA may initialize hardware defaults when the emulator opens
              * its devices. Reapply the stored levels after readiness and before
@@ -473,12 +467,12 @@ static void service_hook(struct supervisor *s, uint64_t now) {
                 fprintf(stderr, "supervisor: post-emulator level restore could not start\n");
                 hook_reply(s, CS_RESULT_COMPLETED);
             }
-        } else if ((!s->preflight_pending && s->ra_pid <= 0) || now >= s->hook_deadline ||
-                   (!s->preflight_pending && s->ra_pid > 0 && published)) {
+        } else if ((!s->preflight_pending && (s->ra_pid <= 0 && s->native_pid <= 0)) || now >= s->hook_deadline ||
+                   (!s->preflight_pending && (s->ra_pid > 0 || s->native_pid > 0) && published)) {
             s->preflight_pending = false;
             /* No core has been released. Drain the rejected child so a
              * startup recovery screen cannot take ownership of the display. */
-            if (s->ra_pid > 0 && !sc_term_once(s->ra_pid, &s->ra_term))
+            if ((s->ra_pid > 0 || s->native_pid > 0) && !sc_term_once(s->ra_pid, &s->ra_term))
                 s->transport_fault = true;
             hook_reply(s, CS_RESULT_FAILED);
             ui_error(
@@ -488,6 +482,10 @@ static void service_hook(struct supervisor *s, uint64_t now) {
     } else if (s->hook.request.operation == CS_OP_STANDBY_ENTER ||
                s->hook.request.operation == CS_OP_STANDBY_LEAVE) {
         bool entering = s->hook.request.operation == CS_OP_STANDBY_ENTER;
+        if(entering && s->native_pid>0 && !s->native_paused){
+            s->standby_transition=false;hook_reply(s,CS_RESULT_FAILED);
+            remember_error(s,"Native frontend did not acknowledge pause; display remains on.");return;
+        }
         if (s->standby_helper) return;
         if (s->ui_pid <= 0 && (s->level_pid <= 0 && s->netplay_level_pid <= 0) && !sc_lan_busy(&s->lan_services) &&
             (!entering || (!s->status.unsettled && !s->ui_fault))) {
@@ -514,9 +512,9 @@ static void service_hook(struct supervisor *s, uint64_t now) {
                 return;
             }
             if (!sc_term_once(s->ra_pid, &s->ra_term)) s->transport_fault = true;
-            if (s->ra_pid > 0 || s->status.active) return;
+            if ((s->ra_pid > 0 || s->native_pid > 0) || s->status.active) return;
         }
-        if (s->ui_pid <= 0 && (s->level_pid <= 0 && s->netplay_level_pid <= 0) && s->file_service.pid <= 0 && !sc_lan_busy(&s->lan_services)) {
+        if (s->ui_pid <= 0 && s->native_pid<=0 && (s->level_pid <= 0 && s->netplay_level_pid <= 0) && s->file_service.pid <= 0 && !sc_lan_busy(&s->lan_services)) {
             hook_reply(s, CS_RESULT_COMPLETED);
         }
     } else if (s->hook.request.operation == CS_OP_SHUTDOWN) {
@@ -525,7 +523,7 @@ static void service_hook(struct supervisor *s, uint64_t now) {
         if (!sc_term_once(s->ra_pid, &s->ra_term)) {
             s->transport_fault = true;
         }
-        if (s->ui_pid <= 0 && s->ra_pid <= 0 && (s->level_pid <= 0 && s->netplay_level_pid <= 0) && !sc_lan_busy(&s->lan_services)) {
+        if (s->ui_pid <= 0 && (s->ra_pid <= 0 && s->native_pid <= 0) && (s->level_pid <= 0 && s->netplay_level_pid <= 0) && !sc_lan_busy(&s->lan_services)) {
             hook_reply(s, CS_RESULT_COMPLETED);
         }
     }
@@ -536,6 +534,8 @@ static void service_hook(struct supervisor *s, uint64_t now) {
     }
 }
 static void daemon_message(struct supervisor *s, const struct sc_message *message) {
+    if(message->type==SC_ACK && s->native_maintenance_pending && message->token==s->native_maintenance_token)
+        s->native_maintenance_pending=false;
     if (message->type == SC_STATUS) {
         enum cs_state previous = s->status.state;
         s->status = message->data.status;
@@ -572,12 +572,12 @@ static void daemon_message(struct supervisor *s, const struct sc_message *messag
         if (s->status.state == CS_OFF && !s->status.unsettled) {
             s->daemon_off = true;
         }
-        if (s->status.state == CS_MENU_READY && !s->status.active && s->ra_pid > 0 &&
+        if (s->status.state == CS_MENU_READY && !s->status.active && (s->ra_pid > 0 || s->native_pid > 0) &&
             !s->hook_pending) {
             (void)sc_term_once(s->ra_pid, &s->ra_term); /* EXIT_SESSION already closed the core. */
         }
         if (previous == CS_STARTING_SESSION && s->status.state == CS_RECOVERY &&
-            !s->status.active && s->ra_pid > 0 && !s->hook_pending &&
+            !s->status.active && (s->ra_pid > 0 || s->native_pid > 0) && !s->hook_pending &&
             !sc_term_once(s->ra_pid, &s->ra_term))
             s->transport_fault = true;
         if (previous != CS_MENU_READY && s->status.state == CS_MENU_READY && s->ui_pid > 0 &&
@@ -617,7 +617,7 @@ static void service_display_levels(struct supervisor *s) {
     if (s->stopping) { s->display_levels_pending = s->wake_levels_pending = false; return; }
     bool menu = s->status.state == CS_MENU_READY && !s->status.active;
     bool game = s->wake_levels_pending && s->status.state == CS_GAME_RUNNING &&
-                s->status.active && s->ra_pid > 0;
+                s->status.active && (s->ra_pid > 0 || s->native_pid > 0);
     if ((!menu && !game) || s->hook_pending ||
         s->status.unsettled || s->standby_transition || s->standby_active || s->level_pid > 0 || s->netplay_level_pid > 0)
         return;
@@ -646,6 +646,7 @@ static bool netplay_runtime_file(const char *path,const char *expected)
 }
 static bool netplay_game(const struct supervisor *s)
 {
+    if(s->native_pid>0)return netplay_runtime_file("/run/console/native-runtime/phase","emulator-running\n");
     if (!s->startup_child || !s->netplay_running || s->level_pid <= 0) return false;
     return netplay_runtime_file("/run/console/netplay-runtime/phase","emulator-running\n") ||
         (s->easy_netplay && s->link_running && strcmp(s->launch.auxiliary,"onion4")==0 &&
@@ -662,7 +663,7 @@ static bool netplay_reset_runtime(void)
 }
 static void service_netplay_levels(struct supervisor *s)
 {
-    const char *ready=netplay_runtime_file("/run/console/netplay-runtime/phase","emulator-running\n") ?
+    const char *ready=s->native_pid>0?"/run/console/native-runtime/audio-ready":netplay_runtime_file("/run/console/netplay-runtime/phase","emulator-running\n") ?
         "/run/console/netplay-runtime/audio-ready" : "/run/console/easy-netplay/audio-ready";
     if(!netplay_game(s)||s->stopping||s->status.unsettled||s->hook_pending||
         s->standby_active||s->standby_transition||s->netplay_level_restore_attempted||
@@ -678,7 +679,7 @@ static void level_request(struct supervisor *s, const struct sc_level *level) {
     char *args[6];
     bool menu = s->status.state == CS_MENU_READY && !s->status.active;
     bool game = (s->status.state == CS_GAME_RUNNING || s->status.state == CS_QUICK_MENU) &&
-                s->status.active && s->ra_pid > 0;
+                s->status.active && (s->ra_pid > 0 || s->native_pid > 0);
     bool netplay=netplay_game(s);
     pid_t *owner=netplay?&s->netplay_level_pid:&s->level_pid;
     if(!netplay&&s->netplay_level_pid>0){s->level_queued=false;return;}
@@ -726,7 +727,7 @@ static void level_request(struct supervisor *s, const struct sc_level *level) {
 static void service_level_queue(struct supervisor *s) {
     bool menu = s->status.state == CS_MENU_READY && !s->status.active;
     bool game = (s->status.state == CS_GAME_RUNNING || s->status.state == CS_QUICK_MENU) &&
-                s->status.active && s->ra_pid > 0;
+                s->status.active && (s->ra_pid > 0 || s->native_pid > 0);
     bool netplay=netplay_game(s);
     if (!s->level_queued) return;
     if (s->stopping || s->hook_pending || s->status.unsettled || s->standby_active ||
@@ -882,9 +883,9 @@ static void ui_message(struct supervisor *s, const struct sc_message *message) {
             s->catalog_refresh_token = message->token;
         }
     } else if (!s->stopping && (message->type == SC_REMOVE || message->type == SC_DELETE_STATES)) {
-        if (!sc_queue(&s->daemon_out, message)) {
-            ui_error(s, "History request could not be queued.");
-        }
+        if(s->native_pid>0 || s->status.active || s->native_maintenance_pending || !sc_disk_submit(&s->disk,message))
+            ui_error(s,"Finish the current operation before changing game history or states.");
+        else{s->native_maintenance_pending=true;s->native_maintenance_token=message->token;}
     } else if (message->type == SC_UI_LEVEL) {
         level_request(s, &message->data.level);
     } else if (message->type == SC_EVENT && message->data.event == CS_EV_RETRY) {
@@ -985,6 +986,17 @@ static void reap(struct supervisor *s) {
                 s->ui_fault = true;
                 remember_error(s, "UI quiesced unexpectedly; use explicit retry.");
             }
+        } else if(pid==s->native_pid){
+            s->native_pid=0;s->native_paused=false;
+            (void)sc_cpu_policy_restore(&s->cpu_policy);
+            s->netplay_levels_restored=false;s->level_queued=false;
+            if(WIFEXITED(status) && WEXITSTATUS(status)==31)
+                remember_error(s,"A RetroArch save/settings write failed. Previous completed files were retained; check card space.");
+            else if(!WIFEXITED(status) || WEXITSTATUS(status)!=0)
+                remember_error(s,"RetroArch exited unexpectedly. Existing saves and legacy checkpoints were retained.");
+            s->native_term=false;
+            struct sc_message refresh;sc_message_init(&refresh,SC_UI_HISTORY,s->ui_epoch<<32);
+            (void)sc_disk_submit(&s->disk,&refresh);
         } else if (pid == s->ra_pid) {
             fprintf(stderr, "supervisor: emulator reaped pid=%ld exit=%d signal=%d "
                             "term_requested=%u\n", (long)pid,
@@ -1098,7 +1110,13 @@ static void reap(struct supervisor *s) {
                 s->standby_helper = false;
                 s->standby_transition = false;
                 if (success) s->standby_active = entering;
-                if (success && !entering) queue_wake_levels(s);
+                if (success && !entering) {
+                    if(s->native_pid>0 && s->native_paused){
+                        if(sc_native_request(CLOVE_NATIVE_RESUME))s->native_paused=false;
+                        else remember_error(s,"Native frontend resume acknowledgement unavailable.");
+                    }
+                    queue_wake_levels(s);
+                }
                 fprintf(stderr, "supervisor: standby display %s result=%s; kernel suspend=disabled\n",
                         entering ? "off" : "on", success ? "completed" : "failed");
                 s->diagnostics_dirty = true;
@@ -1181,6 +1199,12 @@ static void disk_results(struct supervisor *s) {
                     stop(s,false);
             } else s->low_battery_samples=0U;
         }
+        if(result->native_maintenance){
+            if(!result->ok || !sc_queue(&s->daemon_out,&result->message)){
+                s->native_maintenance_pending=false;remember_error(s,"Native history/state operation could not finish. Other files were retained.");
+            }
+            continue;
+        }
         if (result->activity_write) {
             fprintf(stderr, "Activity Tracker persistence failed (%u); checkpoint retained.\n",
                     (unsigned int)result->activity_result);
@@ -1250,14 +1274,17 @@ static void disk_results(struct supervisor *s) {
             } else {
                 remember_error(s, result->message.data.text);
             }
-            if (!s->stopping && !s->boot_override && result->automatic_candidate &&
+            if(!s->stopping && !s->boot_override && result->native_candidate && result->verification_loaded){
+                struct cl_launch_intent intent={.kind=CL_LAUNCH_NATIVE};
+                if(!launch_native(s,&intent,true))remember_error(s,"Native resume could not open; MainUI remains available.");
+            }else if (!s->stopping && !s->boot_override && result->automatic_candidate &&
                 result->verification_loaded) {
                 struct cl_launch_intent intent = {0};
                 intent.identity = result->resume.identity;
-                intent.kind = CL_LAUNCH_CHECKPOINT;
+                intent.kind = CL_LAUNCH_NATIVE;
                 intent.checkpoint.generation = result->resume.generation;
                 memcpy(intent.checkpoint.manifest, result->resume.manifest, 65U);
-                if (!select_launch(s, &intent, true)) {
+                if (!launch_native(s, &intent, false)) {
                     remember_error(
                         s, "Automatic restore refused: its frozen game/profile is unavailable.");
                 }
@@ -1369,7 +1396,7 @@ static void client_request(struct supervisor *s, struct client *client) {
     if (message.type == SC_SESSION_STATUS) {
         struct ucred peer;
         socklen_t size = sizeof(peer);
-        if (s->ra_pid <= 0 || getsockopt(client->fd, SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 ||
+        if ((s->ra_pid <= 0 && s->native_pid <= 0) || getsockopt(client->fd, SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 ||
             size != sizeof(peer) || peer.uid != geteuid() || peer.pid != s->ra_pid) {
             sc_message_init(&reply, SC_ACK, message.token);
             reply.data.result = CS_RESULT_FAILED;
@@ -1402,7 +1429,7 @@ static void client_request(struct supervisor *s, struct client *client) {
             if (s->diagnostic_running)
                 (void)sc_term_once(s->level_pid, &s->level_term);
             if (s->disk_final && !s->disk_ok && !s->disk.started && s->daemon_reaped &&
-                s->ui_pid <= 0 && s->ra_pid <= 0 && (s->level_pid <= 0 && s->netplay_level_pid <= 0)) {
+                s->ui_pid <= 0 && (s->ra_pid <= 0 && s->native_pid <= 0) && (s->level_pid <= 0 && s->netplay_level_pid <= 0)) {
                 if (sc_disk_start(&s->disk, &s->config)) {
                     if (s->hook.degraded) {
                         sc_disk_offline_permission(&s->disk);
@@ -1420,7 +1447,7 @@ static void client_request(struct supervisor *s, struct client *client) {
                    message.type == SC_RECOVERY_OFF || message.type == SC_RECOVERY_MENU) {
             struct ucred peer;
             socklen_t size = sizeof(peer);
-            if (s->ra_pid <= 0 || s->stopping ||
+            if ((s->ra_pid <= 0 && s->native_pid <= 0) || s->stopping ||
                 getsockopt(client->fd, SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 ||
                 size != sizeof(peer) || peer.uid != geteuid() || peer.pid != s->ra_pid) {
                 reply.data.result = CS_RESULT_FAILED;
@@ -1445,7 +1472,7 @@ static void client_request(struct supervisor *s, struct client *client) {
             socklen_t size = sizeof(peer);
             /* The UID check on accept is insufficient: authorize the exact
              * live child, never an unrelated same-UID local client. */
-            if (s->ra_pid <= 0 || s->stopping ||
+            if ((s->ra_pid <= 0 && s->native_pid <= 0) || s->stopping ||
                 getsockopt(client->fd, SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 ||
                 size != sizeof(peer) || peer.uid != geteuid() || peer.pid != s->ra_pid) {
                 reply.data.result = CS_RESULT_FAILED;
@@ -1586,6 +1613,7 @@ static void menu_input(struct supervisor *s, uint64_t now) {
                                 s->menu.name,(unsigned int)events[i].code,events[i].value,
                                 s->hotkeys.down?1U:0U,cs_state_name(s->status.state),
                                 (long)s->ui_pid,(long)s->ra_pid);
+                    if(s->native_pid>0 && s->hotkeys.down && events[i].code!=s->menu.code && events[i].value==1)cs_hotkeys_consume(&s->hotkeys);
                     if (events[i].code == s->menu.code && at <= s->menu_sampled_at)
                         continue; /* A bitmap observation already delivered this edge. */
                 }
@@ -1679,6 +1707,7 @@ static void menu_input(struct supervisor *s, uint64_t now) {
         }
     }
     if (s->menu.fd >= 0) {
+        if(s->native_pid>0 && unlink("/run/console/native-runtime/hotkey-consumed")==0)cs_hotkeys_consume(&s->hotkeys);
         enum cs_menu_action action = cs_hotkeys_tick(&s->hotkeys, now);
         if (action != CS_MENU_NONE) {
             fprintf(stderr, "MENU action: kind=%u state=%s active=%u unsettled=%u\n",
@@ -1697,7 +1726,10 @@ static void menu_input(struct supervisor *s, uint64_t now) {
             else if(mapping==2U) action=CS_MENU_RECENT;
             else if(mapping==3U) action=CS_MENU_PREVIOUS;
         }
-        if (s->startup_child && (action == CS_MENU_LIBRARY ||
+        if(s->native_pid>0 && action!=CS_MENU_NONE && !s->stopping){
+            s->show_gameswitcher=action!=CS_MENU_LIBRARY;
+            if(!sc_native_request(CLOVE_NATIVE_QUIT))remember_error(s,"Native frontend exit was not acknowledged; game remains available.");
+        } else if (s->startup_child && (action == CS_MENU_LIBRARY ||
             (netplay_game(s)&&action==CS_MENU_RECENT)) && !s->stopping) {
             /* During link gameplay the MENU chord belongs to RetroArch. A
              * supervised cancellation before launch still restores Wi-Fi. */
@@ -1793,7 +1825,7 @@ static bool launch_glo_app(struct supervisor *s)
 {
     struct sc_game game;
     const struct cl_launch_intent *intent = &s->launch;
-    if (s->transport_fault || s->catalog_refreshing || s->ra_pid > 0 || s->level_pid > 0 || s->netplay_level_pid > 0 ||
+    if (s->transport_fault || s->catalog_refreshing || (s->ra_pid > 0 || s->native_pid > 0) || s->level_pid > 0 || s->netplay_level_pid > 0 ||
         s->status.active || s->status.unsettled || s->selection_pending ||
         !cs_identity_valid(&intent->identity) ||
         !sc_core_resolve(&s->config, intent->identity.game, &game) ||
@@ -1877,7 +1909,7 @@ static bool launch_portmaster(struct supervisor *s)
 {
     if (s->status.state != CS_MENU_READY || s->status.active || s->status.unsettled ||
         s->transport_fault || s->catalog_refreshing || s->selection_pending ||
-        s->ra_pid > 0 || s->level_pid > 0 || s->netplay_level_pid > 0 || s->file_service.pid > 0 ||
+        (s->ra_pid > 0 || s->native_pid > 0) || s->level_pid > 0 || s->netplay_level_pid > 0 || s->file_service.pid > 0 ||
         !s->memory.input_persisted || strcmp(s->config.base.card_path,"/mnt/SDCARD") != 0) return false;
     struct cl_ports_config config = {
         .device = {.display = {.display_index=s->config.ui_config.display,
@@ -1898,7 +1930,7 @@ static bool launch_file_explorer(struct supervisor *s)
 {
     if (s->status.state != CS_MENU_READY || s->status.active || s->status.unsettled ||
         s->transport_fault || s->catalog_refreshing || s->selection_pending ||
-        s->ra_pid > 0 || s->level_pid > 0 || s->netplay_level_pid > 0 || s->file_service.pid > 0 ||
+        (s->ra_pid > 0 || s->native_pid > 0) || s->level_pid > 0 || s->netplay_level_pid > 0 || s->file_service.pid > 0 ||
         strcmp(s->config.base.card_path, "/mnt/SDCARD") != 0) return false;
     struct cl_file_explorer_config config = {
         .display = {
@@ -1920,6 +1952,26 @@ static bool launch_file_explorer(struct supervisor *s)
 }
 static void start_progress(struct supervisor *s, uint64_t now) {
     game_services_policy(s);
+    if(!s->stopping){
+        int fd=open("/run/console/native-power-request",O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK);
+        if(fd>=0){char operation[16]={0};struct stat st;bool valid=fstat(fd,&st)==0 && S_ISREG(st.st_mode) &&
+            st.st_uid==geteuid() && (st.st_mode&0077U)==0U && st.st_size>0 && st.st_size<(off_t)sizeof(operation) &&
+            read(fd,operation,sizeof(operation)-1U)==st.st_size;close(fd);
+            if(valid && (!strcmp(operation,"shutdown\n") || !strcmp(operation,"reboot\n")) &&
+               unlink("/run/console/native-power-request")==0){s->native_reboot=!strcmp(operation,"reboot\n");stop(s,false);}
+        }
+    }
+    if(s->native_pid>0 && now>=s->native_observe_at){
+        struct clove_native_record record;
+        if(sc_native_read("/run/console/native-runtime/status",&record)){
+            s->native_running=!record.paused;
+            const struct sc_game *game=NULL;
+            for(size_t i=0;i<s->config.game_count;i++)if(!strcmp(s->config.games[i].content,record.content)&&!strcmp(s->config.games[i].core,record.core)){game=&s->config.games[i];break;}
+            if(game){s->effective_game=*game;s->selected=&s->effective_game;}
+            else s->selected=NULL;
+        }
+        s->native_observe_at=now+500U;
+    }
     activity_update(s, now);
     advance_game_request(s);
     if (!s->boot_queried && s->boot_checked && !s->status.active && !s->status.unsettled &&
@@ -1939,18 +1991,21 @@ static void start_progress(struct supervisor *s, uint64_t now) {
             char program[] = "/system/bin/console-startup-app";
             char *args[] = {program, app == CL_START_RETROARCH ? "retroarch" : "advance", NULL};
             if (app == CL_START_ADVANCE) (void)unlink(advance_request_path);
-            if (sc_spawn(program, args, -1, -1, NULL, &s->level_pid)) {
-                s->startup_child = true;
-                s->startup_advance = app == CL_START_ADVANCE;
-                s->netplay_running = app == CL_START_RETROARCH;
-                s->level_term = false;
-            } else {
+            bool started;
+            if(app==CL_START_RETROARCH){
+                struct cl_launch_intent intent={.kind=CL_LAUNCH_NATIVE};strcpy(intent.auxiliary,"menu");
+                started=launch_native(s,&intent,false);
+            }else{
+                started=sc_spawn(program,args,-1,-1,NULL,&s->level_pid);
+                if(started){s->startup_child=true;s->startup_advance=true;s->netplay_running=false;s->level_term=false;}
+            }
+            if(!started) {
                 remember_error(s, "Startup application could not open. MainUI is available.");
             }
         }
     }
     if (s->switch_previous && s->status.state == CS_MENU_READY && !s->status.active &&
-        !s->status.unsettled && s->ra_pid <= 0 && !s->stopping) {
+        !s->status.unsettled && (s->ra_pid <= 0 && s->native_pid <= 0) && !s->stopping) {
         s->launch = s->previous_launch;
         s->launch_pending = true;
         s->switch_previous = false;
@@ -1992,9 +2047,9 @@ static void start_progress(struct supervisor *s, uint64_t now) {
                 ui_error(s, link ? "Link requires a verified unpacked .gb or .gbc cartridge in Games." :
                                    "The script or Netplay launch could not be validated.");
             }
-        } else if (select_launch(s, &s->launch, false)) {
+        } else if (launch_native(s, &s->launch, false)) {
             s->launch_pending = false;
-        } else if (!s->status.active && !s->status.unsettled && (s->level_pid <= 0 && s->netplay_level_pid <= 0)) {
+        } else if (!s->native_maintenance_pending && !s->status.active && !s->status.unsettled && (s->level_pid <= 0 && s->netplay_level_pid <= 0)) {
             s->launch_pending = false;
             ui_error(s, "Launch request failed frozen-profile validation.");
         }
@@ -2003,7 +2058,7 @@ static void start_progress(struct supervisor *s, uint64_t now) {
         s->boot_decided && s->daemon_pid > 0 && !s->transport_fault &&
         (s->status.state == CS_MENU_READY || s->status.state == CS_RECOVERY ||
          s->status.state == CS_CHECKPOINT_ERROR) &&
-        !s->status.active && !s->status.unsettled && s->ui_pid <= 0 && s->ra_pid <= 0 &&
+        !s->status.active && !s->status.unsettled && s->ui_pid <= 0 && (s->ra_pid <= 0 && s->native_pid <= 0) &&
         !s->selection_pending && !s->launch_pending && !s->ui_fault) {
         if (!spawn_ui(s) && (s->level_pid <= 0 && s->netplay_level_pid <= 0)) {
             s->ui_fault = true;
@@ -2011,7 +2066,7 @@ static void start_progress(struct supervisor *s, uint64_t now) {
         }
     }
     if (!s->stopping && s->ui_fault && !s->diagnostic_shown && !s->status.active &&
-        !s->status.unsettled && s->ui_pid <= 0 && s->ra_pid <= 0 && (s->level_pid <= 0 && s->netplay_level_pid <= 0) &&
+        !s->status.unsettled && s->ui_pid <= 0 && (s->ra_pid <= 0 && s->native_pid <= 0) && (s->level_pid <= 0 && s->netplay_level_pid <= 0) &&
         !s->selection_pending && !s->launch_pending) {
         char program[512];
         int length = snprintf(program, sizeof(program), "%s/bin/console-boot-status",
@@ -2029,7 +2084,7 @@ static void start_progress(struct supervisor *s, uint64_t now) {
             fprintf(stderr, "supervisor: could not start visible UI diagnostics\n");
         }
     }
-    if ((s->ui_pid > 0 || s->ra_pid > 0) && now >= s->telemetry_at && !s->stopping) {
+    if ((s->ui_pid > 0 || (s->ra_pid > 0 || s->native_pid > 0)) && now >= s->telemetry_at && !s->stopping) {
         struct sc_message request;
         sc_message_init(&request, SC_UI_STATUS, s->ui_epoch << 32);
         /* Only MainUI can edit these settings. During a game, sample the
@@ -2041,7 +2096,7 @@ static void start_progress(struct supervisor *s, uint64_t now) {
         }
     }
     if (s->stopping && s->daemon_reaped && (!s->transport_fault || !s->ever_started) &&
-        s->ui_pid <= 0 && s->ra_pid <= 0 && (s->level_pid <= 0 && s->netplay_level_pid <= 0) &&
+        s->ui_pid <= 0 && (s->ra_pid <= 0 && s->native_pid <= 0) && (s->level_pid <= 0 && s->netplay_level_pid <= 0) &&
         (s->daemon_off || !s->ever_started) && !s->disk_closing) {
         sc_disk_finish(&s->disk);
         s->disk_closing = true;
@@ -2072,6 +2127,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     (void)unlink("/run/console/shutdown.ready");
+    if(snprintf(s.config_path,sizeof(s.config_path),"%s",argv[2])<0)return 2;
     if (!sc_runtime_check() || !sc_config_load(argv[2], &s.config) || !bind_server(&s)) {
         perror("supervisor configuration/runtime");
         return 1;
@@ -2300,6 +2356,7 @@ int main(int argc, char **argv) {
     (void)close(s.signal_fd);
     (void)close(s.lock);
     if (s.auto_poweroff && !s.external_stop) {
+        if(s.native_reboot){execl("/bin/busybox","busybox","reboot","-f",(char *)NULL);perror("native clean reboot");return 1;}
         char *args[] = {s.config.poweroff, NULL};
         execv(s.config.poweroff, args);
         perror("normal init poweroff");

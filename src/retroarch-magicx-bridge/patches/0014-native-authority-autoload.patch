@@ -1,0 +1,15 @@
+--- a/runloop.c
++++ b/runloop.c
+@@ -4322,7 +4322,11 @@
+      if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
+ #endif
+       {
+-        if (!runloop_st->entry_state_slot && settings->bools.savestate_auto_load)
++        if (!runloop_st->entry_state_slot && settings->bools.savestate_auto_load
++#ifdef HAVE_MAGICX_BRIDGE
++            && getenv("CLOVE_NATIVE_FRESH")==NULL && access("/run/console/native-runtime/import",F_OK)!=0
++#endif
++           )
+           command_event_load_auto_state();
+       }
+    }

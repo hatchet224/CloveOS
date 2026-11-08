@@ -298,6 +298,14 @@ int main(int argc, char **argv)
     }
     char saves[PATH_CAP], name[80];
     int length = snprintf(saves, sizeof(saves), "%s/%s", directory, host ? "saves" : "saves/.netplay");
+    char capture[PATH_CAP];
+    int captured_length=snprintf(capture,sizeof(capture),"%s/native-battery/complete",directory);
+    if(captured_length>0 && (size_t)captured_length<sizeof(capture) && access(capture,F_OK)==0)
+        length=snprintf(saves,sizeof(saves),"%s/native-battery",directory);
+    else {
+        captured_length=snprintf(capture,sizeof(capture),"%s/native-export-required",directory);
+        if(captured_length>0 && (size_t)captured_length<sizeof(capture) && access(capture,F_OK)==0)return 25;
+    }
     struct battery updated = {.sram = own.sram, .rtc = RTC_BYTES};
     unsigned int slot = host ? 1U : 2U;
     if (length < 0 || (size_t)length >= sizeof(saves) ||

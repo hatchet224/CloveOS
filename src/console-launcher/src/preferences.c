@@ -71,6 +71,8 @@ static int lock_store(const struct cs_store *store)
        st.st_uid!=geteuid()||(st.st_mode&0077U)!=0U||flock(fd,LOCK_EX|LOCK_NB)!=0){(void)close(fd);return -1;}
     return fd;
 }
+/* Native synchronization occurs only for an explicit changed Tweaks value. */
+#include "native_preferences.h"
 static bool commit(const struct cs_store *store,const struct cl_preference_snapshot *current,
                     struct cl_preference_snapshot *desired)
 {
@@ -82,6 +84,7 @@ static bool commit(const struct cs_store *store,const struct cl_preference_snaps
        current->revision==UINT64_MAX)goto done;
     desired->revision=current->revision+1U;
     desired->has_record=true;
+    if(!cl_native_preferences_sync(store,current,desired))goto done;
     if(!write_record(store,CL_PREFERENCE_PREVIOUS,current)||!write_record(store,CL_PREFERENCE_CURRENT,desired))goto done;
     ok=true;
  done:
